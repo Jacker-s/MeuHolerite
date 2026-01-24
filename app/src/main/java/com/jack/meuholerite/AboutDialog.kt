@@ -1,5 +1,6 @@
 package com.jack.meuholerite
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,9 +63,18 @@ fun AboutDialog(onDismiss: () -> Unit) {
                         onClick = {
                             scope.launch {
                                 checkingUpdate = true
-                                updateManager.checkForUpdates(currentVersion) { version, url ->
-                                    updateInfo = version to url
-                                }
+                                updateManager.checkForUpdates(
+                                    currentVersion = currentVersion,
+                                    onUpdateAvailable = { version, url ->
+                                        updateInfo = version to url
+                                    },
+                                    onNoUpdate = {
+                                        Toast.makeText(context, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onError = {
+                                        Toast.makeText(context, "Erro ao verificar atualizações", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                                 checkingUpdate = false
                             }
                         },

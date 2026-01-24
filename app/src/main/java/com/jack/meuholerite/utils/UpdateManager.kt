@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -31,11 +32,18 @@ class UpdateManager(private val context: Context) {
         val name: String
     )
 
-    suspend fun checkForUpdates(currentVersion: String, onUpdateAvailable: (String, String) -> Unit) {
+    suspend fun checkForUpdates(
+        currentVersion: String,
+        onUpdateAvailable: (String, String) -> Unit,
+        onNoUpdate: () -> Unit,
+        onError: () -> Unit
+    ) {
         withContext(Dispatchers.IO) {
             try {
                 val url = URL(githubApiUrl)
                 val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                 
@@ -46,15 +54,22 @@ class UpdateManager(private val context: Context) {
                     val latestVersion = release.tag_name.replace("v", "")
                     if (isNewerVersion(currentVersion, latestVersion)) {
                         val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                        apkAsset?.let {
+                        if (apkAsset != null) {
                             withContext(Dispatchers.Main) {
-                                onUpdateAvailable(latestVersion, it.browser_download_url)
+                                onUpdateAvailable(latestVersion, apkAsset.browser_download_url)
                             }
+                        } else {
+                            withContext(Dispatchers.Main) { onNoUpdate() }
                         }
+                    } else {
+                        withContext(Dispatchers.Main) { onNoUpdate() }
                     }
+                } else {
+                    withContext(Dispatchers.Main) { onError() }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                withContext(Dispatchers.Main) { onError() }
             }
         }
     }
@@ -103,11 +118,9 @@ class UpdateManager(private val context: Context) {
         }
         
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(onComplete, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            context.registerReceiver(onComplete, filter)
-        }
+        
+        // Use ContextCompat to handle receiver flags across different Android versions
+        ContextCompat.registerReceiver(context, onComplete, filter, ContextCompat.RECEIVER_EXPORTED)
     }
 
     private fun installApk(file: File) {
@@ -120,14 +133,13 @@ class UpdateManager(private val context: Context) {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${context.packageName}")
                 }
-                context.startActivity(intent)
+                context.startActivity(settingsIntent)
                 return
             }
         }
-
 
         try {
             context.startActivity(intent)
