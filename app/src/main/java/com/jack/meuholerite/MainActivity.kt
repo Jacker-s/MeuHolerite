@@ -147,7 +147,7 @@ fun IosTopBar(
                     letterSpacing = (-0.5).sp
                 )
             }
-            
+
             Box {
                 Surface(
                     onClick = { showMenu = true },
@@ -478,7 +478,7 @@ fun AbsenceWarningDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text("Entendido") } },
-        title = { 
+        title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Warning, contentDescription = null, tint = Color(0xFFFF3B30))
                 Spacer(Modifier.width(8.dp))
@@ -498,7 +498,7 @@ fun DeductionDetailDialog(item: ReciboItem, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
-        title = { 
+        title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.MonetizationOn, contentDescription = null, tint = Color(0xFFFF3B30))
                 Spacer(Modifier.width(8.dp))
@@ -607,7 +607,7 @@ fun TimesheetScreen(
 
         if (espelho != null) {
             item { IosWidgetSummaryLargeCard(espelho, userName, userMatricula, onEditProfile, onOpen = { onOpen(espelho.pdfFilePath) }) }
-            
+
             // ADICIONADO: Seção de Faltas na aba Ponto
             if (espelho.hasAbsences) {
                 item {
@@ -1022,9 +1022,9 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
                 Text("Não foi possível carregar o portal ePays. Verifique sua internet.", textAlign = TextAlign.Center, color = Color.Gray)
                 Spacer(Modifier.height(24.dp))
                 Button(
-                    onClick = { 
+                    onClick = {
                         hasError = false
-                        webView?.reload() 
+                        webView?.reload()
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -1050,7 +1050,7 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
                             MotionEvent.ACTION_MOVE -> {
                                 val deltaX = abs(event.x - startX)
                                 val deltaY = event.y - startY
-                                
+
                                 // Swipe horizontal significativo libera o Pager
                                 if (deltaX > abs(deltaY) && deltaX > 30) {
                                     v.parent.requestDisallowInterceptTouchEvent(false)
@@ -1121,10 +1121,10 @@ fun HomeScreen(
 ) {
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
-    
+
     // Configura o Pager para os cards principais
-    val cardsPagerState = rememberPagerState(pageCount = { 
-        if (selectedRecibo != null && selectedEspelho != null) 2 
+    val cardsPagerState = rememberPagerState(pageCount = {
+        if (selectedRecibo != null && selectedEspelho != null) 2
         else 1
     })
 
@@ -1218,12 +1218,12 @@ fun HomeScreen(
             )
 
             SectionHeader("Outros Descontos")
-            
+
             if (selectedRecibo != null) {
                 val topDeductions = selectedRecibo.descontos
                     .sortedByDescending { it.valor.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 }
                     .take(3)
-                
+
                 if (topDeductions.isNotEmpty()) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         topDeductions.forEach { item ->
@@ -1242,7 +1242,7 @@ fun HomeScreen(
                         if (topDeductions.size < 3) repeat(3 - topDeductions.size) { Spacer(modifier = Modifier.weight(1f).height(115.dp)) }
                     }
                 } else {
-                     IosWidgetFinanceWideCard(title = "Sem Descontos", value = "R$ 0,00", subtitle = "Este recibo não possui descontos detalhados.", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)
+                    IosWidgetFinanceWideCard(title = "Sem Descontos", value = "R$ 0,00", subtitle = "Este recibo não possui descontos detalhados.", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)
                 }
             } else {
                 IosWidgetFinanceWideCard(title = "Descontos", value = "---", subtitle = "Importe um recibo para visualizar os detalhes", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)
