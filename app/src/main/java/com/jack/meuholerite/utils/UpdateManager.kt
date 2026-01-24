@@ -11,7 +11,6 @@ import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +20,6 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class UpdateManager(private val context: Context) {
-    // Certifique-se que o repositório é público e o nome está exatamente igual ao GitHub
     private val githubApiUrl = "https://api.github.com/repos/Jacker-s/MeuHolerite/releases/latest"
 
     data class GitHubRelease(
@@ -48,42 +46,31 @@ class UpdateManager(private val context: Context) {
                 connection.connectTimeout = 15000
                 connection.readTimeout = 15000
                 connection.requestMethod = "GET"
-                
                 connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-                connection.setRequestProperty("User-Agent", "MeuHolerite-App-v1")
+                connection.setRequestProperty("User-Agent", "MeuHolerite-App")
                 
-                val responseCode = connection.responseCode
-                Log.d("UpdateManager", "Response Code: $responseCode")
-
-                if (responseCode == 200) {
+                if (connection.responseCode == 200) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     val release = Gson().fromJson(response, GitHubRelease::class.java)
-                    
                     val tagName = release?.tag_name
+                    
                     if (tagName != null) {
                         val latestVersion = tagName.replace("v", "").trim()
                         if (isNewerVersion(currentVersion, latestVersion)) {
                             val apkAsset = release.assets?.find { it.name?.endsWith(".apk") == true }
                             val downloadUrl = apkAsset?.browser_download_url
-                            
                             if (downloadUrl != null) {
-                                withContext(Dispatchers.Main) {
-                                    onUpdateAvailable(latestVersion, downloadUrl)
-                                }
+                                withContext(Dispatchers.Main) { onUpdateAvailable(latestVersion, downloadUrl) }
                                 return@withContext
                             }
                         }
                     }
                     withContext(Dispatchers.Main) { onNoUpdate() }
-                } else if (responseCode == 404) {
-                    // 404 significa que o repositório não existe ou não tem NENHUMA release.
-                    // Nesse caso, não é um erro do app, apenas não há atualizações.
-                    withContext(Dispatchers.Main) { onNoUpdate() }
                 } else {
-                    withContext(Dispatchers.Main) { onError() }
+                    withContext(Dispatchers.Main) { onNoUpdate() }
                 }
             } catch (e: Exception) {
-                Log.e("UpdateManager", "Falha ao verificar atualização", e)
+                Log.e("UpdateManager", "Erro ao verificar: ${e.message}")
                 withContext(Dispatchers.Main) { onError() }
             } finally {
                 connection?.disconnect()
@@ -93,27 +80,21 @@ class UpdateManager(private val context: Context) {
 
     private fun isNewerVersion(current: String, latest: String): Boolean {
         return try {
-            // Remove qualquer texto (como "beta") e fica apenas com os números e pontos
-            val cleanCurrent = current.replace(Regex("[^0-9.]"), "").trim()
-            val cleanLatest = latest.replace(Regex("[^0-9.]"), "").trim()
-            
-            val currentParts = cleanCurrent.split(".").filter { it.isNotEmpty() }.map { it.toInt() }
-            val latestParts = cleanLatest.split(".").filter { it.isNotEmpty() }.map { it.toInt() }
-            
-            for (i in 0 until maxOf(currentParts.size, latestParts.size)) {
-                val cur = currentParts.getOrElse(i) { 0 }
-                val lat = latestParts.getOrElse(i) { 0 }
+            val curParts = current.split(".").map { it.toInt() }
+            val latParts = latest.split(".").map { it.toInt() }
+            for (i in 0 until maxOf(curParts.size, latParts.size)) {
+                val cur = curParts.getOrElse(i) { 0 }
+                val lat = latParts.getOrElse(i) { 0 }
                 if (lat > cur) return true
                 if (lat < cur) return false
             }
             false
-        } catch (e: Exception) {
-            latest != current
-        }
+        } catch (e: Exception) { latest != current }
     }
 
     fun downloadAndInstall(url: String, version: String) {
         val fileName = "meu_holerite_$version.apk"
+        // Salva na pasta pública de Downloads para garantir que o instalador do sistema tenha acesso
         val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
         
         if (destination.exists()) {
@@ -121,55 +102,64 @@ class UpdateManager(private val context: Context) {
             return
         }
 
+        Toast.makeText(context, "Iniciando download da v$version...", Toast.LENGTH_LONG).show()
+
         val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle("Baixando atualização")
-            .setDescription("Meu Holerite v$version")
+            .setTitle("Meu Holerite v$version")
+            .setDescription("Baixando nova versão...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(destination))
+            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, fileName)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
 
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = downloadManager.enqueue(request)
+        val downloadId = try {
+            downloadManager.enqueue(request)
+        } catch (e: Exception) {
+            Log.e("UpdateManager", "Erro ao enfileirar download: ${e.message}")
+            Toast.makeText(context, "Erro ao iniciar download", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val onComplete = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
                     installApk(destination)
-                    context.unregisterReceiver(this)
+                    context.applicationContext.unregisterReceiver(this)
                 }
             }
         }
         
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
+            context.applicationContext.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
         } else {
-            context.registerReceiver(onComplete, filter)
+            context.applicationContext.registerReceiver(onComplete, filter)
         }
     }
 
     private fun installApk(file: File) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        try {
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!context.packageManager.canRequestPackageInstalls()) {
-                val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+                Toast.makeText(context, "Autorize a instalação de fontes desconhecidas", Toast.LENGTH_LONG).show()
+                context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${context.packageName}")
-                }
-                context.startActivity(settingsIntent)
+                })
                 return
             }
-        }
 
-        try {
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Erro ao abrir o instalador", Toast.LENGTH_SHORT).show()
+            Log.e("UpdateManager", "Erro ao instalar: ${e.message}")
+            Toast.makeText(context, "Erro ao abrir instalador", Toast.LENGTH_SHORT).show()
         }
     }
 }
