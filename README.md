@@ -27,7 +27,7 @@ O aplicativo automatiza a extração de dados de documentos PDF, permitindo que 
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/Jacker-s/meu-holerite.git
+   git clone https://github.com/Jacker-s/MeuHolerite.git
    ```
 2. Abra o projeto no **Android Studio** (versão Ladybug ou superior recomendada).
 3. Sincronize o Gradle.
