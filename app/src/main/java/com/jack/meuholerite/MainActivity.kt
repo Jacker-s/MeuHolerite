@@ -76,6 +76,7 @@ import com.jack.meuholerite.parser.PontoParser
 import com.jack.meuholerite.parser.ReciboParser
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 import com.jack.meuholerite.utils.PdfReader
+import com.jack.meuholerite.utils.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -224,7 +225,12 @@ fun MainScreen(intent: Intent? = null) {
     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
     var userMatricula by remember { mutableStateOf(prefs.getString("user_matricula", "") ?: "") }
     var showOnboarding by remember { mutableStateOf(userName.isEmpty() || userMatricula.isEmpty()) }
-    var selectedDeduction by remember { mutableStateOf<ReciboItem?>(null) } // Novo estado para o item de desconto selecionado
+    var selectedDeduction by remember { mutableStateOf<ReciboItem?>(null) }
+    
+    // Estados para Atualização Automática
+    val updateManager = remember { UpdateManager(context) }
+    var autoUpdateInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val currentVersion = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0" }
 
     fun openPdf(filePath: String?) {
         if (filePath == null) {
@@ -282,6 +288,15 @@ fun MainScreen(intent: Intent? = null) {
 
     LaunchedEffect(Unit) {
         refreshData()
+        // Checagem automática de versão ao iniciar
+        updateManager.checkForUpdates(
+            currentVersion = currentVersion,
+            onUpdateAvailable = { version, url ->
+                autoUpdateInfo = version to url
+            },
+            onNoUpdate = {},
+            onError = {}
+        )
     }
 
     LaunchedEffect(selectedEspelho) {
@@ -319,7 +334,7 @@ fun MainScreen(intent: Intent? = null) {
                         val updatedNovo = novo.copy(pdfFilePath = path)
                         selectedEspelho = updatedNovo
                         db.espelhoDao().insert(updatedNovo.toEntity(gson, path))
-                        pagerState.animateScrollToPage(3) // MODIFICADO: Ir para a tela de Ponto (índice 3)
+                        pagerState.animateScrollToPage(3)
                     } else if (isRecibo) {
                         var novo = ReciboParser().parse(text)
                         if (novo.funcionario == "Não identificado" && userName.isNotEmpty()) {
@@ -348,6 +363,33 @@ fun MainScreen(intent: Intent? = null) {
         DeductionDetailDialog(selectedDeduction!!) {
             selectedDeduction = null
         }
+    }
+    
+    // Dialog de Atualização Disponível (Automático)
+    if (autoUpdateInfo != null) {
+        AlertDialog(
+            onDismissRequest = { autoUpdateInfo = null },
+            title = { Text("Nova Atualização Disponível", fontWeight = FontWeight.Bold) },
+            text = { Text("Uma nova versão (v${autoUpdateInfo!!.first}) está disponível para download. Deseja atualizar agora?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        updateManager.downloadAndInstall(autoUpdateInfo!!.second, autoUpdateInfo!!.first)
+                        autoUpdateInfo = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759))
+                ) {
+                    Text("Atualizar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { autoUpdateInfo = null }) {
+                    Text("Depois")
+                }
+            },
+            shape = RoundedCornerShape(22.dp),
+            containerColor = Color.White
+        )
     }
 
     Scaffold(
@@ -430,7 +472,7 @@ fun MainScreen(intent: Intent? = null) {
                                         val updatedNovo = novo.copy(pdfFilePath = path)
                                         selectedEspelho = updatedNovo
                                         db.espelhoDao().insert(updatedNovo.toEntity(gson, path))
-                                        pagerState.animateScrollToPage(3) // MODIFICADO: Ir para a tela de Ponto (índice 3)
+                                        pagerState.animateScrollToPage(3)
                                     }
                                     Toast.makeText(context, "Espelho de ponto importado!", Toast.LENGTH_SHORT).show()
                                 } else if (isRecibo) {
@@ -608,7 +650,6 @@ fun TimesheetScreen(
         if (espelho != null) {
             item { IosWidgetSummaryLargeCard(espelho, userName, userMatricula, onEditProfile, onOpen = { onOpen(espelho.pdfFilePath) }) }
 
-            // ADICIONADO: Seção de Faltas na aba Ponto
             if (espelho.hasAbsences) {
                 item {
                     AbsenceDetailCard(espelho)
@@ -1050,12 +1091,9 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
                             MotionEvent.ACTION_MOVE -> {
                                 val deltaX = abs(event.x - startX)
                                 val deltaY = event.y - startY
-
-                                // Swipe horizontal significativo libera o Pager
                                 if (deltaX > abs(deltaY) && deltaX > 30) {
                                     v.parent.requestDisallowInterceptTouchEvent(false)
                                 } else {
-                                    // Caso contrário, WebView cuida da rolagem vertical interna
                                     v.parent.requestDisallowInterceptTouchEvent(true)
                                 }
                             }
@@ -1082,7 +1120,6 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
                             hasError = false
                         }
                         override fun onReceivedError(v: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                            // Apenas erros na URL principal
                             if (request?.isForMainFrame == true) {
                                 hasError = true
                             }
@@ -1122,7 +1159,6 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
 
-    // Configura o Pager para os cards principais
     val cardsPagerState = rememberPagerState(pageCount = {
         if (selectedRecibo != null && selectedEspelho != null) 2
         else 1
@@ -1152,7 +1188,6 @@ fun HomeScreen(
 
             SectionHeader("DESTAQUES")
 
-            // Pager de Cards (Estilo Widget iOS)
             HorizontalPager(
                 state = cardsPagerState,
                 modifier = Modifier.fillMaxWidth(),
@@ -1160,15 +1195,12 @@ fun HomeScreen(
             ) { page ->
                 val fullCardModifier = Modifier.fillMaxWidth().height(320.dp)
                 when {
-                    // Caso 1: Ambos os dados existem
                     selectedRecibo != null && selectedEspelho != null -> {
                         if (page == 0) IosWidgetReceiptFullCard(selectedRecibo, modifier = fullCardModifier, onClick = onGoToRecibo, onOpen = { onOpenPdf(selectedRecibo.pdfFilePath) })
                         else IosWidgetTimesheetFullCard(selectedEspelho, modifier = fullCardModifier, onClick = onGoToPonto, onOpen = { onOpenPdf(selectedEspelho.pdfFilePath) })
                     }
-                    // Caso 2: Apenas um existe
                     selectedRecibo != null -> IosWidgetReceiptFullCard(selectedRecibo, modifier = fullCardModifier, onClick = onGoToRecibo, onOpen = { onOpenPdf(selectedRecibo.pdfFilePath) })
                     selectedEspelho != null -> IosWidgetTimesheetFullCard(selectedEspelho, modifier = fullCardModifier, onClick = onGoToPonto, onOpen = { onOpenPdf(selectedEspelho.pdfFilePath) })
-                    // Caso 3: Nenhum existe
                     else -> IosWidgetFinanceWideCard(
                         title = "Importe seus dados",
                         value = "---",
@@ -1180,7 +1212,6 @@ fun HomeScreen(
                 }
             }
 
-            // Indicador do Pager
             if (cardsPagerState.pageCount > 1) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -1319,14 +1350,13 @@ fun IosWidgetTimesheetFullCard(espelho: EspelhoPonto, modifier: Modifier = Modif
     }
 }
 
-// Nova função para determinar a cor do card com base no tipo de desconto
 private fun getDeductionColor(description: String): Color {
     val upperDesc = description.uppercase()
     return when {
-        upperDesc.contains("IRRF") -> Color(0xFFFF3B30) // Vermelho brilhante
-        upperDesc.contains("INSS") -> Color(0xFFE53935) // Vermelho um pouco mais escuro
-        upperDesc.contains("VALE") || upperDesc.contains("TRANSPORTE") -> Color(0xFFB71C1C) // Vinho/vermelho escuro
-        else -> Color(0xFFC62828) // Padrão
+        upperDesc.contains("IRRF") -> Color(0xFFFF3B30)
+        upperDesc.contains("INSS") -> Color(0xFFE53935)
+        upperDesc.contains("VALE") || upperDesc.contains("TRANSPORTE") -> Color(0xFFB71C1C)
+        else -> Color(0xFFC62828)
     }
 }
 

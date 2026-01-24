@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -20,16 +21,17 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class UpdateManager(private val context: Context) {
-    private val githubApiUrl = "https://api.github.com/repos/Jacker-s/meu-holerite/releases/latest"
+    // Certifique-se que o repositório é público e o nome está exatamente igual ao GitHub
+    private val githubApiUrl = "https://api.github.com/repos/Jacker-s/MeuHolerite/releases/latest"
 
     data class GitHubRelease(
-        val tag_name: String,
-        val assets: List<Asset>
+        val tag_name: String?,
+        val assets: List<Asset>?
     )
 
     data class Asset(
-        val browser_download_url: String,
-        val name: String
+        val browser_download_url: String?,
+        val name: String?
     )
 
     suspend fun checkForUpdates(
@@ -39,51 +41,72 @@ class UpdateManager(private val context: Context) {
         onError: () -> Unit
     ) {
         withContext(Dispatchers.IO) {
+            var connection: HttpURLConnection? = null
             try {
                 val url = URL(githubApiUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
+                connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
                 connection.requestMethod = "GET"
-                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                 
-                if (connection.responseCode == 200) {
+                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                connection.setRequestProperty("User-Agent", "MeuHolerite-App-v1")
+                
+                val responseCode = connection.responseCode
+                Log.d("UpdateManager", "Response Code: $responseCode")
+
+                if (responseCode == 200) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     val release = Gson().fromJson(response, GitHubRelease::class.java)
                     
-                    val latestVersion = release.tag_name.replace("v", "")
-                    if (isNewerVersion(currentVersion, latestVersion)) {
-                        val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                        if (apkAsset != null) {
-                            withContext(Dispatchers.Main) {
-                                onUpdateAvailable(latestVersion, apkAsset.browser_download_url)
+                    val tagName = release?.tag_name
+                    if (tagName != null) {
+                        val latestVersion = tagName.replace("v", "").trim()
+                        if (isNewerVersion(currentVersion, latestVersion)) {
+                            val apkAsset = release.assets?.find { it.name?.endsWith(".apk") == true }
+                            val downloadUrl = apkAsset?.browser_download_url
+                            
+                            if (downloadUrl != null) {
+                                withContext(Dispatchers.Main) {
+                                    onUpdateAvailable(latestVersion, downloadUrl)
+                                }
+                                return@withContext
                             }
-                        } else {
-                            withContext(Dispatchers.Main) { onNoUpdate() }
                         }
-                    } else {
-                        withContext(Dispatchers.Main) { onNoUpdate() }
                     }
+                    withContext(Dispatchers.Main) { onNoUpdate() }
+                } else if (responseCode == 404) {
+                    // 404 significa que o repositório não existe ou não tem NENHUMA release.
+                    // Nesse caso, não é um erro do app, apenas não há atualizações.
+                    withContext(Dispatchers.Main) { onNoUpdate() }
                 } else {
                     withContext(Dispatchers.Main) { onError() }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("UpdateManager", "Falha ao verificar atualização", e)
                 withContext(Dispatchers.Main) { onError() }
+            } finally {
+                connection?.disconnect()
             }
         }
     }
 
     private fun isNewerVersion(current: String, latest: String): Boolean {
         return try {
-            val currentParts = current.split(".").map { it.toInt() }
-            val latestParts = latest.split(".").map { it.toInt() }
+            // Remove qualquer texto (como "beta") e fica apenas com os números e pontos
+            val cleanCurrent = current.replace(Regex("[^0-9.]"), "").trim()
+            val cleanLatest = latest.replace(Regex("[^0-9.]"), "").trim()
             
-            for (i in 0 until minOf(currentParts.size, latestParts.size)) {
-                if (latestParts[i] > currentParts[i]) return true
-                if (latestParts[i] < currentParts[i]) return false
+            val currentParts = cleanCurrent.split(".").filter { it.isNotEmpty() }.map { it.toInt() }
+            val latestParts = cleanLatest.split(".").filter { it.isNotEmpty() }.map { it.toInt() }
+            
+            for (i in 0 until maxOf(currentParts.size, latestParts.size)) {
+                val cur = currentParts.getOrElse(i) { 0 }
+                val lat = latestParts.getOrElse(i) { 0 }
+                if (lat > cur) return true
+                if (lat < cur) return false
             }
-            latestParts.size > currentParts.size
+            false
         } catch (e: Exception) {
             latest != current
         }
@@ -118,9 +141,11 @@ class UpdateManager(private val context: Context) {
         }
         
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        
-        // Use ContextCompat to handle receiver flags across different Android versions
-        ContextCompat.registerReceiver(context, onComplete, filter, ContextCompat.RECEIVER_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(onComplete, filter)
+        }
     }
 
     private fun installApk(file: File) {
