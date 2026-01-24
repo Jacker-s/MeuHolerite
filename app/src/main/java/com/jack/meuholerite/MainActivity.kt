@@ -91,21 +91,66 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.Geocoder
 import android.location.LocationManager
 import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
         enableEdgeToEdge()
         setContent {
             MeuHoleriteTheme {
                 MainScreen(intent)
             }
         }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Avisos de Falta"
+            val descriptionText = "Notificações de faltas detectadas no espelho de ponto"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("ABSENCE_ALERTS", name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+}
+
+fun showAbsenceNotification(context: Context, periodo: String, numFaltas: Int) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+    }
+
+    val intent = Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+    val pendingIntent: PendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+    val builder = NotificationCompat.Builder(context, "ABSENCE_ALERTS")
+        .setSmallIcon(R.drawable.ic_launcher_foreground) // Certifique-se de que este ícone existe ou use outro
+        .setContentTitle("Faltas Detectadas")
+        .setContentText("Foram detectadas $numFaltas faltas no período $periodo.")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+
+    with(NotificationManagerCompat.from(context)) {
+        notify(1001, builder.build())
     }
 }
 
@@ -233,6 +278,14 @@ fun MainScreen(intent: Intent? = null) {
     var autoUpdateInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
     val currentVersion = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0" }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Permissão de notificação negada. Você não receberá avisos de falta.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun openPdf(filePath: String?) {
         if (filePath == null) {
             Toast.makeText(context, "Arquivo PDF não disponível", Toast.LENGTH_SHORT).show()
@@ -297,12 +350,18 @@ fun MainScreen(intent: Intent? = null) {
             onNoUpdate = {},
             onError = {}
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
     LaunchedEffect(selectedEspelho) {
         val hasAbsences = selectedEspelho?.hasAbsences ?: false
         if (hasAbsences) {
             showAbsenceWarning = true
+            showAbsenceNotification(context, selectedEspelho?.periodo ?: "", selectedEspelho?.diasFaltas?.size ?: 0)
         }
     }
 
