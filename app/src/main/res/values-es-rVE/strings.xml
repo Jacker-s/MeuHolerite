@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">Mi Recibo</string>
+    <string name="home">Inicio</string>
+    <string name="summary">Resumen</string>
+    <string name="history">Historial</string>
+    <string name="timesheet">Asistencia</string>
+    <string name="language">Idioma</string>
+    <string name="select_pdf">Seleccione un PDF</string>
+    <string name="import_new_pdf">Importar Nuevo PDF</string>
+    <string name="bank_hours">BANCO DE HORAS</string>
+    <string name="bank_balance">Saldo Banco de Horas</string>
+    <string name="import_another_period">Importar Otro Período</string>
+    <string name="saved_periods">Períodos guardados en el dispositivo</string>
+    <string name="no_periods_saved">Aún no hay períodos guardados.</string>
+    <string name="open_epays">Abrir ePays</string>
+    <string name="receipts">Recibos</string>
+    <string name="no_receipts_saved">Aún no hay recibos guardados.</string>
+    <string name="net_pay">Líquido a Cobrar</string>
+    <string name="earnings">Asignaciones</string>
+    <string name="deductions">Deducciones</string>
+
+    <!-- Rótulos del PDF -->
+    <string name="label_worked_hours">Horas Trabajadas</string>
+    <string name="label_night_allowance">Bono Nocturno</string>
+    <string name="label_interval_delay">Retraso en el Intervalo</string>
+    <string name="label_early_departure">Salida Anticipada</string>
+    <string name="label_extra_hours_50">Horas Extras 50%</string>
+    <string name="label_extra_hours_100">Horas Extras 100%</string>
+    <string name="label_excused_absence">Horas Justificadas</string>
+    <string name="label_absences">Faltas</string>
+    <string name="label_previous_balance">Saldo Anterior</string>
+    <string name="label_period_balance">Saldo del Período</string>
+    <string name="label_unknown">Desconocido</string>
+
+    <!-- Descripciones -->
+    <string name="desc_worked_hours">Total de horas productivas registradas.</string>
+    <string name="desc_night_allowance">Horas trabajadas en período nocturno.</string>
+    <string name="desc_interval_delay">Tiempo de descanso no utilizado.</string>
+    <string name="desc_early_departure">Salidas antes do horario contractual.</string>
+    <string name="desc_extra_hours_50">Horas excedentes de la jornada normal (50%).</string>
+    <string name="desc_extra_hours_100">Horas extras realizadas en feriados o días libres.</string>
+    <string name="desc_excused_absence">Horas de ausencia justificadas por reposo médico o permiso.</string>
+    <string name="desc_absences">Horas no trabajadas debido a faltas injustificadas.</string>
+    <string name="desc_bank_balance">Su saldo acumulado en el banco de horas.</string>
+
+    <!-- Avisos -->
+    <string name="warning_absences">Atención: Se detectaron faltas en este período. Verifique su reporte de asistencia detallado.</string>
+
+    <!-- Sobre -->
+    <string name="about_title">Sobre la Aplicación</string>
+    <string name="developer_label">Desarrollador</string>
+    <string name="developer_name">Jackson silva</string>
+    <string name="developer_phone">14991717549</string>
+    <string name="developer_email">ssj53415170@gmail.com</string>
+    <string name="version_label">Versión</string>
+    <string name="version_value">beta 0.01</string>
+    <string name="close">Cerrar</string>
+</resources>
