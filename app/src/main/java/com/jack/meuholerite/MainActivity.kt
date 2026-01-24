@@ -25,6 +25,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.LocaleListCompat
@@ -206,7 +208,7 @@ fun IosTopBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(intent: Intent? = null) {
     val pagerState = rememberPagerState(pageCount = { 4 })
@@ -227,7 +229,6 @@ fun MainScreen(intent: Intent? = null) {
     var showOnboarding by remember { mutableStateOf(userName.isEmpty() || userMatricula.isEmpty()) }
     var selectedDeduction by remember { mutableStateOf<ReciboItem?>(null) }
     
-    // Estados para Atualização Automática
     val updateManager = remember { UpdateManager(context) }
     var autoUpdateInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
     val currentVersion = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0" }
@@ -288,7 +289,6 @@ fun MainScreen(intent: Intent? = null) {
 
     LaunchedEffect(Unit) {
         refreshData()
-        // Checagem automática de versão ao iniciar
         updateManager.checkForUpdates(
             currentVersion = currentVersion,
             onUpdateAvailable = { version, url ->
@@ -365,7 +365,6 @@ fun MainScreen(intent: Intent? = null) {
         }
     }
     
-    // Dialog de Atualização Disponível (Automático)
     if (autoUpdateInfo != null) {
         AlertDialog(
             onDismissRequest = { autoUpdateInfo = null },
@@ -563,44 +562,133 @@ fun DeductionDetailDialog(item: ReciboItem, onDismiss: () -> Unit) {
     )
 }
 
+data class OnboardingStep(
+    val titleRes: Int,
+    val descRes: Int,
+    val icon: ImageVector,
+    val color: Color
+)
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (String, String) -> Unit) {
     var name by remember { mutableStateOf(initialName) }
     var matricula by remember { mutableStateOf(initialMatricula) }
+    
+    val steps = listOf(
+        OnboardingStep(R.string.onboarding_welcome_title, R.string.onboarding_welcome_desc, Icons.Outlined.WavingHand, Color(0xFF007AFF)),
+        OnboardingStep(R.string.onboarding_import_title, R.string.onboarding_import_desc, Icons.Outlined.CloudDownload, Color(0xFF5856D6)),
+        OnboardingStep(R.string.onboarding_receipts_title, R.string.onboarding_receipts_desc, Icons.Outlined.AccountBalanceWallet, Color(0xFF34C759)),
+        OnboardingStep(R.string.onboarding_ponto_title, R.string.onboarding_ponto_desc, Icons.Outlined.Schedule, Color(0xFFFF9500)),
+        OnboardingStep(R.string.onboarding_privacy_title, R.string.onboarding_privacy_desc, Icons.Outlined.Shield, Color(0xFFFF3B30)),
+        OnboardingStep(R.string.onboarding_finish_title, R.string.onboarding_finish_desc, Icons.Outlined.Person, Color(0xFF8E8E93))
+    )
+    
+    val pagerState = rememberPagerState(pageCount = { steps.size })
+    val scope = rememberCoroutineScope()
 
     AlertDialog(
         onDismissRequest = { },
-        title = { Text("Seus Dados", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Informe seu nome e matrícula para personalizar o app.")
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nome Completo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                OutlinedTextField(
-                    value = matricula,
-                    onValueChange = { matricula = it },
-                    label = { Text("Matrícula") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (name.isNotBlank() && matricula.isNotBlank()) onSave(name, matricula) },
-                enabled = name.isNotBlank() && matricula.isNotBlank(),
-                shape = RoundedCornerShape(12.dp)
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxSize().padding(12.dp),
+        content = {
+            Surface(
+                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White,
+                shadowElevation = 8.dp
             ) {
-                Text("Salvar")
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth().height(600.dp),
+                        userScrollEnabled = true
+                    ) { page ->
+                        val step = steps[page]
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(
+                                modifier = Modifier.size(160.dp).background(step.color.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(step.icon, null, tint = step.color, modifier = Modifier.size(90.dp))
+                            }
+                            Spacer(Modifier.height(40.dp))
+                            Text(stringResource(step.titleRes), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, lineHeight = 38.sp)
+                            Spacer(Modifier.height(24.dp))
+                            Text(stringResource(step.descRes), fontSize = 19.sp, color = Color.Gray, textAlign = TextAlign.Center, lineHeight = 28.sp)
+                            
+                            if (page == steps.size - 1) {
+                                Spacer(Modifier.height(32.dp))
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text("Nome Completo") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    singleLine = true
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                OutlinedTextField(
+                                    value = matricula,
+                                    onValueChange = { matricula = it },
+                                    label = { Text("Matrícula") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    singleLine = true
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(24.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Indicadores
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            repeat(steps.size) { iteration ->
+                                val color = if (pagerState.currentPage == iteration) steps[iteration].color else Color.LightGray
+                                Box(modifier = Modifier.padding(2.dp).clip(CircleShape).background(color).size(12.dp))
+                            }
+                        }
+                        
+                        // Botão
+                        Button(
+                            onClick = {
+                                if (pagerState.currentPage < steps.size - 1) {
+                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                } else {
+                                    if (name.isNotBlank() && matricula.isNotBlank()) onSave(name, matricula)
+                                }
+                            },
+                            enabled = if (pagerState.currentPage == steps.size - 1) name.isNotBlank() && matricula.isNotBlank() else true,
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (pagerState.currentPage == steps.size - 1) Color(0xFF007AFF) else Color(0xFFF2F2F7),
+                                contentColor = if (pagerState.currentPage == steps.size - 1) Color.White else Color.Black
+                            )
+                        ) {
+                            Text(
+                                text = if (pagerState.currentPage == steps.size - 1) stringResource(R.string.start) else stringResource(R.string.next),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
-        },
-        shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        }
     )
 }
 
@@ -1145,7 +1233,7 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     selectedRecibo: ReciboPagamento?,
@@ -1308,7 +1396,7 @@ fun IosWidgetTimesheetFullCard(espelho: EspelhoPonto, modifier: Modifier = Modif
                     Text("BANCO DE HORAS", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                     Text(espelho.periodo, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
                 }
-                IconButton(onClick = onOpen) { Icon(Icons.Outlined.PictureAsPdf, null, tint = Color.White) }
+                IconButton(onClick = { onOpen() }) { Icon(Icons.Outlined.PictureAsPdf, null, tint = Color.White) }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -1484,7 +1572,7 @@ fun IosWidgetSummaryLargeCard(espelho: EspelhoPonto, userName: String = "", matr
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    IconButton(onClick = onOpen) {
+                    IconButton(onClick = { onOpen() }) {
                         Icon(Icons.Outlined.PictureAsPdf, null, tint = Color.White)
                     }
                     Text("VER PDF", color = Color.White.copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Bold)

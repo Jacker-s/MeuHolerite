@@ -53,6 +53,22 @@
     <string name="developer_phone">14991717549</string>
     <string name="developer_email">ssj53415170@gmail.com</string>
     <string name="version_label">Versão</string>
-    <string name="version_value">beta 0.01</string>
+    <string name="version_value">1.5</string>
     <string name="close">Fechar</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bem-vindo ao Meu Holerite</string>
+    <string name="onboarding_welcome_desc">Sua ferramenta completa para gerenciar pontos e recibos de forma simples e privada.</string>
+    <string name="onboarding_import_title">Importação Integrada</string>
+    <string name="onboarding_import_desc">Acesse o portal ePays diretamente pelo app. Ao baixar um PDF de Holerite ou Ponto, nós o importamos automaticamente para você.</string>
+    <string name="onboarding_receipts_title">Seu Dinheiro no Detalhe</string>
+    <string name="onboarding_receipts_desc">Visualize seus proventos e descontos de forma clara. Saiba exatamente quanto vai receber com gráficos e resumos intuitivos.</string>
+    <string name="onboarding_ponto_title">Controle de Horas</string>
+    <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos automáticos sobre faltas detectadas no período.</string>
+    <string name="onboarding_privacy_title">Privacidade Total</string>
+    <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processado e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
+    <string name="onboarding_finish_title">Vamos Começar?</string>
+    <string name="onboarding_finish_desc">Informe seu nome e matrícula para personalizar seus relatórios e widgets.</string>
+    <string name="next">Próximo</string>
+    <string name="start">Começar</string>
 </resources>
