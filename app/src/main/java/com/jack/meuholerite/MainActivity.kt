@@ -66,6 +66,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.LocaleListCompat
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.gson.Gson
 import com.jack.meuholerite.R
 import com.jack.meuholerite.database.AppDatabase
@@ -105,6 +107,14 @@ import androidx.core.app.NotificationManagerCompat
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Inicialização Global do AdMob
+        val requestConfiguration = RequestConfiguration.Builder()
+            .setTestDeviceIds(listOf("0DE9BC5C143E849581BCCEF706786AFA"))
+            .build()
+        MobileAds.setRequestConfiguration(requestConfiguration)
+        MobileAds.initialize(this) {}
+
         createNotificationChannel()
         enableEdgeToEdge()
         setContent {
@@ -142,7 +152,7 @@ fun showAbsenceNotification(context: Context, periodo: String, numFaltas: Int) {
     val pendingIntent: PendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
     val builder = NotificationCompat.Builder(context, "ABSENCE_ALERTS")
-        .setSmallIcon(R.drawable.ic_launcher_foreground) // Certifique-se de que este ícone existe ou use outro
+        .setSmallIcon(R.drawable.ic_launcher_foreground) 
         .setContentTitle("Faltas Detectadas")
         .setContentText("Foram detectadas $numFaltas faltas no período $periodo.")
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -713,7 +723,6 @@ fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (Str
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Indicadores
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             repeat(steps.size) { iteration ->
                                 val color = if (pagerState.currentPage == iteration) steps[iteration].color else Color.LightGray
@@ -721,7 +730,6 @@ fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (Str
                             }
                         }
                         
-                        // Botão
                         Button(
                             onClick = {
                                 if (pagerState.currentPage < steps.size - 1) {
@@ -1398,29 +1406,60 @@ fun HomeScreen(
             SectionHeader("Outros Descontos")
 
             if (selectedRecibo != null) {
-                val topDeductions = selectedRecibo.descontos
+                val deductions = selectedRecibo.descontos
+                val emprestimo = deductions.find { it.descricao.uppercase().contains("EMPREST") }
+                val inss = deductions.find { it.descricao.uppercase().contains("INSS") }
+                val others = deductions.filter { it != emprestimo && it != inss }
                     .sortedByDescending { it.valor.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 }
-                    .take(3)
 
-                if (topDeductions.isNotEmpty()) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        topDeductions.forEach { item ->
-                            val value = "R$ ${item.valor.replace("salário", "", ignoreCase = true).trim()}"
-                            val deductionColor = getDeductionColor(item.descricao)
-                            IosWidgetSmallInfoCard(
-                                label = item.descricao.substringBefore(" ").uppercase(),
-                                value = value,
-                                icon = Icons.Outlined.MonetizationOn,
-                                modifier = Modifier.weight(1f).height(115.dp).clickable { onDeductionClick(item) },
-                                cardColor = deductionColor,
-                                iconColor = Color.White,
-                                textColor = Color.White
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (emprestimo != null || inss != null) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (emprestimo != null) {
+                                val value = "R$ ${emprestimo.valor.replace("salário", "", ignoreCase = true).trim()}"
+                                IosWidgetSmallInfoCard(
+                                    label = "EMPRÉSTIMO",
+                                    value = value,
+                                    icon = Icons.Outlined.AccountBalance,
+                                    modifier = Modifier.weight(1.8f).height(115.dp).clickable { onDeductionClick(emprestimo) },
+                                    cardColor = Color(0xFFC62828),
+                                    iconColor = Color.White,
+                                    textColor = Color.White
+                                )
+                            }
+                            if (inss != null) {
+                                val value = "R$ ${inss.valor.replace("salário", "", ignoreCase = true).trim()}"
+                                IosWidgetSmallInfoCard(
+                                    label = "INSS",
+                                    value = value,
+                                    icon = Icons.Outlined.Security,
+                                    modifier = Modifier.weight(1f).height(115.dp).clickable { onDeductionClick(inss) },
+                                    cardColor = Color(0xFFE53935),
+                                    iconColor = Color.White,
+                                    textColor = Color.White
+                                )
+                            } else if (emprestimo != null) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
-                        if (topDeductions.size < 3) repeat(3 - topDeductions.size) { Spacer(modifier = Modifier.weight(1f).height(115.dp)) }
                     }
-                } else {
-                    IosWidgetFinanceWideCard(title = "Sem Descontos", value = "R$ 0,00", subtitle = "Este recibo não possui descontos detalhados.", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)
+
+                    if (others.isNotEmpty()) {
+                        val firstOther = others.first()
+                        val value = "R$ ${firstOther.valor.replace("salário", "", ignoreCase = true).trim()}"
+                        IosWidgetFinanceWideCard(
+                            title = firstOther.descricao,
+                            value = value,
+                            subtitle = "Dedução Adicional",
+                            color = Color(0xFFB71C1C),
+                            icon = Icons.Outlined.MonetizationOn,
+                            onClick = { onDeductionClick(firstOther) }
+                        )
+                    }
+
+                    if (emprestimo == null && inss == null && others.isEmpty()) {
+                        IosWidgetFinanceWideCard(title = "Sem Descontos", value = "R$ 0,00", subtitle = "Este recibo não possui descontos detalhados.", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)
+                    }
                 }
             } else {
                 IosWidgetFinanceWideCard(title = "Descontos", value = "---", subtitle = "Importe um recibo para visualizar os detalhes", color = Color.Gray, icon = Icons.Outlined.MonetizationOn, onClick = onGoToRecibo)

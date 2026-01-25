@@ -19,6 +19,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MeuHolerite"
         android:localeConfig="@xml/locales_config">
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7931782163570852~9037019125" />
+
+        <!-- Correção para o erro 'Unable to obtain a JavascriptEngine' -->
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.JS_SANDBOX"
+            android:value="false" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true"/>
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
