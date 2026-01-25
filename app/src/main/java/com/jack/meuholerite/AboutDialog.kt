@@ -91,8 +91,8 @@ fun AboutDialog(onDismiss: () -> Unit) {
     // Carrega os anúncios em background
     LaunchedEffect(Unit) {
         activity?.let { act ->
-            // Carrega anúncio nativo
-            val adLoader = AdLoader.Builder(act, "ca-app-pub-7931782163570852/1828597034")
+            // Carrega anúncio nativo avançado
+            val adLoader = AdLoader.Builder(act, "ca-app-pub-7931782163570852/3323805245")
                 .forNativeAd { ad ->
                     Log.d("AdMob", "Native Ad Carregado com Sucesso")
                     nativeAd = ad
@@ -114,7 +114,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
                         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                             override fun onAdDismissedFullScreenContent() {
                                 rewardedInterstitialAd = null
-                                Toast.makeText(context, "Obrigado por assistir! Seu apoio ajuda muito.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.ad_thanks_toast), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -169,8 +169,8 @@ fun AboutDialog(onDismiss: () -> Unit) {
                                     onUpdateAvailable = { v, url, log -> 
                                         updateInfo = DetailedUpdateInfo(v, url, log) 
                                     },
-                                    onNoUpdate = { Toast.makeText(context, "Versão atualizada!", Toast.LENGTH_SHORT).show() },
-                                    onError = { Toast.makeText(context, "Erro na atualização", Toast.LENGTH_SHORT).show() }
+                                    onNoUpdate = { Toast.makeText(context, context.getString(R.string.version_up_to_date), Toast.LENGTH_SHORT).show() },
+                                    onError = { Toast.makeText(context, context.getString(R.string.update_error), Toast.LENGTH_SHORT).show() }
                                 )
                                 checkingUpdate = false
                             }
@@ -208,13 +208,20 @@ fun AboutMainContent(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             AboutInfoRow(Icons.Default.Person, stringResource(R.string.developer_label), stringResource(R.string.developer_name))
             
-            ContactActionRow(Icons.Default.Phone, "Telefone") {
+            ContactActionRow(Icons.Default.Phone, stringResource(R.string.phone_label)) {
                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${context.getString(R.string.developer_phone)}"))
                 context.startActivity(intent)
             }
 
-            ContactActionRow(Icons.Default.Email, "E-mail") {
+            ContactActionRow(Icons.Default.Email, stringResource(R.string.email_label)) {
                 val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${context.getString(R.string.developer_email)}"))
+                context.startActivity(intent)
+            }
+
+            ContactActionRow(Icons.Default.Feedback, stringResource(R.string.suggestions_label)) {
+                val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${context.getString(R.string.suggestions_email)}")).apply {
+                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.suggestions_subject))
+                }
                 context.startActivity(intent)
             }
 
@@ -226,7 +233,7 @@ fun AboutMainContent(
             ) {
                 Icon(Icons.Default.Favorite, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Ajude o Desenvolvedor", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.help_developer), fontWeight = FontWeight.Bold)
             }
 
             AboutInfoRow(Icons.Default.Info, stringResource(R.string.version_label), currentVersion)
@@ -234,20 +241,20 @@ fun AboutMainContent(
             if (updateInfo != null) {
                 Surface(color = Color(0xFF34C759).copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Nova versão v${updateInfo.version}", fontWeight = FontWeight.Bold, color = Color(0xFF248A3D))
+                        Text(stringResource(R.string.new_version_available, updateInfo.version), fontWeight = FontWeight.Bold, color = Color(0xFF248A3D))
                         Spacer(Modifier.height(8.dp))
-                        Text("O que há de novo:", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.whats_new), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         Text(updateInfo.changeLog, fontSize = 13.sp, color = Color.DarkGray)
                         Spacer(Modifier.height(12.dp))
                         Button(onClick = onUpdateNow, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)), modifier = Modifier.fillMaxWidth()) {
-                            Text("Atualizar Agora")
+                            Text(stringResource(R.string.update_now))
                         }
                     }
                 }
             } else {
                 OutlinedButton(onClick = onCheckUpdate, enabled = !checkingUpdate, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                     if (checkingUpdate) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    else Text("Verificar Atualizações")
+                    else Text(stringResource(R.string.check_updates))
                 }
             }
         }
@@ -302,7 +309,7 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
             IconButton(onClick = onBack, enabled = timeLeft == 0) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = if (timeLeft == 0) Color.Black else Color.Gray)
             }
-            Text("Obrigado pelo Apoio!", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            Text(stringResource(R.string.thanks_support), fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                 if (timeLeft > 0) Text(timeLeft.toString(), fontWeight = FontWeight.Bold, color = Color(0xFF007AFF))
                 else Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF34C759))
@@ -310,7 +317,7 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("Visualizar este anúncio ajuda a manter o aplicativo gratuito.", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.ad_help_desc), fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
         Spacer(Modifier.height(20.dp))
 
         Box(
@@ -331,35 +338,35 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                             }
 
                             val headline = TextView(ctx).apply {
+                                headlineView = this
                                 textSize = 16f
                                 setTypeface(null, android.graphics.Typeface.BOLD)
                                 setTextColor(android.graphics.Color.BLACK)
                             }
                             root.addView(headline)
-                            this.headlineView = headline
 
                             val media = MediaView(ctx).apply {
+                                mediaView = this
                                 layoutParams = LinearLayout.LayoutParams(
                                     LinearLayout.LayoutParams.MATCH_PARENT,
                                     400
                                 )
                             }
                             root.addView(media)
-                            this.mediaView = media
 
                             val body = TextView(ctx).apply {
+                                bodyView = this
                                 textSize = 14f
                                 setTextColor(android.graphics.Color.GRAY)
                             }
                             root.addView(body)
-                            this.bodyView = body
 
                             val callToAction = android.widget.Button(ctx).apply {
+                                callToActionView = this
                                 setBackgroundColor(android.graphics.Color.parseColor("#007AFF"))
                                 setTextColor(android.graphics.Color.WHITE)
                             }
                             root.addView(callToAction)
-                            this.callToActionView = callToAction
 
                             setNativeAd(nativeAd)
                             headline.text = nativeAd.headline
@@ -374,7 +381,7 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = Color(0xFF007AFF))
                     Spacer(Modifier.height(8.dp))
-                    Text(loadError ?: "Carregando anúncio...", fontSize = 12.sp, color = Color.Gray)
+                    Text(loadError ?: stringResource(R.string.loading_ad), fontSize = 12.sp, color = Color.Gray)
                 }
             }
         }
@@ -387,13 +394,13 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Muito obrigado!",
+                    stringResource(R.string.very_thanks),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF34C759)
                 )
                 Text(
-                    "Seu apoio é fundamental para continuarmos melhorando o app.",
+                    stringResource(R.string.support_fundamental),
                     fontSize = 14.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,

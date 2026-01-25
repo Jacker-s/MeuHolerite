@@ -54,7 +54,7 @@
     <string name="developer_phone">14991717549</string>
     <string name="developer_email">ssj53415170@gmail.com</string>
     <string name="version_label">Versión</string>
-    <string name="version_value">1.5</string>
+    <string name="version_value">2.1.6</string>
     <string name="close">Cerrar</string>
     <string name="phone_label">Teléfono</string>
     <string name="email_label">Correo electrónico</string>
@@ -69,6 +69,9 @@
     <string name="support_fundamental">Tu apoyo es fundamental para seguir mejorando la app.</string>
     <string name="loading_ad">Cargando anuncio...</string>
     <string name="ad_thanks_toast">¡Gracias por ver! Tu apoyo ayuda mucho.</string>
+    <string name="suggestions_label">Sugerencias</string>
+    <string name="suggestions_email">jacksonsu.silva@gmail.com</string>
+    <string name="suggestions_subject">Sugerencia - Mi Recibo</string>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenido a Mi Recibo</string>

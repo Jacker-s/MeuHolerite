@@ -54,8 +54,11 @@
     <string name="developer_phone">14991717549</string>
     <string name="developer_email">ssj53415170@gmail.com</string>
     <string name="version_label">Versão</string>
-    <string name="version_value">2.1.5</string>
+    <string name="version_value">2.1.6</string>
     <string name="close">Fechar</string>
+    <string name="suggestions_label">Sugestões</string>
+    <string name="suggestions_email">jacksonsu.silva@gmail.com</string>
+    <string name="suggestions_subject">Sugestão - Meu Holerite</string>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Meu Holerite</string>
@@ -80,11 +83,9 @@
     <string name="whats_new">O que há de novo:</string>
     <string name="update_now">Atualizar Agora</string>
     <string name="thanks_support">Obrigado pelo Apoio!</string>
-    <string name="ad_help_desc">Visualizar este anúncio ajuda a manter o aplicativo gratuito.
-    </string>
+    <string name="ad_help_desc">Visualizar este anúncio ajuda a manter o aplicativo gratuito.</string>
     <string name="very_thanks">Muito obrigado!</string>
-    <string name="support_fundamental">Seu apoio é fundamental para continuarmos melhorando o app.
-    </string>
+    <string name="support_fundamental">Seu apoio é fundamental para continuarmos melhorando o app.</string>
     <string name="loading_ad">Carregando anúncio...</string>
     <string name="ad_thanks_toast">Obrigado por assistir! Seu apoio ajuda muito.</string>
     
@@ -98,13 +99,10 @@
     <string name="edit_data">Editar Meus Dados</string>
     <string name="about_app">Sobre o App</string>
     <string name="absence_alerts">Avisos de Falta</string>
-    <string name="absence_alerts_desc">Notificações de faltas detectadas no espelho de ponto
-    </string>
+    <string name="absence_alerts_desc">Notificações de faltas detectadas no espelho de ponto</string>
     <string name="absences_detected">Faltas Detectadas</string>
     <string name="absences_detected_msg">Foram detectadas %1$d faltas no período %2$s.</string>
-    <string name="notification_denied">Permissão de notificação negada. Você não receberá avisos de
-        falta.
-    </string>
+    <string name="notification_denied">Permissão de notificação negada. Você não receberá avisos de falta.</string>
     <string name="pdf_not_available">Arquivo PDF não disponível</string>
     <string name="file_not_found">Arquivo não encontrado</string>
     <string name="open_pdf_with">Abrir PDF com...</string>
@@ -113,12 +111,9 @@
     <string name="update_error">Erro na atualização</string>
     <string name="import_ponto_success">Espelho de ponto importado!</string>
     <string name="import_recibo_success">Recibo de pagamento importado!</string>
-    <string name="pdf_not_identified">PDF não identificado. Verifique se é um espelho ou recibo.
-    </string>
+    <string name="pdf_not_identified">PDF não identificado. Verifique se é um espelho ou recibo.</string>
     <string name="new_update_title">Nova Atualização Disponível</string>
-    <string name="new_update_msg">Uma nova versão (v%1$s) está disponível para download. Deseja
-        atualizar agora?
-    </string>
+    <string name="new_update_msg">Uma nova versão (v%1$s) está disponível para download. Deseja atualizar agora?</string>
     <string name="update">Atualizar</string>
     <string name="later">Depois</string>
     <string name="highlights">DESTAQUES</string>
@@ -141,41 +136,6 @@
     <string name="period_balance">SALDO PERÍODO</string>
     <string name="full_name">Nome Completo</string>
     <string name="no_connection">Sem Conexão</string>
-    <string name="connection_error_desc">Não foi possível carregar o portal. Verifique sua
-        internet.
-    </string>
+    <string name="connection_error_desc">Não foi possível carregar o portal. Verifique sua internet.</string>
     <string name="try_again">Tentar Novamente</string>
-
-    <!-- <string name="desc_excused_absence">Horas de ausência justificadas por atestado ou folga.
-    </string> -->
-
-
-    <!-- Avisos -->
-    <!-- <string name="warning_absences">Atenção: Foram detectadas faltas neste período. Verifique seu
-        espelho de ponto detalhado.
-    </string> -->
-
-    <!-- <string name="onboarding_welcome_desc">Sua ferramenta completa para gerenciar pontos e recibos
-        de forma simples e privada.
-    </string> -->
-
-    <!-- <string name="onboarding_import_desc">Acesse o portal ePays diretamente pelo app. Ao baixar um
-        PDF de Holerite ou Ponto, nós o importamos automaticamente para você.
-    </string> -->
-
-    <!-- <string name="onboarding_receipts_desc">Visualize seus proventos e descontos de forma clara.
-        Saiba exatamente quanto vai receber com gráficos e resumos intuitivos.
-    </string> -->
-
-    <!-- <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos
-        automáticos sobre faltas detectadas no período.
-    </string> -->
-
-    <!-- <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processado e salvo localmente
-        no seu celular. Nada é enviado para servidores externos.
-    </string> -->
-
-    <!-- <string name="onboarding_finish_desc">Informe seu nome e matrícula para personalizar seus
-        relatórios e widgets.
-    </string> -->
 </resources>
