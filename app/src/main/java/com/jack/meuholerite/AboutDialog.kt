@@ -6,15 +6,15 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import android.view.ViewGroup
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -57,6 +57,12 @@ fun Context.findActivity(): Activity? {
     return null
 }
 
+data class DetailedUpdateInfo(
+    val version: String,
+    val url: String,
+    val changeLog: String
+)
+
 @Composable
 fun AboutDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
@@ -69,7 +75,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
     var adLoadError by remember { mutableStateOf<String?>(null) }
     var rewardedInterstitialAd by remember { mutableStateOf<RewardedInterstitialAd?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
-    var updateInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var updateInfo by remember { mutableStateOf<DetailedUpdateInfo?>(null) }
 
     val currentVersion = remember(context) {
         try {
@@ -156,14 +162,16 @@ fun AboutDialog(onDismiss: () -> Unit) {
                                 checkingUpdate = true
                                 updateManager.checkForUpdates(
                                     currentVersion = currentVersion,
-                                    onUpdateAvailable = { v, url -> updateInfo = v to url },
+                                    onUpdateAvailable = { v, url, log -> 
+                                        updateInfo = DetailedUpdateInfo(v, url, log) 
+                                    },
                                     onNoUpdate = { Toast.makeText(context, "Versão atualizada!", Toast.LENGTH_SHORT).show() },
                                     onError = { Toast.makeText(context, "Erro na atualização", Toast.LENGTH_SHORT).show() }
                                 )
                                 checkingUpdate = false
                             }
                         },
-                        onUpdateNow = { updateInfo?.let { updateManager.downloadAndInstall(it.second, it.first) } },
+                        onUpdateNow = { updateInfo?.let { updateManager.downloadAndInstall(it.url, it.version) } },
                         onClose = onDismiss
                     )
                 }
@@ -175,7 +183,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
 @Composable
 fun AboutMainContent(
     currentVersion: String,
-    updateInfo: Pair<String, String>?,
+    updateInfo: DetailedUpdateInfo?,
     checkingUpdate: Boolean,
     onHelpClick: () -> Unit,
     onCheckUpdate: () -> Unit,
@@ -183,7 +191,9 @@ fun AboutMainContent(
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
-    Column(modifier = Modifier.padding(24.dp)) {
+    val scrollState = rememberScrollState()
+    
+    Column(modifier = Modifier.padding(24.dp).verticalScroll(scrollState)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.about_title), fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.weight(1f))
             IconButton(onClick = onClose) { Icon(Icons.Default.Close, null) }
@@ -220,7 +230,11 @@ fun AboutMainContent(
             if (updateInfo != null) {
                 Surface(color = Color(0xFF34C759).copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Nova versão v${updateInfo.first}", fontWeight = FontWeight.Bold, color = Color(0xFF248A3D))
+                        Text("Nova versão v${updateInfo.version}", fontWeight = FontWeight.Bold, color = Color(0xFF248A3D))
+                        Spacer(Modifier.height(8.dp))
+                        Text("O que há de novo:", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(updateInfo.changeLog, fontSize = 13.sp, color = Color.DarkGray)
+                        Spacer(Modifier.height(12.dp))
                         Button(onClick = onUpdateNow, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)), modifier = Modifier.fillMaxWidth()) {
                             Text("Atualizar Agora")
                         }
@@ -232,6 +246,38 @@ fun AboutMainContent(
                     else Text("Verificar Atualizações")
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AboutInfoRow(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(label, fontSize = 12.sp, color = Color.Gray)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+fun ContactActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF2F2F7),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
         }
     }
 }
@@ -279,105 +325,54 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                                 orientation = LinearLayout.VERTICAL
                                 setPadding(16, 16, 16, 16)
                             }
+                            
                             val headline = TextView(ctx).apply { 
                                 textSize = 16f
                                 setTypeface(null, android.graphics.Typeface.BOLD)
                                 setTextColor(android.graphics.Color.BLACK) 
                             }
-                            val body = TextView(ctx).apply { 
-                                textSize = 13f
-                                setTextColor(android.graphics.Color.DKGRAY)
-                                setPadding(0, 4, 0, 8) 
+                            root.addView(headline)
+                            this.headlineView = headline
+
+                            val media = MediaView(ctx).apply {
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    400
+                                )
                             }
-                            val media = MediaView(ctx).apply { 
-                                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 160.toPx(ctx))
+                            root.addView(media)
+                            this.mediaView = media
+
+                            val body = TextView(ctx).apply {
+                                textSize = 14f
+                                setTextColor(android.graphics.Color.GRAY)
                             }
-                            val btn = android.widget.Button(ctx).apply { 
-                                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                            root.addView(body)
+                            this.bodyView = body
+
+                            val callToAction = android.widget.Button(ctx).apply {
                                 setBackgroundColor(android.graphics.Color.parseColor("#007AFF"))
                                 setTextColor(android.graphics.Color.WHITE)
                             }
+                            root.addView(callToAction)
+                            this.callToActionView = callToAction
 
-                            root.addView(headline)
-                            root.addView(body)
-                            root.addView(media)
-                            root.addView(btn)
+                            setNativeAd(nativeAd)
+                            headline.text = nativeAd.headline
+                            body.text = nativeAd.body
+                            callToAction.text = nativeAd.callToAction
                             
-                            this.addView(root)
-                            this.headlineView = headline
-                            this.bodyView = body
-                            this.mediaView = media
-                            this.callToActionView = btn
+                            addView(root)
                         }
-                    },
-                    update = { adView ->
-                        (adView.headlineView as? TextView)?.text = nativeAd.headline
-                        (adView.bodyView as? TextView)?.text = nativeAd.body
-                        nativeAd.mediaContent?.let { adView.mediaView?.setMediaContent(it) }
-                        (adView.callToActionView as? android.widget.Button)?.text = nativeAd.callToAction
-                        adView.setNativeAd(nativeAd)
                     }
                 )
-            } else if (loadError != null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
-                    Icon(Icons.Default.ErrorOutline, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text("Não foi possível carregar o anúncio no momento.", textAlign = TextAlign.Center, fontSize = 12.sp, color = Color.Gray)
-                    Text("Erro: $loadError", fontSize = 10.sp, color = Color.LightGray)
-                }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = Color(0xFF007AFF))
                     Spacer(Modifier.height(8.dp))
-                    Text("Carregando apoio...", fontSize = 12.sp, color = Color.Gray)
+                    Text(loadError ?: "Carregando anúncio...", fontSize = 12.sp, color = Color.Gray)
                 }
             }
-        }
-        
-        Spacer(Modifier.height(20.dp))
-        Button(
-            onClick = onBack, 
-            enabled = timeLeft == 0, 
-            modifier = Modifier.fillMaxWidth(), 
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = if (timeLeft == 0) Color(0xFF34C759) else Color.LightGray)
-        ) {
-            Text(if (timeLeft > 0) "Aguarde $timeLeft seg..." else "Concluir")
-        }
-    }
-}
-
-// Extensão para converter DP em PX (Corrigida para evitar receiver mismatch)
-fun Int.toPx(context: Context): Int = (this * context.resources.displayMetrics.density).toInt()
-
-@Composable
-fun AboutInfoRow(icon: ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(label, fontSize = 12.sp, color = Color.Gray)
-            Text(value, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-fun ContactActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        color = Color(0xFFF2F2F7),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(label, fontSize = 11.sp, color = Color.Gray)
-                Text("Entrar em contato", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF007AFF))
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray, modifier = Modifier.size(16.dp))
         }
     }
 }

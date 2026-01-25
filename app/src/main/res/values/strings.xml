@@ -18,6 +18,7 @@
     <string name="net_pay">Líquido a Receber</string>
     <string name="earnings">Proventos</string>
     <string name="deductions">Descontos</string>
+    <string name="alelo">Alelo</string>
 
     <!-- Rótulos do PDF -->
     <string name="label_worked_hours">Horas Trabalhadas</string>

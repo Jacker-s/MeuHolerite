@@ -354,7 +354,7 @@ fun MainScreen(intent: Intent? = null) {
         refreshData()
         updateManager.checkForUpdates(
             currentVersion = currentVersion,
-            onUpdateAvailable = { version, url ->
+            onUpdateAvailable = { version, url, _ ->
                 autoUpdateInfo = version to url
             },
             onNoUpdate = {},

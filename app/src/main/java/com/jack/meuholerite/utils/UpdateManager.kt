@@ -24,6 +24,7 @@ class UpdateManager(private val context: Context) {
 
     data class GitHubRelease(
         val tag_name: String?,
+        val body: String?, // Release notes from GitHub
         val assets: List<Asset>?
     )
 
@@ -34,7 +35,7 @@ class UpdateManager(private val context: Context) {
 
     suspend fun checkForUpdates(
         currentVersion: String,
-        onUpdateAvailable: (String, String) -> Unit,
+        onUpdateAvailable: (String, String, String) -> Unit, // Added changeLog parameter
         onNoUpdate: () -> Unit,
         onError: () -> Unit
     ) {
@@ -53,6 +54,7 @@ class UpdateManager(private val context: Context) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     val release = Gson().fromJson(response, GitHubRelease::class.java)
                     val tagName = release?.tag_name
+                    val changeLog = release?.body ?: "Nenhuma descrição informada."
                     
                     if (tagName != null) {
                         val latestVersion = tagName.replace("v", "").trim()
@@ -60,7 +62,7 @@ class UpdateManager(private val context: Context) {
                             val apkAsset = release.assets?.find { it.name?.endsWith(".apk") == true }
                             val downloadUrl = apkAsset?.browser_download_url
                             if (downloadUrl != null) {
-                                withContext(Dispatchers.Main) { onUpdateAvailable(latestVersion, downloadUrl) }
+                                withContext(Dispatchers.Main) { onUpdateAvailable(latestVersion, downloadUrl, changeLog) }
                                 return@withContext
                             }
                         }
@@ -94,7 +96,6 @@ class UpdateManager(private val context: Context) {
 
     fun downloadAndInstall(url: String, version: String) {
         val fileName = "meu_holerite_$version.apk"
-        // Salva na pasta pública de Downloads para garantir que o instalador do sistema tenha acesso
         val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
         
         if (destination.exists()) {
