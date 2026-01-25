@@ -47,4 +47,4 @@ Este projeto está sob a licença [MIT](LICENSE). (Ou a licença que você prefe
 **Jackson Silva**
 - 📧 Email: [ssj53415170@gmail.com](mailto:ssj53415170@gmail.com)
 - 📱 Telefone: (14) 99171-7549
-- 🏗️ Versão: 1.5
+- 🏗️ Versão: 2.0

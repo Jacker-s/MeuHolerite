@@ -3,13 +3,34 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Anel Orbital (Conceito Global Marfrig) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:alpha="0.25"
+        android:pathData="M54,20 A34,34 0 1,1 53.9,20 Z" />
+
     <group
-        android:translateX="18"
-        android:translateY="18"
-        android:scaleX="3"
-        android:scaleY="3">
+        android:translateX="2"
+        android:translateY="5">
+
+        <!-- Letra M (Estilo Bold Marfrig) -->
         <path
-            android:fillColor="#87CEEB"
-            android:pathData="M19.5,3.5L18,2l-1.5,1.5L15,2l-1.5,1.5L12,2l-1.5,1.5L9,2L7.5,3.5L6,2v14H3v3c0,1.66,1.34,3,3,3h12c1.66,0,3-1.34,3-3V2L19.5,3.5z M15,20H6c-0.55,0-1-0.45-1-1v-1h10V20z M19,19c0,0.55-0.45,1-1,1s-1-0.45-1-1v-3H8V5h11V19z M9,8h10v2H9V8z M9,11h10v2H9V11z M14,14h5v2h-5V14z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M15,65 L15,35 L26,35 L37,49 L48,35 L59,35 L59,65 L50,65 L50,47 L37,63 L24,47 L24,65 Z" />
+
+        <!-- Letra H (Integrada e Alinhada) -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M65,35 L74,35 L74,46 L82,46 L82,35 L91,35 L91,65 L82,65 L82,54 L74,54 L74,65 L65,65 Z" />
+
     </group>
+
+    <!-- Detalhe sutil de Holerite (Opcional, mas ajuda na identificação) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:alpha="0.5"
+        android:pathData="M48,72 H60 V74 H48 Z M48,76 H56 V78 H48 Z" />
+
 </vector>
