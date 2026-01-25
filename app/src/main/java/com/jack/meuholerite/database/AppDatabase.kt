@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 data class EspelhoEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val funcionario: String,
+    val empresa: String = "",
     val periodo: String,
     val resumoItensJson: String,
     val saldoFinalBH: String,
@@ -81,7 +82,7 @@ interface ReciboDao {
     suspend fun delete(recibo: ReciboEntity)
 }
 
-@Database(entities = [EspelhoEntity::class, ReciboEntity::class], version = 7)
+@Database(entities = [EspelhoEntity::class, ReciboEntity::class], version = 8)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun espelhoDao(): EspelhoDao
     abstract fun reciboDao(): ReciboDao
@@ -108,6 +109,7 @@ abstract class AppDatabase : RoomDatabase() {
 fun EspelhoPonto.toEntity(gson: Gson, pdfPath: String? = null): EspelhoEntity {
     return EspelhoEntity(
         funcionario = this.funcionario,
+        empresa = this.empresa,
         periodo = this.periodo,
         resumoItensJson = gson.toJson(this.resumoItens),
         saldoFinalBH = this.saldoFinalBH,
@@ -124,6 +126,7 @@ fun EspelhoEntity.toModel(gson: Gson): EspelhoPonto {
     val listType = object : TypeToken<List<String>>() {}.type
     return EspelhoPonto(
         funcionario = this.funcionario,
+        empresa = this.empresa,
         periodo = this.periodo,
         resumoItens = gson.fromJson(this.resumoItensJson, itemType),
         saldoFinalBH = this.saldoFinalBH,

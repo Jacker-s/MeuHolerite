@@ -13,8 +13,8 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
-        versionName = "2.1.6"
+        versionCode = 10
+        versionName = "2.1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

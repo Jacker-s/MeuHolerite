@@ -5,6 +5,8 @@ import com.jack.meuholerite.model.EspelhoPonto
 
 class PontoParser {
     fun parse(text: String): EspelhoPonto {
+        val empresa = text.split("\n").firstOrNull { it.isNotBlank() }?.trim() ?: "Empresa não identificada"
+
         val funcionario = "FUNCIONARIO\\s+\\d+\\s+-\\s+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE)
             .find(text)?.groupValues?.get(1)?.trim() ?: "Não encontrado"
             
@@ -77,6 +79,7 @@ class PontoParser {
         
         return EspelhoPonto(
             funcionario = funcionario,
+            empresa = empresa,
             periodo = periodo,
             resumoItens = itens.reversed(),
             saldoFinalBH = saldoFinal,

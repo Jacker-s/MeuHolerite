@@ -1493,6 +1493,9 @@ fun IosWidgetTimesheetFullCard(espelho: EspelhoPonto, modifier: Modifier = Modif
                 Column(modifier = Modifier.weight(1f)) {
                     Text("BANCO DE HORAS", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                     Text(espelho.periodo, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                    if (espelho.empresa.isNotEmpty()) {
+                        Text(espelho.empresa, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
                 IconButton(onClick = { onOpen() }) { Icon(Icons.Outlined.PictureAsPdf, null, tint = Color.White) }
             }
@@ -1687,6 +1690,9 @@ fun IosWidgetSummaryLargeCard(espelho: EspelhoPonto, userName: String = "", matr
                 Column {
                     Text(stringResource(R.string.summary), color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Text(espelho.periodo, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                    if (espelho.empresa.isNotEmpty()) {
+                        Text(espelho.empresa, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
                 Icon(Icons.Outlined.Analytics, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
             }
