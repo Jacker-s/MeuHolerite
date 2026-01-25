@@ -109,8 +109,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         // Inicialização Global do AdMob
+        // Configuração de ID de dispositivo de teste removida para permitir anúncios de produção.
         val requestConfiguration = RequestConfiguration.Builder()
-            .setTestDeviceIds(listOf("0DE9BC5C143E849581BCCEF706786AFA"))
             .build()
         MobileAds.setRequestConfiguration(requestConfiguration)
         MobileAds.initialize(this) {}

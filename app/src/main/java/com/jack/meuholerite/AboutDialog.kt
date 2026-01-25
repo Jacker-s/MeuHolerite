@@ -9,7 +9,10 @@ import android.util.Log
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -90,9 +93,9 @@ fun AboutDialog(onDismiss: () -> Unit) {
         activity?.let { act ->
             // Carrega anúncio nativo
             val adLoader = AdLoader.Builder(act, "ca-app-pub-7931782163570852/1828597034")
-                .forNativeAd { ad -> 
+                .forNativeAd { ad ->
                     Log.d("AdMob", "Native Ad Carregado com Sucesso")
-                    nativeAd = ad 
+                    nativeAd = ad
                 }
                 .withAdListener(object : AdListener() {
                     override fun onAdFailedToLoad(error: LoadAdError) {
@@ -111,6 +114,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
                         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                             override fun onAdDismissedFullScreenContent() {
                                 rewardedInterstitialAd = null
+                                Toast.makeText(context, "Obrigado por assistir! Seu apoio ajuda muito.", Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -325,11 +329,11 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                                 orientation = LinearLayout.VERTICAL
                                 setPadding(16, 16, 16, 16)
                             }
-                            
-                            val headline = TextView(ctx).apply { 
+
+                            val headline = TextView(ctx).apply {
                                 textSize = 16f
                                 setTypeface(null, android.graphics.Typeface.BOLD)
-                                setTextColor(android.graphics.Color.BLACK) 
+                                setTextColor(android.graphics.Color.BLACK)
                             }
                             root.addView(headline)
                             this.headlineView = headline
@@ -361,7 +365,7 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                             headline.text = nativeAd.headline
                             body.text = nativeAd.body
                             callToAction.text = nativeAd.callToAction
-                            
+
                             addView(root)
                         }
                     }
@@ -372,6 +376,29 @@ fun HelpDeveloperContent(nativeAd: NativeAd?, loadError: String?, onBack: () -> 
                     Spacer(Modifier.height(8.dp))
                     Text(loadError ?: "Carregando anúncio...", fontSize = 12.sp, color = Color.Gray)
                 }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+        
+        AnimatedVisibility(
+            visible = timeLeft == 0,
+            enter = fadeIn() + slideInVertically()
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "Muito obrigado!",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF34C759)
+                )
+                Text(
+                    "Seu apoio é fundamental para continuarmos melhorando o app.",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
         }
     }
