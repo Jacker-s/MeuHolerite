@@ -18,6 +18,7 @@
     <string name="net_pay">Líquido a Cobrar</string>
     <string name="earnings">Asignaciones</string>
     <string name="deductions">Deducciones</string>
+    <string name="alelo">Alelo</string>
 
     <!-- Rótulos del PDF -->
     <string name="label_worked_hours">Horas Trabajadas</string>
@@ -53,6 +54,85 @@
     <string name="developer_phone">14991717549</string>
     <string name="developer_email">ssj53415170@gmail.com</string>
     <string name="version_label">Versión</string>
-    <string name="version_value">beta 0.01</string>
+    <string name="version_value">1.5</string>
     <string name="close">Cerrar</string>
+    <string name="phone_label">Teléfono</string>
+    <string name="email_label">Correo electrónico</string>
+    <string name="help_developer">Ayuda al Desarrollador</string>
+    <string name="check_updates">Verificar Actualizaciones</string>
+    <string name="new_version_available">Nueva versión v%1$s</string>
+    <string name="whats_new">¿Qué hay de nuevo?</string>
+    <string name="update_now">Actualizar Ahora</string>
+    <string name="thanks_support">¡Gracias por el Apoyo!</string>
+    <string name="ad_help_desc">Ver este anuncio ayuda a mantener la aplicación gratuita.</string>
+    <string name="very_thanks">¡Muchísimas gracias!</string>
+    <string name="support_fundamental">Tu apoyo es fundamental para seguir mejorando la app.</string>
+    <string name="loading_ad">Cargando anuncio...</string>
+    <string name="ad_thanks_toast">¡Gracias por ver! Tu apoyo ayuda mucho.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bienvenido a Mi Recibo</string>
+    <string name="onboarding_welcome_desc">Tu herramienta completa para gestionar asistencias y recibos de forma sencilla y privada.</string>
+    <string name="onboarding_import_title">Importación Integrada</string>
+    <string name="onboarding_import_desc">Accede al portal ePays directamente desde la app. Al descargar un PDF de Recibo o Asistencia, lo importamos automáticamente para ti.</string>
+    <string name="onboarding_receipts_title">Tu Dinero al Detalle</string>
+    <string name="onboarding_receipts_desc">Visualiza tus asignaciones y deducciones de forma clara. Sabrás exactamente cuánto vas a cobrar con resúmenes intuitivos.</string>
+    <string name="onboarding_ponto_title">Control de Horas</string>
+    <string name="onboarding_ponto_desc">Sigue tu Banco de Horas, horas extras y recibe avisos automáticos sobre faltas detectadas en el período.</string>
+    <string name="onboarding_privacy_title">Privacidad Total</string>
+    <string name="onboarding_privacy_desc">Tus datos son tuyos. Todo se procesa y guarda localmente en tu celular. Nada se envía a servidores externos.</string>
+    <string name="onboarding_finish_title">¿Comenzamos?</string>
+    <string name="onboarding_finish_desc">Ingresa tu nombre y número de nómina para personalizar tus informes y widgets.</string>
+    <string name="next">Siguiente</string>
+    <string name="start">Comenzar</string>
+
+    <!-- MainActivity UI -->
+    <string name="greeting_morning">Buenos días,</string>
+    <string name="greeting_afternoon">Buenas tardes,</string>
+    <string name="greeting_evening">Buenas noches,</string>
+    <string name="welcome_user">Bienvenido</string>
+    <string name="user_label">Usuario</string>
+    <string name="matricula_label">Nómina</string>
+    <string name="edit_data">Editar Mis Datos</string>
+    <string name="about_app">Sobre la App</string>
+    <string name="absence_alerts">Alertas de Faltas</string>
+    <string name="absence_alerts_desc">Notificaciones de faltas detectadas en el reporte de asistencia</string>
+    <string name="absences_detected">Faltas Detectadas</string>
+    <string name="absences_detected_msg">Se detectaron %1$d faltas en el período %2$s.</string>
+    <string name="notification_denied">Permiso de notificación denegado. No recibirás avisos de faltas.</string>
+    <string name="pdf_not_available">Archivo PDF no disponible</string>
+    <string name="file_not_found">Archivo no encontrado</string>
+    <string name="open_pdf_with">Abrir PDF con...</string>
+    <string name="no_pdf_app">No se encontró ninguna aplicación para abrir PDF</string>
+    <string name="version_up_to_date">¡Versión actualizada!</string>
+    <string name="update_error">Error en la actualización</string>
+    <string name="import_ponto_success">¡Reporte de asistencia importado!</string>
+    <string name="import_recibo_success">¡Recibo de pago importado!</string>
+    <string name="pdf_not_identified">PDF no identificado. Verifica si es un reporte o recibo.</string>
+    <string name="new_update_title">Nueva Actualización Disponible</string>
+    <string name="new_update_msg">Una nueva versión (v%1$s) está disponible. ¿Deseas actualizar ahora?</string>
+    <string name="update">Actualizar</string>
+    <string name="later">Después</string>
+    <string name="highlights">DESTACADOS</string>
+    <string name="last_receipt">Último Recibo</string>
+    <string name="bank_hours_label">Banco de Horas</string>
+    <string name="other_deductions">Otras Deducciones</string>
+    <string name="import_data">Importa tus datos</string>
+    <string name="use_epays_tab">Usa la pestaña ePays para comenzar</string>
+    <string name="net_pay_label">Líquido a Cobrar</string>
+    <string name="import_receipt">Importa un recibo</string>
+    <string name="current_balance">Saldo Actual</string>
+    <string name="import_timesheet">Importa un reporte</string>
+    <string name="loan">PRÉSTAMO</string>
+    <string name="social_security">IVSS</string>
+    <string name="additional_deduction">Deducción Adicional</string>
+    <string name="no_deductions">Sin Deducciones</string>
+    <string name="no_deductions_desc">Este recibo no posee deducciones detalladas.</string>
+    <string name="import_receipt_desc">Importa un recibo para visualizar los detalles</string>
+    <string name="worked">TRABAJADAS</string>
+    <string name="period_balance">SALDO PERÍODO</string>
+    <string name="full_name">Nombre Completo</string>
+    <string name="no_connection">Sin Conexión</string>
+    <string name="connection_error_desc">No fue posible cargar el portal. Verifica tu internet.</string>
+    <string name="try_again">Intentar de Nuevo</string>
 </resources>
