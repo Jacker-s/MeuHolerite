@@ -38,6 +38,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme // NOVO
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -107,11 +108,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch // NOVO
+import androidx.compose.material3.SwitchDefaults // NOVO
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -160,6 +164,7 @@ import com.jack.meuholerite.parser.PontoParser
 import com.jack.meuholerite.parser.ReciboParser
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 import com.jack.meuholerite.utils.PdfReader
+import com.jack.meuholerite.utils.StorageManager // Importar StorageManager
 import com.jack.meuholerite.utils.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -186,11 +191,28 @@ class MainActivity : ComponentActivity() {
             RewardedInterstitialAdManager.loadAd(this)
         }
 
+        val storageManager = StorageManager(this) // Instanciar StorageManager
+
         createNotificationChannel()
         enableEdgeToEdge()
         setContent {
-            MeuHoleriteTheme {
-                MainScreen(intent)
+            val systemInDarkTheme = isSystemInDarkTheme()
+            var useDarkTheme by remember {
+                val hasSet = storageManager.hasDarkModeSet()
+                mutableStateOf(if (hasSet) storageManager.isDarkMode() else systemInDarkTheme)
+            }
+
+            val onToggleDarkMode: (Boolean) -> Unit = { isEnabled ->
+                storageManager.setDarkMode(isEnabled)
+                useDarkTheme = isEnabled
+            }
+
+            MeuHoleriteTheme(darkTheme = useDarkTheme) {
+                MainScreen(
+                    intent = intent,
+                    isDarkTheme = useDarkTheme, // NOVO
+                    onToggleDarkMode = onToggleDarkMode // NOVO
+                )
             }
         }
     }
@@ -288,7 +310,7 @@ fun IosTopBar(
     var showMenu by remember { mutableStateOf(false) }
 
     Surface(
-        color = Color(0xFFF2F2F7).copy(alpha = 0.95f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         modifier = Modifier.fillMaxWidth().statusBarsPadding()
     ) {
         Row(
@@ -336,7 +358,11 @@ fun IosTopBar(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(intent: Intent? = null) {
+fun MainScreen(
+    intent: Intent? = null,
+    isDarkTheme: Boolean, // NOVO
+    onToggleDarkMode: (Boolean) -> Unit // NOVO
+) {
     val pagerState = rememberPagerState(pageCount = { 5 }) // ✅ 5 páginas agora
     val scope = rememberCoroutineScope()
 
@@ -604,12 +630,12 @@ fun MainScreen(intent: Intent? = null) {
                 }
             },
             shape = RoundedCornerShape(22.dp),
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     Scaffold(
-        containerColor = Color(0xFFF2F2F7),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             IosTopBar(
                 userName = userName,
@@ -620,7 +646,7 @@ fun MainScreen(intent: Intent? = null) {
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Color.White.copy(alpha = 0.95f)) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)) {
                 NavigationBarItem(
                     selected = pagerState.currentPage == 0,
                     onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
@@ -766,7 +792,9 @@ fun MainScreen(intent: Intent? = null) {
                             onEditProfile = { showEditProfile = true },
                             onUpdateAvailable = { v, url, log ->
                                 autoUpdateInfo = Triple(v, url, log)
-                            }
+                            },
+                            isDarkTheme = isDarkTheme, // NOVO
+                            onToggleDarkMode = onToggleDarkMode // NOVO
                         )
                     }
                 }
@@ -796,7 +824,7 @@ fun AboutDialog(onDismiss: () -> Unit)  {
             }
         },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -816,7 +844,7 @@ fun AbsenceWarningDialog(onDismiss: () -> Unit) {
             Text(stringResource(R.string.warning_absences), lineHeight = 20.sp)
         },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -844,7 +872,7 @@ fun DeductionDetailDialog(item: ReciboItem, onDismiss: () -> Unit) {
             }
         },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -881,7 +909,7 @@ fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (Str
             Surface(
                 modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                 shape = RoundedCornerShape(32.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp
             ) {
                 Column(
@@ -1018,7 +1046,7 @@ fun EditProfileDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -1198,7 +1226,7 @@ fun TimesheetHistoryDialog(
             }
         },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -1292,7 +1320,7 @@ fun ReceiptSummaryCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 4.dp
     ) {
         Column(
@@ -1369,7 +1397,7 @@ fun IosWidgetReceiptFullCard(
             .scale(scale)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         shape = RoundedCornerShape(32.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp
     ) {
         Column(
@@ -1426,7 +1454,7 @@ fun IosWidgetReceiptFullCard(
 fun ReceiptItemCard(item: ReciboItem, color: Color) {
     var expanded by remember { mutableStateOf(false) }
     Surface(
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
     ) {
@@ -1443,7 +1471,7 @@ fun ReceiptItemCard(item: ReciboItem, color: Color) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF9F9F9), RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
                     Text(item.detalhe, fontSize = 13.sp, color = Color.DarkGray, lineHeight = 18.sp)
@@ -1485,7 +1513,7 @@ fun ReceiptHistoryDialog(
             }
         },
         shape = RoundedCornerShape(22.dp),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -1712,7 +1740,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 pageSpacing = 16.dp
             ) { page ->
-                val fullCardModifier = Modifier.fillMaxWidth().height(320.dp)
+                val fullCardModifier = Modifier.fillMaxWidth().height(350.dp)
                 when {
                     selectedRecibo != null && selectedEspelho != null -> {
                         if (page == 0) IosWidgetReceiptFullCard(
@@ -1830,7 +1858,7 @@ fun HomeScreen(
                     if (emprestimo != null || inss != null) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (emprestimo != null) {
-                                val value = "R$ ${emprestimo.valor.replace("salário", "", ignoreCase = true).trim()}"
+                                val value = "R$ ${emprestimo.valor.replace("salário", "", ignoreCase = true).trim().ifEmpty { "0,00" }}"
                                 IosWidgetSmallInfoCard(
                                     label = "EMPRÉSTIMO",
                                     value = value,
@@ -1842,7 +1870,7 @@ fun HomeScreen(
                                 )
                             }
                             if (inss != null) {
-                                val value = "R$ ${inss.valor.replace("salário", "", ignoreCase = true).trim()}"
+                                val value = "R$ ${inss.valor.replace("salário", "", ignoreCase = true).trim().ifEmpty { "0,00" }}"
                                 IosWidgetSmallInfoCard(
                                     label = "INSS",
                                     value = value,
@@ -1860,7 +1888,7 @@ fun HomeScreen(
 
                     if (others.isNotEmpty()) {
                         val firstOther = others.first()
-                        val value = "R$ ${firstOther.valor.replace("salário", "", ignoreCase = true).trim()}"
+                        val value = "R$ ${firstOther.valor.replace("salário", "", ignoreCase = true).trim().ifEmpty { "0,00" }}"
                         IosWidgetFinanceWideCard(
                             title = firstOther.descricao,
                             value = value,
@@ -1916,7 +1944,7 @@ fun IosWidgetTimesheetFullCard(
             .scale(scale)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         shape = RoundedCornerShape(32.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp
     ) {
         Column(
@@ -1995,9 +2023,9 @@ fun IosWidgetSmallInfoCard(
     value: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    cardColor: Color = Color.White,
+    cardColor: Color = MaterialTheme.colorScheme.surface,
     iconColor: Color = Color.Gray,
-    textColor: Color = Color.Black
+    textColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     Surface(
         modifier = modifier,
@@ -2009,7 +2037,14 @@ fun IosWidgetSmallInfoCard(
             Icon(icon, null, tint = iconColor, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.height(8.dp))
             Text(label, fontSize = 12.sp, color = textColor.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = textColor)
+            Text(
+                text = value,
+                fontSize = 18.sp, // REDUZIDO de 20.sp para 18.sp
+                fontWeight = FontWeight.ExtraBold,
+                color = textColor,
+                maxLines = 1, // Garantir que não quebre a linha
+                overflow = TextOverflow.Ellipsis // Adicionar reticências se não couber
+            )
         }
     }
 }
@@ -2037,7 +2072,7 @@ fun IosWidgetFinanceWideCard(
             .scale(scale)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         shape = RoundedCornerShape(22.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
     ) {
         Row(
@@ -2085,7 +2120,7 @@ fun IosWidgetSummaryLargeCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 4.dp
     ) {
         Column(
@@ -2201,7 +2236,7 @@ fun IosWidgetCard(
     var expanded by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).clickable { expanded = !expanded },
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(22.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp).animateContentSize()) {
@@ -2217,7 +2252,7 @@ fun IosWidgetCard(
             if (expanded && description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFFF9F9F9), RoundedCornerShape(12.dp)).padding(12.dp)
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)).padding(12.dp)
                 ) { Text(description, fontSize = 13.sp, color = Color.DarkGray, lineHeight = 18.sp) }
             }
         }
@@ -2272,7 +2307,9 @@ fun SettingsScreen(
     currentVersion: String,
     updateManager: UpdateManager,
     onEditProfile: () -> Unit,
-    onUpdateAvailable: (String, String, String) -> Unit // Novo parâmetro
+    onUpdateAvailable: (String, String, String) -> Unit, // Novo parâmetro
+    isDarkTheme: Boolean, // NOVO
+    onToggleDarkMode: (Boolean) -> Unit // NOVO
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -2291,10 +2328,26 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
+        
+        // NOVO: SEÇÃO APARÊNCIA
+        item {
+            SectionHeader("APARÊNCIA")
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SettingsToggleRow(
+                        Icons.Outlined.NightsStay,
+                        "Modo Escuro",
+                        isDarkTheme,
+                        onToggleDarkMode
+                    )
+                }
+            }
+        }
+
 
         item {
             SectionHeader("CONTA")
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color.White) {
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onEditProfile() },
@@ -2311,10 +2364,10 @@ fun SettingsScreen(
 
         item {
             SectionHeader("SOBRE")
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color.White) {
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SettingsRow(Icons.Outlined.Info, "Versão do App", currentVersion)
-                    HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFF2F2F7))
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     SettingsActionRow(Icons.Outlined.Code, "Código Fonte (GitHub)") {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Jacker-s/MeuHolerite")))
                     }
@@ -2388,5 +2441,31 @@ fun SettingsActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
         Spacer(Modifier.width(12.dp))
         Text(label, fontSize = 15.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Outlined.ChevronRight, null, tint = Color.LightGray)
+    }
+}
+
+// NOVO: Componente para o interruptor de ajustes
+@Composable
+fun SettingsToggleRow(
+    icon: ImageVector,
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = Color(0xFF007AFF),
+                uncheckedThumbColor = Color.LightGray
+            )
+        )
     }
 }

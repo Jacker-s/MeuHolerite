@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,12 +12,31 @@ android {
     namespace = "com.jack.meuholerite"
     compileSdk = 35
 
+    // Carregar propriedades da chave
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        val releaseKeyFile = rootProject.file("release-key.jks")
+        if (releaseKeyFile.exists()) {
+            create("release") {
+                storeFile = releaseKeyFile
+                storePassword = keystoreProperties["KEYSTORE_PASSWORD"] as String?
+                keyAlias = keystoreProperties["KEY_ALIAS"] as String?
+                keyPassword = keystoreProperties["KEY_PASSWORD"] as String?
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "3.0"
+        versionCode = 15
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -26,7 +48,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            if (signingConfigs.findByName("release") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+        debug {
+            // Use default debug signing config unless release is available and desired
+            if (signingConfigs.findByName("release") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

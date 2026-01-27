@@ -29,4 +29,16 @@ class StorageManager(context: Context) {
     fun clearData() {
         prefs.edit().remove("saved_espelho").apply()
     }
+
+    fun setDarkMode(enabled: Boolean) {
+        prefs.edit().putBoolean("dark_mode", enabled).apply()
+    }
+
+    fun isDarkMode(): Boolean {
+        return prefs.getBoolean("dark_mode", false)
+    }
+
+    fun hasDarkModeSet(): Boolean {
+        return prefs.contains("dark_mode")
+    }
 }
