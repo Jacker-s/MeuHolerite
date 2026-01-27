@@ -40,11 +40,5 @@ O aplicativo automatiza a extração de dados de documentos PDF, permitindo que 
 
 Este projeto está sob a licença [MIT](LICENSE). (Ou a licença que você preferir)
 
----
-
-## 👨‍💻 Desenvolvedor
-
-**Jackson Silva**
-- 📧 Email: [ssj53415170@gmail.com](mailto:ssj53415170@gmail.com)
-- 📱 Telefone: (14) 99171-7549
+--
 - 🏗️ Versão: 2.0
