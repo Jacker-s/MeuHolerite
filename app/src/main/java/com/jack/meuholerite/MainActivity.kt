@@ -1,5 +1,7 @@
 package com.jack.meuholerite
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -23,10 +25,10 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.platform.ComposeView
+import androidx.fragment.app.FragmentActivity
+import androidx.core.view.WindowCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -64,7 +66,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Public
@@ -180,67 +181,90 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicialização Global do AdMob
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         val requestConfiguration = RequestConfiguration.Builder().build()
         MobileAds.setRequestConfiguration(requestConfiguration)
+
         MobileAds.initialize(this) {
             RewardedInterstitialAdManager.loadAd(this)
         }
 
-        val storageManager = StorageManager(this) // Instanciar StorageManager
+        val storageManager = StorageManager(this)
 
         createNotificationChannel()
-        enableEdgeToEdge()
-        setContent {
-            val systemInDarkTheme = isSystemInDarkTheme()
-            var useDarkTheme by remember {
-                val hasSet = storageManager.hasDarkModeSet()
-                mutableStateOf(if (hasSet) storageManager.isDarkMode() else systemInDarkTheme)
-            }
 
-            val onToggleDarkMode: (Boolean) -> Unit = { isEnabled ->
-                storageManager.setDarkMode(isEnabled)
-                useDarkTheme = isEnabled
-            }
+        setContentView(
+            ComposeView(this).apply {
+                setContent {
 
-            MeuHoleriteTheme(darkTheme = useDarkTheme) {
-                MainScreen(
-                    intent = intent,
-                    isDarkTheme = useDarkTheme, // NOVO
-                    onToggleDarkMode = onToggleDarkMode // NOVO
-                )
+                    val hideValuesDefault = storageManager.isHideValuesEnabled()
+                    var hideValues by remember {
+                        mutableStateOf(hideValuesDefault)
+                    }
+
+                    val systemInDarkTheme = isSystemInDarkTheme()
+
+                    var useDarkTheme by remember {
+                        val hasSet = storageManager.hasDarkModeSet()
+                        mutableStateOf(
+                            if (hasSet) storageManager.isDarkMode()
+                            else systemInDarkTheme
+                        )
+                    }
+
+                    val onToggleDarkMode: (Boolean) -> Unit = { enabled ->
+                        storageManager.setDarkMode(enabled)
+                        useDarkTheme = enabled
+                    }
+
+                    MeuHoleriteTheme(darkTheme = useDarkTheme) {
+
+                        AppLockGate(storage = storageManager) {
+
+                            MainScreen(
+                                intent = intent,
+                                isDarkTheme = useDarkTheme,
+                                onToggleDarkMode = onToggleDarkMode,
+                                hideValues = hideValues,
+                                onToggleHideValues = { enabled ->
+                                    storageManager.setHideValues(enabled)
+                                    hideValues = enabled
+                                }
+                            )
+                        }
+                    }
+                }
             }
-        }
+        )
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Channel for Absences
+            val manager =
+                getSystemService(Context.NOTIFICATION_SERVICE)
+                        as NotificationManager
+
             val absenceChannel = NotificationChannel(
                 "ABSENCE_ALERTS",
                 "Avisos de Falta",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notificações de faltas detectadas no espelho de ponto"
-            }
-            notificationManager.createNotificationChannel(absenceChannel)
+            )
 
-            // Channel for Payments
             val paymentChannel = NotificationChannel(
                 "PAYMENT_ALERTS",
                 "Avisos de Pagamento",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notificações de recebimento de holerite"
-            }
-            notificationManager.createNotificationChannel(paymentChannel)
+            )
+
+            manager.createNotificationChannel(absenceChannel)
+            manager.createNotificationChannel(paymentChannel)
         }
     }
 }
@@ -360,14 +384,18 @@ fun IosTopBar(
 @Composable
 fun MainScreen(
     intent: Intent? = null,
-    isDarkTheme: Boolean, // NOVO
-    onToggleDarkMode: (Boolean) -> Unit // NOVO
-) {
+    isDarkTheme: Boolean,
+    onToggleDarkMode: (Boolean) -> Unit,
+    hideValues: Boolean,                      // NOVO
+    onToggleHideValues: (Boolean) -> Unit     // NOVO
+)
+ {
     val pagerState = rememberPagerState(pageCount = { 5 }) // ✅ 5 páginas agora
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
+     val storage = remember { StorageManager(context) }
+     val db = remember { AppDatabase.getDatabase(context) }
     val gson = remember { Gson() }
     val prefs = remember { context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE) }
 
@@ -787,14 +815,18 @@ fun MainScreen(
 
 // 1. Atualize a chamada da SettingsScreen dentro da MainScreen (por volta da linha 480):
                         4 -> SettingsScreen(
+                            storage = storage,
                             currentVersion = currentVersion,
                             updateManager = updateManager,
                             onEditProfile = { showEditProfile = true },
-                            onUpdateAvailable = { v, url, log ->
-                                autoUpdateInfo = Triple(v, url, log)
-                            },
-                            isDarkTheme = isDarkTheme, // NOVO
-                            onToggleDarkMode = onToggleDarkMode // NOVO
+                            onUpdateAvailable = { v, url, log -> autoUpdateInfo = Triple(v, url, log) },
+                            isDarkTheme = isDarkTheme,
+                            onToggleDarkMode = onToggleDarkMode,
+                            onChangePin = {
+                                // aqui você abre um dialog/tela para trocar o PIN
+                                // (por enquanto pode ser um Toast só pra compilar)
+                                Toast.makeText(context, "Trocar PIN (implementar)", Toast.LENGTH_SHORT).show()
+                            }
                         )
                     }
                 }
@@ -2301,20 +2333,44 @@ private fun getIconForLabel(label: String, isNegative: Boolean): ImageVector {
    ✅ NOVO: TELA DE AJUSTES
    =========================== */
 
-// 2. Atualize a definição da SettingsScreen (por volta da linha 1030):
+/* ===========================
+   ✅ SETTINGS SCREEN (corrigida)
+   ===========================
+
+📍 Arquivo: app/src/main/java/com/jack/meuholerite/MainActivity.kt
+➡️ Cole/atualize esta função no mesmo arquivo onde já estão seus composables (perto da antiga SettingsScreen).
+
+✅ Depende destes composables que você já tem no arquivo:
+- SectionHeader(...)
+- SettingsToggleRow(...)
+- SettingsActionRow(...)
+
+✅ E do StorageManager com:
+- isAppLockEnabled()
+- setAppLockEnabled(enabled)
+- clearPin()  (vamos usar para “Trocar PIN”)
+*/
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    storage: com.jack.meuholerite.utils.StorageManager, // ✅ obrigatório
     currentVersion: String,
-    updateManager: UpdateManager,
+    updateManager: com.jack.meuholerite.utils.UpdateManager,
     onEditProfile: () -> Unit,
-    onUpdateAvailable: (String, String, String) -> Unit, // Novo parâmetro
-    isDarkTheme: Boolean, // NOVO
-    onToggleDarkMode: (Boolean) -> Unit // NOVO
+    onUpdateAvailable: (String, String, String) -> Unit,
+    isDarkTheme: Boolean,
+    onToggleDarkMode: (Boolean) -> Unit,
+    onChangePin: () -> Unit // ✅ obrigatório
 ) {
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
 
+    var appLockEnabled by remember { mutableStateOf(storage.isAppLockEnabled()) }
+
+    var versionTapCount by remember { mutableStateOf(0) }
+    var showEasterEgg by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -2328,26 +2384,78 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
-        
-        // NOVO: SEÇÃO APARÊNCIA
+
+        // 🔐 SEGURANÇA
+        item {
+            SectionHeader("SEGURANÇA")
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    SettingsToggleRow(
+                        icon = Icons.Outlined.Lock,
+                        label = "Senha / Biometria",
+                        checked = appLockEnabled,
+                        onCheckedChange = { enabled ->
+                            appLockEnabled = enabled
+                            storage.setAppLockEnabled(enabled)
+
+                            if (enabled && !storage.hasPin()) {
+                                Toast.makeText(context, "Crie um PIN para ativar a proteção", Toast.LENGTH_SHORT).show()
+                                onChangePin()
+                            }
+                        }
+                    )
+
+                    HorizontalDivider(
+                        Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    )
+
+                    SettingsActionRow(
+                        icon = Icons.Outlined.Edit,
+                        label = "Trocar PIN"
+                    ) {
+                        if (!appLockEnabled) {
+                            Toast.makeText(context, "Ative Senha/Biometria primeiro", Toast.LENGTH_SHORT).show()
+                        } else {
+                            onChangePin()
+                        }
+                    }
+                }
+            }
+        }
+
+        // 🌙 APARÊNCIA
         item {
             SectionHeader("APARÊNCIA")
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SettingsToggleRow(
-                        Icons.Outlined.NightsStay,
-                        "Modo Escuro",
-                        isDarkTheme,
-                        onToggleDarkMode
+                        icon = Icons.Outlined.NightsStay,
+                        label = "Modo Escuro",
+                        checked = isDarkTheme,
+                        onCheckedChange = onToggleDarkMode
                     )
                 }
             }
         }
 
-
+        // 👤 CONTA
         item {
             SectionHeader("CONTA")
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onEditProfile() },
@@ -2362,38 +2470,72 @@ fun SettingsScreen(
             }
         }
 
+        // ℹ️ SOBRE
         item {
             SectionHeader("SOBRE")
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    SettingsRow(Icons.Outlined.Info, "Versão do App", currentVersion)
-                    HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            versionTapCount++
+                            if (versionTapCount >= 7) {
+                                versionTapCount = 0
+                                showEasterEgg = true
+                            }
+                        },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.Info, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Versão do App", fontSize = 12.sp, color = Color.Gray)
+                            Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, null, tint = Color.LightGray)
+                    }
+
+                    HorizontalDivider(
+                        Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    )
+
                     SettingsActionRow(Icons.Outlined.Code, "Código Fonte (GitHub)") {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Jacker-s/MeuHolerite")))
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Jacker-s/MeuHolerite"))
+                        )
+                    }
+
+                    HorizontalDivider(
+                        Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    )
+
+                    SettingsActionRow(Icons.Outlined.Lock, "Política de Privacidade") {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://jacker-s.github.io/meu-holerite-site/privacidade/"))
+                        )
                     }
                 }
             }
         }
 
+        // ⚙️ SISTEMA
         item {
             SectionHeader("SISTEMA")
-            // ... (dentro do LazyColumn, no botão de verificar atualizações)
             Button(
                 onClick = {
                     scope.launch {
                         checking = true
                         updateManager.checkForUpdates(
                             currentVersion = currentVersion,
-                            onUpdateAvailable = { v, url, log ->
-                                // Em vez de apenas um Toast, chamamos o callback que abre o popup
-                                onUpdateAvailable(v, url, log)
-                            },
-                            onNoUpdate = {
-                                Toast.makeText(context, "O app já está na última versão.", Toast.LENGTH_SHORT).show()
-                            },
-                            onError = {
-                                Toast.makeText(context, "Erro ao verificar atualizações.", Toast.LENGTH_SHORT).show()
-                            }
+                            onUpdateAvailable = { v, url, log -> onUpdateAvailable(v, url, log) },
+                            onNoUpdate = { Toast.makeText(context, "O app já está na última versão.", Toast.LENGTH_SHORT).show() },
+                            onError = { Toast.makeText(context, "Erro ao verificar atualizações.", Toast.LENGTH_SHORT).show() }
                         )
                         checking = false
                     }
@@ -2404,11 +2546,7 @@ fun SettingsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
             ) {
                 if (checking) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
                     Text("Verificar Atualizações")
                 }
@@ -2417,7 +2555,25 @@ fun SettingsScreen(
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
     }
+
+    if (showEasterEgg) {
+        AlertDialog(
+            onDismissRequest = { showEasterEgg = false },
+            title = { Text("🎉 Easter Egg!") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Parabéns, você desbloqueou o modo secreto 😎")
+                    Text("Desenvolvido com ❤️ por Jackson")
+                    Text("Meu Holerite • $currentVersion")
+                }
+            },
+            confirmButton = { TextButton(onClick = { showEasterEgg = false }) { Text("Fechar") } }
+        )
+    }
 }
+
+
+
 
 @Composable
 fun SettingsRow(icon: ImageVector, label: String, value: String) {
@@ -2434,7 +2590,9 @@ fun SettingsRow(icon: ImageVector, label: String, value: String) {
 @Composable
 fun SettingsActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
@@ -2453,7 +2611,10 @@ fun SettingsToggleRow(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))

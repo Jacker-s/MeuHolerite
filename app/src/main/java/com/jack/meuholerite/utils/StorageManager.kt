@@ -18,18 +18,19 @@ class StorageManager(context: Context) {
         return if (json != null) {
             try {
                 gson.fromJson(json, EspelhoPonto::class.java)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
-        } else {
-            null
-        }
+        } else null
     }
 
     fun clearData() {
         prefs.edit().remove("saved_espelho").apply()
     }
 
+    // ======================
+    // 🌙 DARK MODE
+    // ======================
     fun setDarkMode(enabled: Boolean) {
         prefs.edit().putBoolean("dark_mode", enabled).apply()
     }
@@ -40,5 +41,43 @@ class StorageManager(context: Context) {
 
     fun hasDarkModeSet(): Boolean {
         return prefs.contains("dark_mode")
+    }
+
+    // ======================
+    // 👁️ VISIBILIDADE
+    // ======================
+    fun isHideValuesEnabled(): Boolean {
+        return prefs.getBoolean("hide_values_enabled", false)
+    }
+
+    fun setHideValues(enabled: Boolean) {
+        prefs.edit().putBoolean("hide_values_enabled", enabled).apply()
+    }
+
+    // ======================
+    // 🔐 APP LOCK / SEGURANÇA
+    // ======================
+    fun isAppLockEnabled(): Boolean {
+        return prefs.getBoolean("app_lock_enabled", false)
+    }
+
+    fun setAppLockEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("app_lock_enabled", enabled).apply()
+    }
+
+    fun hasPin(): Boolean {
+        return !prefs.getString("app_lock_pin", "").isNullOrBlank()
+    }
+
+    fun getPin(): String {
+        return prefs.getString("app_lock_pin", "") ?: ""
+    }
+
+    fun setPin(pin: String) {
+        prefs.edit().putString("app_lock_pin", pin).apply()
+    }
+
+    fun clearPin() {
+        prefs.edit().remove("app_lock_pin").apply()
     }
 }
