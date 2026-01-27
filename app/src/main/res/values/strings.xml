@@ -59,6 +59,8 @@
     <string name="suggestions_label">Sugestões</string>
     <string name="suggestions_email">jacksonsu.silva@gmail.com</string>
     <string name="suggestions_subject">Sugestão - Meu Holerite</string>
+    <string name="source_code_label">Código Fonte no GitHub</string>
+    <string name="github_url">https://github.com/Jacker-s/MeuHolerite</string>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Meu Holerite</string>
@@ -70,7 +72,7 @@
     <string name="onboarding_ponto_title">Controle de Horas</string>
     <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos automáticos sobre faltas detectadas no período.</string>
     <string name="onboarding_privacy_title">Privacidade Total</string>
-    <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processado e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
+    <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processcedo e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
     <string name="onboarding_finish_title">Vamos Começar?</string>
     <string name="onboarding_finish_desc">Informe seu nome e matrícula para personalizar seus relatórios e widgets.</string>
     <string name="next">Próximo</string>
@@ -97,7 +99,7 @@
     <string name="user_label">Usuário</string>
     <string name="matricula_label">Matrícula</string>
     <string name="edit_data">Editar Meus Dados</string>
-    <string name="about_app">Sobre o App</string>
+    <string name="about_app">Sobre a App</string>
     <string name="absence_alerts">Avisos de Falta</string>
     <string name="absence_alerts_desc">Notificações de faltas detectadas no espelho de ponto</string>
     <string name="absences_detected">Faltas Detectadas</string>

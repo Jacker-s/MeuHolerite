@@ -10,6 +10,8 @@ data class EspelhoPonto(
     val funcionario: String,
     val empresa: String = "",
     val periodo: String,
+    val jornada: String = "",
+    val jornadaRealizada: String = "",
     val resumoItens: List<EspelhoItem>,
     val saldoFinalBH: String,
     val saldoPeriodoBH: String = "0:00",

@@ -13,6 +13,17 @@ class PontoParser {
         val periodo = "Período\\s+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE)
             .find(text)?.groupValues?.get(1)?.trim() ?: "Não encontrado"
 
+        // Extração de Jornada (Horários) considerando quebras de linha
+        val jornadaRegex = "(?:Horário\\s+Padronizado|Jornada):?\\s*((?:\\d{2}:\\d{2}[\\s\\n]*)+)".toRegex(RegexOption.IGNORE_CASE)
+        val jornada = jornadaRegex.find(text)?.groupValues?.get(1)?.trim()?.replace("\\s+".toRegex(), " ") ?: ""
+
+        // Extração de Jornada Realizada considerando quebras de linha
+        val jornadaRealizadaRegex = "Jornada\\s+Realizada:?\\s*([\\d:\\s\\n]+)".toRegex(RegexOption.IGNORE_CASE)
+        val jornadaRealizadaRaw = jornadaRealizadaRegex.find(text)?.groupValues?.get(1)?.trim() ?: ""
+        val jornadaRealizada = if (jornadaRealizadaRaw.contains(":")) {
+            jornadaRealizadaRaw.split("\\s+".toRegex()).firstOrNull { it.contains(":") } ?: ""
+        } else ""
+
         val itens = mutableListOf<EspelhoItem>()
         val labelsProcessadas = mutableSetOf<String>()
         
@@ -53,8 +64,32 @@ class PontoParser {
             labelsProcessadas.add(resourceKey)
         }
 
-        val saldoBHRegex = "=\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex()
-        val saldoFinal = formatTime(saldoBHRegex.find(text)?.groupValues?.get(1) ?: "0:00")
+        // Se jornadaRealizada não foi encontrada pelo padrão específico, podemos usar o valor de HORAS TRABALHADAS se disponível
+        val finalJornadaRealizada = if (jornadaRealizada.isEmpty()) {
+            itens.find { it.label == "label_worked_hours" }?.value ?: ""
+        } else {
+            jornadaRealizada
+        }
+
+        // Busca mais robusta pelo saldo final do banco de horas
+        val patternsSaldoFinal = listOf(
+            "=\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(),
+            "SALDO ATUAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
+            "SALDO FINAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
+            "TOTAL\\s+BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
+            "SALDO\\s+BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
+            "BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE)
+        )
+        
+        var saldoFinalRaw = "0:00"
+        for (pattern in patternsSaldoFinal) {
+            val match = pattern.findAll(text).lastOrNull()
+            if (match != null) {
+                saldoFinalRaw = match.groupValues[1]
+                break
+            }
+        }
+        val saldoFinal = formatTime(saldoFinalRaw)
         
         val saldoPeriodoBH = "SALDO DO PERÍODO\\s+([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE)
             .find(text)?.groupValues?.get(1)?.let { formatTime(it) } ?: "0:00"
@@ -81,6 +116,8 @@ class PontoParser {
             funcionario = funcionario,
             empresa = empresa,
             periodo = periodo,
+            jornada = jornada,
+            jornadaRealizada = finalJornadaRealizada,
             resumoItens = itens.reversed(),
             saldoFinalBH = saldoFinal,
             saldoPeriodoBH = saldoPeriodoBH,

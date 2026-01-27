@@ -13,8 +13,8 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.1.9"
+        versionCode = 12
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -74,10 +74,14 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    testImplementation(libs.junit.jupiter)
     ksp(libs.androidx.room.compiler)
 
     // Biometric Authentication
     implementation(libs.androidx.biometric)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

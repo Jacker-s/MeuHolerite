@@ -16,6 +16,8 @@ data class EspelhoEntity(
     val funcionario: String,
     val empresa: String = "",
     val periodo: String,
+    val jornada: String = "",
+    val jornadaRealizada: String = "",
     val resumoItensJson: String,
     val saldoFinalBH: String,
     val saldoPeriodoBH: String = "0:00",
@@ -82,7 +84,7 @@ interface ReciboDao {
     suspend fun delete(recibo: ReciboEntity)
 }
 
-@Database(entities = [EspelhoEntity::class, ReciboEntity::class], version = 8)
+@Database(entities = [EspelhoEntity::class, ReciboEntity::class], version = 9)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun espelhoDao(): EspelhoDao
     abstract fun reciboDao(): ReciboDao
@@ -111,6 +113,8 @@ fun EspelhoPonto.toEntity(gson: Gson, pdfPath: String? = null): EspelhoEntity {
         funcionario = this.funcionario,
         empresa = this.empresa,
         periodo = this.periodo,
+        jornada = this.jornada,
+        jornadaRealizada = this.jornadaRealizada,
         resumoItensJson = gson.toJson(this.resumoItens),
         saldoFinalBH = this.saldoFinalBH,
         saldoPeriodoBH = this.saldoPeriodoBH,
@@ -128,6 +132,8 @@ fun EspelhoEntity.toModel(gson: Gson): EspelhoPonto {
         funcionario = this.funcionario,
         empresa = this.empresa,
         periodo = this.periodo,
+        jornada = this.jornada,
+        jornadaRealizada = this.jornadaRealizada,
         resumoItens = gson.fromJson(this.resumoItensJson, itemType),
         saldoFinalBH = this.saldoFinalBH,
         saldoPeriodoBH = this.saldoPeriodoBH,

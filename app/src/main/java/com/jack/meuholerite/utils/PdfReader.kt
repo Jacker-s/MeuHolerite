@@ -19,6 +19,8 @@ class PdfReader(private val context: Context) {
             inputStream?.use { stream ->
                 val document = PDDocument.load(stream)
                 val stripper = PDFTextStripper()
+                // Ativar ordenação por posição ajuda a manter a estrutura visual do texto
+                stripper.sortByPosition = true
                 val text = stripper.getText(document)
                 document.close()
                 text

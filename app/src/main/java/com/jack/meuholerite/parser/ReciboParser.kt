@@ -15,69 +15,103 @@ class ReciboParser {
         var periodo = "Não identificado"
         var dataPagamento = ""
 
-        // 1. Busca por Matrícula (Topo direito)
+        // 1. Matrícula e Período (Topo do documento)
         matricula = "MATR[IÍ]CULA\\s+(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: ""
-
-        // 2. Busca por Período (Ex: DEZ 2025)
         val periodoMatch = "FOLHA_PAGAMENTO\\s+([A-Z]{3,}\\s+\\d{4})".toRegex().find(text)
         if (periodoMatch != null) {
             periodo = periodoMatch.groupValues[1]
         }
 
-        // 3. Busca por Nome (Lógica aprimorada para colunas)
+        // 2. Nome do Funcionário (Abaixo de DADOS PESSOAIS)
         val nomeLineIndex = lines.indexOfFirst { it.contains("NOME", true) }
-        if (nomeLineIndex != -1) {
-            for (k in 1..2) {
-                if (nomeLineIndex + k < lines.size) {
-                    val line = lines[nomeLineIndex + k].trim()
-                    if (line.isNotEmpty() && !line.contains("MATR", true) && !line.contains("DADOS", true)) {
-                        funcionario = line.split(Regex("\\s{2,}|\\t|CPF", RegexOption.IGNORE_CASE))[0]
-                            .replace("*", "").trim()
-                        if (funcionario.length > 3) break
+        if (nomeLineIndex != -1 && nomeLineIndex + 1 < lines.size) {
+            val line = lines[nomeLineIndex + 1].trim()
+            funcionario = line.split(Regex("\\s{3,}|\\t|CPF", RegexOption.IGNORE_CASE))[0]
+                .replace("*", "").trim()
+        }
+
+        // 3. DATA DE PAGAMENTO (Filtro para ignorar data de admissão)
+        val dateRegex = "(\\d{2}/\\d{2}/\\d{4})".toRegex()
+        val cleanText = text.replace("\r", "").replace("\n", " ")
+        
+        // Padrões específicos que buscam a data APÓS o rótulo de pagamento
+        val patternsDataPagamento = listOf(
+            "DATA\\s+DE\\s+PAGAMENTO\\s*[:|\\s]?\\s*(\\d{2}/\\d{2}/\\d{4})".toRegex(RegexOption.IGNORE_CASE),
+            "PAGAMENTO\\s+EM\\s*[:|\\s]?\\s*(\\d{2}/\\d{2}/\\d{4})".toRegex(RegexOption.IGNORE_CASE),
+            "PAGO\\s+EM\\s*[:|\\s]?\\s*(\\d{2}/\\d{2}/\\d{4})".toRegex(RegexOption.IGNORE_CASE)
+        )
+
+        for (pattern in patternsDataPagamento) {
+            val match = pattern.find(cleanText)
+            if (match != null) {
+                dataPagamento = match.groupValues[1]
+                break
+            }
+        }
+
+        // Se falhar, procura a data na seção inferior do holerite (onde geralmente fica o pagamento)
+        if (dataPagamento.isEmpty()) {
+            val idx = lines.indexOfLast { it.contains("DATA DE PAGAMENTO", true) }
+            if (idx != -1) {
+                // Tenta linhas abaixo primeiro (comum em Marfrig/ePays)
+                for (i in 0..3) {
+                    if (idx + i < lines.size) {
+                        val m = dateRegex.find(lines[idx + i])
+                        if (m != null) {
+                            dataPagamento = m.value
+                            break
+                        }
                     }
                 }
             }
         }
-
-        // 4. Busca por Data de Pagamento
-        val dataPagamentoRegex = "(\\d{2}/\\d{2}/\\d{4})\\s+data.*?pagamento".toRegex(RegexOption.IGNORE_CASE)
-        dataPagamento = dataPagamentoRegex.find(text)?.groupValues?.get(1) ?: ""
-        if (dataPagamento.isEmpty()) {
-            val dataHeaderIndex = lines.indexOfFirst { it.contains("DATA DE PAGAMENTO", true) }
-            if (dataHeaderIndex != -1 && dataHeaderIndex + 1 < lines.size) {
-                dataPagamento = "(\\d{2}/\\d{2}/\\d{4})".toRegex().find(lines[dataHeaderIndex + 1])?.value ?: ""
-            }
-        }
-
-        // 5. Processamento de Itens (V... ou D...)
-        lines.forEach { line ->
-            val trimmed = line.trim()
-            val matchItem = "^([VD]\\d+)\\s+(.+)$".toRegex().find(trimmed)
-            if (matchItem != null) {
-                val code = matchItem.groupValues[1]
-                val content = matchItem.groupValues[2]
-                val rIndex = content.lastIndexOf("R$")
-                if (rIndex != -1) {
-                    val valor = content.substring(rIndex + 2).trim()
-                    val middle = content.substring(0, rIndex).trim()
-                    val lastPart = middle.split("\\s+".toRegex()).last()
-                    val hasReference = lastPart.matches("[\\d,.]+".toRegex())
-                    val referencia = if (hasReference) lastPart else ""
-                    val descricao = if (hasReference) middle.substring(0, middle.lastIndexOf(lastPart)).trim() else middle
-                    
-                    val detail = getDetailForItem(code, descricao)
-                    val item = ReciboItem(code, descricao, referencia, valor, detail)
-                    if (code.startsWith("V")) proventos.add(item)
-                    else if (code.startsWith("D")) descontos.add(item)
+        
+        // Verificação final: Se a data encontrada for a mesma da Admissão (que geralmente aparece no topo),
+        // continuamos procurando por outra data no final do texto.
+        val dataAdmissao = "ADMISS[AÃ]O\\s*[:|\\s]?\\s*(\\d{2}/\\d{2}/\\d{4})".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
+        
+        if (dataPagamento == dataAdmissao || dataPagamento.isEmpty()) {
+            // No ePays, a data de pagamento costuma ser uma das últimas datas no arquivo
+            val allDates = dateRegex.findAll(text).map { it.value }.toList()
+            if (allDates.isNotEmpty()) {
+                val lastDate = allDates.last()
+                // Geralmente a última data é a de pagamento ou geração do PDF
+                if (lastDate != dataAdmissao) {
+                    dataPagamento = lastDate
                 }
             }
         }
 
-        // 6. Extração de Totais e Bases
-        val valorLiquido = "TOTAL L[IÍ]QUIDO.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
-        val baseInss = "Base INSS:\\s*R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
-        val fgtsMes = "Valor FGTS:\\s*R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
-        val baseIrpf = "Base IRRF:\\s*R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
+        // 4. Processamento de Itens (V... e D...)
+        lines.forEach { line ->
+            val trimmed = line.trim()
+            val matchItem = "^([VD]\\d{2,})\\s+(.+)$".toRegex().find(trimmed)
+            if (matchItem != null) {
+                val code = matchItem.groupValues[1]
+                val content = matchItem.groupValues[2]
+                
+                val rIndex = content.lastIndexOf("R$")
+                if (rIndex != -1) {
+                    val valor = content.substring(rIndex + 2).trim()
+                    val resto = content.substring(0, rIndex).trim()
+                    
+                    val parts = resto.split("\\s+".toRegex())
+                    val referencia = if (parts.size > 1 && parts.last().matches("[\\d,.]+".toRegex())) parts.last() else ""
+                    
+                    val descricao = if (referencia.isNotEmpty()) {
+                        resto.substring(0, resto.lastIndexOf(referencia)).trim()
+                    } else resto
+
+                    val item = ReciboItem(code, descricao, referencia, valor, getDetailForItem(code, descricao))
+                    if (code.startsWith("V")) proventos.add(item) else descontos.add(item)
+                }
+            }
+        }
+
+        // 5. Totais e Líquido
+        val valorLiquido = "TOTAL\\s+L[IÍ]QUIDO[\\s\\S]{1,50}?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
+        val totalProv = "TOTAL\\s+PROVENTOS[\\s\\S]{1,50}?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
+        val totalDesc = "TOTAL\\s+DESCONTOS[\\s\\S]{1,50}?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
 
         return ReciboPagamento(
             funcionario = funcionario,
@@ -87,31 +121,27 @@ class ReciboParser {
             empresa = "MARFRIG GLOBAL FOODS SA",
             proventos = proventos,
             descontos = descontos,
-            totalProventos = "Total.*?Proventos.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00",
-            totalDescontos = "Total.*?Desconto.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00",
+            totalProventos = totalProv,
+            totalDescontos = totalDesc,
             valorLiquido = valorLiquido,
-            baseInss = baseInss,
-            fgtsMes = fgtsMes,
-            baseIrpf = baseIrpf
+            baseInss = "Base INSS.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00",
+            fgtsMes = "FGTS.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00",
+            baseIrpf = "IRRF.*?R\\$\\s*([\\d,.]+)".toRegex(RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1) ?: "0,00"
         )
     }
 
     private fun getDetailForItem(code: String, description: String): String {
         val desc = description.uppercase()
         return when {
-            desc.contains("SALARIO") || desc.contains("SALÁRIO") -> "Salário base mensal conforme contrato de trabalho."
-            desc.contains("ADICIONAL NOT") -> "Adicional pago por horas trabalhadas entre as 22h e 05h."
-            desc.contains("DSR") -> "Descanso Semanal Remunerado calculado sobre seus ganhos variáveis."
-            desc.contains("INSS") -> "Contribuição previdenciária obrigatória (aposentadoria e benefícios)."
-            desc.contains("IRRF") -> "Imposto de Renda Retido na Fonte conforme tabela da Receita Federal."
-            desc.contains("FGTS") -> "Depósito em sua conta vinculada (8% do salário bruto)."
-            desc.contains("REFEICAO") || desc.contains("REFEIÇÃO") -> "Desconto referente ao benefício de alimentação/refeição."
-            desc.contains("VALE") || desc.contains("ALIMENT") -> "Desconto referente ao benefício de cesta básica ou vale alimentação."
-            desc.contains("SEGURO VIDA") -> "Desconto para apólice de seguro de vida em grupo."
-            desc.contains("SIND") || desc.contains("ASSOCIATIVA") -> "Mensalidade ou contribuição para o sindicato da categoria."
-            desc.contains("CONSIGNADO") || desc.contains("EMPRESTIMO") -> "Parcela de empréstimo descontada diretamente em folha."
-            desc.contains("ATRASO") || desc.contains("SAIDA ANTEC") -> "Desconto por minutos ou horas não trabalhadas."
-            desc.contains("DROG") || desc.contains("FARM") -> "Desconto referente a compras realizadas em farmácias conveniadas."
+            desc.contains("SALARIO") -> "Salário base mensal conforme contrato."
+            desc.contains("DSR") -> "Descanso Semanal Remunerado sobre variáveis."
+            desc.contains("ADICIONAL NOT") -> "Adicional de 30% por trabalho noturno."
+            desc.contains("SEGURO VIDA") -> "Desconto de seguro de vida em grupo."
+            desc.contains("ALIMENT") -> "Desconto de vale alimentação/refeição."
+            desc.contains("INSS") -> "Contribuição previdenciária obrigatória."
+            desc.contains("EMPRESTIMO") || desc.contains("CONSIGNADO") -> "Parcela de empréstimo descontada em folha."
+            desc.contains("ATRASO") -> "Desconto por atrasos ou saídas antecipadas."
+            desc.contains("ASSOCIATIVA") -> "Mensalidade do sindicato/associação."
             else -> ""
         }
     }
