@@ -20,6 +20,9 @@
     <string name="deductions">Descontos</string>
     <string name="alelo">Alelo</string>
 
+    <!-- Google Login -->
+    <string name="default_web_client_id">YOUR_CLIENT_ID_HERE.apps.googleusercontent.com</string>
+
     <!-- Rótulos do PDF -->
     <string name="label_worked_hours">Horas Trabalhadas</string>
     <string name="label_night_allowance">Adicional Noturno</string>
