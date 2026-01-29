@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -29,6 +30,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -58,10 +60,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,6 +81,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.google.gson.Gson
@@ -91,6 +99,7 @@ import com.jack.meuholerite.parser.ReciboParser
 import com.jack.meuholerite.ui.EditProfileDialog
 import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
+import com.jack.meuholerite.utils.BackupManager
 import com.jack.meuholerite.utils.PdfReader
 import com.jack.meuholerite.utils.StorageManager
 import com.jack.meuholerite.utils.UpdateManager
@@ -143,6 +152,20 @@ class MainActivity : FragmentActivity() {
                             if (hasSet) storageManager.isDarkMode()
                             else systemInDarkTheme
                         )
+                    }
+
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            if (event == Lifecycle.Event.ON_RESUME) {
+                                val hasSet = storageManager.hasDarkModeSet()
+                                useDarkTheme = if (hasSet) storageManager.isDarkMode() else systemInDarkTheme
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose {
+                            lifecycleOwner.lifecycle.removeObserver(observer)
+                        }
                     }
 
                     MeuHoleriteTheme(darkTheme = useDarkTheme) {
@@ -274,18 +297,19 @@ fun IosTopBar(
                 Text(
                     text = greeting,
                     fontSize = 13.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = userName.ifEmpty { "Bem-vindo" },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.5).sp
+                    letterSpacing = (-0.5).sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             IconButton(onClick = onSettingsClick) {
-                Icon(Icons.Default.Settings, contentDescription = "Configurações")
+                Icon(Icons.Default.Settings, contentDescription = "Configurações", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -308,6 +332,7 @@ fun MainScreen(
     val db = remember { AppDatabase.getDatabase(context) }
     val gson = remember { Gson() }
     val prefs = remember { context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE) }
+    val backupManager = remember { BackupManager(context) }
 
     var selectedEspelho by remember { mutableStateOf<EspelhoPonto?>(null) }
     var selectedRecibo by remember { mutableStateOf<ReciboPagamento?>(null) }
@@ -317,7 +342,7 @@ fun MainScreen(
     var userMatricula by remember { mutableStateOf(prefs.getString("user_matricula", "") ?: "") }
     var showOnboarding by remember { mutableStateOf(userName.isEmpty() || userMatricula.isEmpty()) }
     var showEditProfile by remember { mutableStateOf(false) }
-    var selectedDeduction by remember { mutableStateOf<ReciboItem?>(null) }
+    var selectedItemForPopup by remember { mutableStateOf<Pair<ReciboItem, Boolean>?>(null) }
 
     val updateManager = remember { UpdateManager(context) }
     var autoUpdateInfo by remember { mutableStateOf<Triple<String, String, String>?>(null) }
@@ -334,6 +359,44 @@ fun MainScreen(
     ) { isGranted ->
         if (!isGranted) {
             Toast.makeText(context, "Permissão de notificação negada.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    suspend fun refreshData() {
+        withContext(Dispatchers.IO) {
+            val newName = prefs.getString("user_name", "") ?: ""
+            val newMatricula = prefs.getString("user_matricula", "") ?: ""
+            withContext(Dispatchers.Main) {
+                userName = newName
+                userMatricula = newMatricula
+            }
+            val list = db.espelhoDao().getAll().map { it.toModel(gson) }
+            if (list.isNotEmpty()) {
+                selectedEspelho = list.sortedByDescending { it.periodo.extractStartDate() }.first()
+            }
+            val listRecibos = db.reciboDao().getAll().map { it.toModel(gson) }
+            if (listRecibos.isNotEmpty()) {
+                selectedRecibo = listRecibos.sortedByDescending { it.periodo.extractStartDateForRecibo() }.first()
+            }
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { refreshData() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    fun triggerAutoBackup() {
+        scope.launch {
+            backupManager.backupData()
         }
     }
 
@@ -374,19 +437,6 @@ fun MainScreen(
                 destFile.absolutePath
             } catch (_: Exception) {
                 null
-            }
-        }
-    }
-
-    suspend fun refreshData() {
-        withContext(Dispatchers.IO) {
-            val list = db.espelhoDao().getAll().map { it.toModel(gson) }
-            if (list.isNotEmpty()) {
-                selectedEspelho = list.sortedByDescending { it.periodo.extractStartDate() }.first()
-            }
-            val listRecibos = db.reciboDao().getAll().map { it.toModel(gson) }
-            if (listRecibos.isNotEmpty()) {
-                selectedRecibo = listRecibos.sortedByDescending { it.periodo.extractStartDateForRecibo() }.first()
             }
         }
     }
@@ -440,6 +490,7 @@ fun MainScreen(
                 userMatricula = matricula
                 prefs.edit().putString("user_name", name).putString("user_matricula", matricula).apply()
                 showOnboarding = false
+                triggerAutoBackup()
             }
         )
     }
@@ -454,6 +505,7 @@ fun MainScreen(
                 userMatricula = matricula
                 prefs.edit().putString("user_name", name).putString("user_matricula", matricula).apply()
                 showEditProfile = false
+                triggerAutoBackup()
             }
         )
     }
@@ -473,6 +525,7 @@ fun MainScreen(
                         val updatedNovo = novo.copy(pdfFilePath = path)
                         selectedEspelho = updatedNovo
                         db.espelhoDao().insert(updatedNovo.toEntity(gson, path))
+                        triggerAutoBackup()
                         pagerState.animateScrollToPage(3)
                     } else if (isRecibo) {
                         var novo = ReciboParser().parse(text)
@@ -483,6 +536,7 @@ fun MainScreen(
                         val updatedNovo = novo.copy(pdfFilePath = path)
                         selectedRecibo = updatedNovo
                         db.reciboDao().insert(updatedNovo.toEntity(gson, path))
+                        triggerAutoBackup()
                         pagerState.animateScrollToPage(2)
                         if (updatedNovo.dataPagamento.isNotEmpty()) {
                             showPaymentNotification(context, updatedNovo.periodo, updatedNovo.dataPagamento)
@@ -497,8 +551,8 @@ fun MainScreen(
         AbsenceWarningDialog(onDismiss = { showAbsenceWarning = false })
     }
 
-    if (selectedDeduction != null) {
-        DeductionDetailDialog(selectedDeduction!!) { selectedDeduction = null }
+    if (selectedItemForPopup != null) {
+        DeductionDetailDialog(selectedItemForPopup!!.first, selectedItemForPopup!!.second) { selectedItemForPopup = null }
     }
 
     if (autoUpdateInfo != null) {
@@ -509,7 +563,7 @@ fun MainScreen(
                 Column(modifier = Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
                     Text("O que há de novo:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text(autoUpdateInfo!!.third, fontSize = 13.sp, color = Color.DarkGray, lineHeight = 18.sp)
+                    Text(autoUpdateInfo!!.third, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), lineHeight = 18.sp)
                 }
             },
             confirmButton = {
@@ -594,7 +648,10 @@ fun MainScreen(
                                         RewardedInterstitialAdManager.showAd(activity) {}
                                     }
                                 }
-                            }
+                            },
+                            db = db,
+                            gson = gson,
+                            onSelectItem = { item, isProvento -> selectedItemForPopup = item to isProvento }
                         )
                         1 -> EpaysWebViewPage { uri: Uri ->
                             val pdfReader = PdfReader(context)
@@ -609,6 +666,7 @@ fun MainScreen(
                                         val updatedNovo = novo.copy(pdfFilePath = path)
                                         selectedEspelho = updatedNovo
                                         db.espelhoDao().insert(updatedNovo.toEntity(gson, path))
+                                        triggerAutoBackup()
                                         pagerState.animateScrollToPage(3)
                                     }
                                 } else if (isRecibo) {
@@ -621,6 +679,7 @@ fun MainScreen(
                                         val updatedNovo = novo.copy(pdfFilePath = path)
                                         selectedRecibo = updatedNovo
                                         db.reciboDao().insert(updatedNovo.toEntity(gson, path))
+                                        triggerAutoBackup()
                                         pagerState.animateScrollToPage(2)
                                         if (updatedNovo.dataPagamento.isNotEmpty()) {
                                             showPaymentNotification(context, updatedNovo.periodo, updatedNovo.dataPagamento)
@@ -639,7 +698,8 @@ fun MainScreen(
                             onEditProfile = { showEditProfile = true },
                             onOpen = { openPdf(it) },
                             onSelect = { selected -> selectedRecibo = selected },
-                            onRefresh = { scope.launch { refreshData() } }
+                            onRefresh = { scope.launch { refreshData() } },
+                            onSelectItem = { item, isProvento -> selectedItemForPopup = item to isProvento }
                         )
                         3 -> TimesheetScreen(
                             espelho = selectedEspelho,
@@ -677,30 +737,74 @@ fun AbsenceWarningDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-fun DeductionDetailDialog(item: ReciboItem, onDismiss: () -> Unit) {
+fun DeductionDetailDialog(item: ReciboItem, isProvento: Boolean, onDismiss: () -> Unit) {
+    val color = if (isProvento) Color(0xFF34C759) else Color(0xFFFF3B30)
+    val title = if (isProvento) "Detalhe do Provento" else "Detalhe do Desconto"
+    val question = if (isProvento) "O que é este ganho?" else "O que é este desconto?"
+
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.MonetizationOn, contentDescription = null, tint = Color(0xFFFF3B30))
+                Icon(if (isProvento) Icons.Outlined.AddCircle else Icons.Outlined.RemoveCircle, contentDescription = null, tint = color)
                 Spacer(Modifier.width(8.dp))
                 Text(item.descricao, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
         },
         text = {
+            val detalheContexto = getDetalheParaItem(item.descricao, isProvento)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Valor: R$ ${item.valor}", fontWeight = FontWeight.SemiBold, color = Color(0xFFFF3B30))
-                Text("Referência: ${item.referencia}", color = Color.Gray)
+                Text("Valor: R$ ${item.valor}", fontWeight = FontWeight.SemiBold, color = color)
+                Text("Referência: ${item.referencia}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                
+                HorizontalDivider()
+                
+                Text(question, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(detalheContexto, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), lineHeight = 20.sp)
+                
                 if (item.detalhe.isNotEmpty()) {
-                    HorizontalDivider()
-                    Text("Detalhes:", fontWeight = FontWeight.SemiBold)
-                    Text(item.detalhe, color = Color.DarkGray, lineHeight = 18.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Observação do Holerite:", fontWeight = FontWeight.SemiBold)
+                    Text(item.detalhe, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 13.sp)
                 }
             }
         },
         shape = RoundedCornerShape(22.dp)
     )
+}
+
+fun getDetalheParaItem(descricao: String, isProvento: Boolean): String {
+    val d = descricao.uppercase()
+    return if (isProvento) {
+        when {
+            d.contains("SALARIO") || d.contains("VENCIMENTO") -> "Seu salário base mensal registrado em contrato, proporcional aos dias trabalhados no mês."
+            d.contains("HORA EXTRA") || d.contains("H.E") -> "Pagamento pelas horas trabalhadas além da sua jornada normal. Geralmente com adicional de 50% ou 100%."
+            d.contains("ADICIONAL NOTURNO") -> "Compensação financeira para quem trabalha entre as 22h e 5h, devido ao desgaste maior do trabalho noturno."
+            d.contains("FERIAS") -> "Pagamento referente ao seu período de descanso anual, incluindo o adicional de 1/3 constitucional."
+            d.contains("13O") || d.contains("GRATIFICACAO") -> "Décimo Terceiro salário, uma gratificação de Natal paga em uma ou duas parcelas ao final do ano."
+            d.contains("PERICULOSIDADE") -> "Adicional de 30% sobre o salário para profissionais expostos a atividades de risco (inflamáveis, eletricidade, etc.)."
+            d.contains("INSALUBRIDADE") -> "Adicional pago a trabalhadores expostos a agentes nocivos à saúde acima dos limites tolerados."
+            d.contains("DSR") || d.contains("REPOUSO") -> "Descanso Semanal Remunerado. Pagamento referente ao domingo ou feriado que você tem direito a folgar."
+            d.contains("PREMIO") || d.contains("BONUS") -> "Valor extra pago como reconhecimento por metas atingidas ou desempenho excepcional."
+            d.contains("AUXILIO") || d.contains("ABONO") -> "Benefício ou ajuda de custo paga pela empresa para auxiliar em despesas específicas."
+            else -> "Este é um provento (ganho) que compõe seu salário bruto. Pode ser um prêmio, comissão ou ajuste de meses anteriores."
+        }
+    } else {
+        when {
+            d.contains("INSS") -> "Contribuição obrigatória para a Previdência Social. Garante sua aposentadoria, auxílio-doença e outros benefícios do governo."
+            d.contains("IRRF") || d.contains("RENDA") -> "Imposto de Renda Retido na Fonte. É o imposto pago ao Governo Federal sobre o que você ganha, calculado conforme sua faixa salarial."
+            d.contains("VALE TRANSPORTE") || d.contains("V.T") -> "Sua coparticipação no benefício de transporte fornecido pela empresa, limitado por lei a 6% do salário base."
+            d.contains("VALE REFEIÇÃO") || d.contains("V.R") || d.contains("ALIMENTACAO") -> "Desconto referente à sua parte no custo dos cartões de refeição ou alimentação."
+            d.contains("MEDICO") || d.contains("SAUDE") || d.contains("ODONTO") -> "Coparticipação ou mensalidade do seu plano de saúde ou odontológico e de seus dependentes."
+            d.contains("SINDICATO") || d.contains("ASSISTENCIAL") -> "Contribuição voltada ao sindicato da sua categoria para custear negociações coletivas e benefícios da classe."
+            d.contains("FALTA") -> "Desconto referente a dias ou horas não trabalhadas que não foram justificadas com atestado médico."
+            d.contains("ATRASO") -> "Desconto pelo tempo em que você chegou após o horário de entrada ou saiu antes do horário previsto."
+            d.contains("CONSIGNADO") || d.contains("EMPRESTIMO") -> "Pagamento de parcela de empréstimo que você autorizou o desconto direto na folha de pagamento."
+            d.contains("ADIANTAMENTO") -> "Valor que você já recebeu antecipadamente ao longo do mês (o famoso 'vale')."
+            else -> "Este é um desconto específico da sua folha de pagamento. Pode ser uma coparticipação, taxa administrativa ou ajuste de períodos anteriores."
+        }
+    }
 }
 
 data class OnboardingStep(val titleRes: Int, val descRes: Int, val icon: ImageVector, val color: Color)
@@ -734,9 +838,9 @@ fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (Str
                                 Icon(step.icon, null, tint = step.color, modifier = Modifier.size(90.dp))
                             }
                             Spacer(Modifier.height(40.dp))
-                            Text(stringResource(step.titleRes), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, lineHeight = 38.sp)
+                            Text(stringResource(step.titleRes), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, lineHeight = 38.sp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.height(24.dp))
-                            Text(stringResource(step.descRes), fontSize = 19.sp, color = Color.Gray, textAlign = TextAlign.Center, lineHeight = 28.sp)
+                            Text(stringResource(step.descRes), fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), textAlign = TextAlign.Center, lineHeight = 28.sp)
                             if (page == steps.size - 1) {
                                 Spacer(Modifier.height(32.dp))
                                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome Completo") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
@@ -749,7 +853,7 @@ fun OnboardingDialog(initialName: String, initialMatricula: String, onSave: (Str
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             repeat(steps.size) { iteration ->
-                                val color = if (pagerState.currentPage == iteration) steps[iteration].color else Color.LightGray
+                                val color = if (pagerState.currentPage == iteration) steps[iteration].color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                                 Box(modifier = Modifier.padding(2.dp).clip(CircleShape).background(color).size(12.dp))
                             }
                         }
@@ -780,10 +884,10 @@ fun TimesheetScreen(espelho: EspelhoPonto?, db: AppDatabase, gson: Gson, userNam
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.timesheet), fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
+                Text(stringResource(R.string.timesheet), fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp, color = MaterialTheme.colorScheme.onSurface)
                 IconButton(onClick = { showHistory = true }) { Icon(Icons.Outlined.History, null, tint = Color(0xFF007AFF)) }
             }
-            Text(espelho?.periodo ?: stringResource(R.string.select_pdf), color = Color.Gray, fontSize = 17.sp)
+            Text(espelho?.periodo ?: stringResource(R.string.select_pdf), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 17.sp)
         }
         if (espelho != null) {
             item { IosWidgetSummaryLargeCard(espelho, userName, userMatricula, onEditProfile, onOpen = { onOpen(espelho.pdfFilePath) }) }
@@ -834,12 +938,12 @@ fun TimesheetHistoryDialog(historico: List<EspelhoPonto>, onDismiss: () -> Unit,
                 items(historico) { item ->
                     Row(modifier = Modifier.fillMaxWidth().clickable { onSelect(item) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.periodo, fontWeight = FontWeight.Bold)
+                            Text(item.periodo, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text("Saldo: ${item.saldoFinalBH}", color = if (item.saldoFinalBH.startsWith("-")) Color(0xFFFF3B30) else Color(0xFF34C759))
                         }
-                        IconButton(onClick = { onDelete(item) }) { Icon(Icons.Outlined.Delete, null, tint = Color.Gray) }
+                        IconButton(onClick = { onDelete(item) }) { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) }
                     }
-                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 }
             }
         },
@@ -848,31 +952,52 @@ fun TimesheetHistoryDialog(historico: List<EspelhoPonto>, onDismiss: () -> Unit,
 }
 
 @Composable
-fun ReceiptsScreen(recibo: ReciboPagamento?, db: AppDatabase, gson: Gson, userName: String, userMatricula: String, onEditProfile: () -> Unit, onOpen: (String?) -> Unit, onSelect: (ReciboPagamento) -> Unit, onRefresh: () -> Unit) {
+fun ReceiptsScreen(
+    recibo: ReciboPagamento?, 
+    db: AppDatabase, 
+    gson: Gson, 
+    userName: String, 
+    userMatricula: String, 
+    onEditProfile: () -> Unit, 
+    onOpen: (String?) -> Unit, 
+    onSelect: (ReciboPagamento) -> Unit, 
+    onRefresh: () -> Unit,
+    onSelectItem: (ReciboItem, Boolean) -> Unit
+) {
     val scope = rememberCoroutineScope()
     val recibosEntities by db.reciboDao().getAllFlow().collectAsState(initial = emptyList())
     val recibos = remember(recibosEntities) { recibosEntities.map { it.toModel(gson) }.sortedByDescending { it.periodo.extractStartDateForRecibo() } }
     var showHistory by remember { mutableStateOf(false) }
+
     if (showHistory) {
         ReceiptHistoryDialog(recibos, onDismiss = { showHistory = false }, onSelect = { onSelect(it); showHistory = false }, onDelete = { scope.launch { db.reciboDao().deleteByPeriodo(it.periodo); onRefresh() } })
     }
+
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.receipts), fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
+                Text(stringResource(R.string.receipts), fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp, color = MaterialTheme.colorScheme.onSurface)
                 IconButton(onClick = { showHistory = true }) { Icon(Icons.Outlined.History, null, tint = Color(0xFF007AFF)) }
             }
-            Text(recibo?.periodo ?: stringResource(R.string.select_pdf), color = Color.Gray, fontSize = 17.sp)
+            Text(recibo?.periodo ?: stringResource(R.string.select_pdf), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 17.sp)
         }
         if (recibo != null) {
             item { ReceiptSummaryCard(recibo, userName, userMatricula, onEditProfile, onOpen = { onOpen(recibo.pdfFilePath) }) }
             item {
-                Text(stringResource(R.string.earnings).uppercase(), fontSize = 13.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recibo.proventos.forEach { item -> ReceiptItemCard(item, Color(0xFF34C759)) } }
+                Text(stringResource(R.string.earnings).uppercase(), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontWeight = FontWeight.SemiBold)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { 
+                    recibo.proventos.forEach { item -> 
+                        ReceiptItemCard(item, Color(0xFF34C759)) { onSelectItem(item, true) }
+                    } 
+                }
             }
             item {
-                Text(stringResource(R.string.deductions).uppercase(), fontSize = 13.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recibo.descontos.forEach { item -> ReceiptItemCard(item, Color(0xFFFF3B30)) } }
+                Text(stringResource(R.string.deductions).uppercase(), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontWeight = FontWeight.SemiBold)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { 
+                    recibo.descontos.forEach { item -> 
+                        ReceiptItemCard(item, Color(0xFFFF3B30)) { onSelectItem(item, false) }
+                    } 
+                }
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
@@ -940,22 +1065,19 @@ fun IosWidgetReceiptFullCard(recibo: ReciboPagamento, userName: String, matricul
 }
 
 @Composable
-fun ReceiptItemCard(item: ReciboItem, color: Color) {
-    var expanded by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }) {
+fun ReceiptItemCard(item: ReciboItem, color: Color, onClick: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface, 
+        shape = RoundedCornerShape(16.dp), 
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+    ) {
         Column(modifier = Modifier.padding(16.dp).animateContentSize()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.descricao, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                    Text("Ref: ${item.referencia}", fontSize = 12.sp, color = Color.Gray)
+                    Text(item.descricao, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Ref: ${item.referencia}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
                 Text("R$ ${item.valor}", fontWeight = FontWeight.Bold, color = color, fontSize = 16.sp)
-            }
-            if (expanded && item.detalhe.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)).padding(12.dp)) {
-                    Text(item.detalhe, fontSize = 13.sp, color = Color.DarkGray, lineHeight = 18.sp)
-                }
             }
         }
     }
@@ -972,12 +1094,12 @@ fun ReceiptHistoryDialog(recibos: List<ReciboPagamento>, onDismiss: () -> Unit, 
                 items(recibos) { recibo ->
                     Row(modifier = Modifier.fillMaxWidth().clickable { onSelect(recibo) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(recibo.periodo, fontWeight = FontWeight.Bold)
+                            Text(recibo.periodo, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text("Líquido: R$ ${recibo.valorLiquido}", color = Color(0xFF34C759), fontSize = 14.sp)
                         }
-                        IconButton(onClick = { onDelete(recibo) }) { Icon(Icons.Outlined.Delete, null, tint = Color.Gray) }
+                        IconButton(onClick = { onDelete(recibo) }) { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) }
                     }
-                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 }
             }
         },
@@ -1026,8 +1148,8 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (hasError) {
             Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Outlined.WifiOff, null, modifier = Modifier.size(64.dp), tint = Color.Gray)
-                Text("Sem Conexão", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Outlined.WifiOff, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                Text("Sem Conexão", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Button(onClick = { hasError = false; webView?.reload() }) { Text("Tentar Novamente") }
             }
         }
@@ -1060,10 +1182,28 @@ fun EpaysWebViewPage(onPdfDownloaded: (Uri) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun HomeScreen(userName: String, userMatricula: String, selectedRecibo: ReciboPagamento?, selectedEspelho: EspelhoPonto?, onGoToRecibo: () -> Unit, onGoToPonto: () -> Unit, onOpenPdf: (String?) -> Unit, onRefresh: () -> Unit) {
+fun HomeScreen(
+    userName: String, 
+    userMatricula: String, 
+    selectedRecibo: ReciboPagamento?, 
+    selectedEspelho: EspelhoPonto?, 
+    onGoToRecibo: () -> Unit, 
+    onGoToPonto: () -> Unit, 
+    onOpenPdf: (String?) -> Unit, 
+    onRefresh: () -> Unit,
+    db: AppDatabase,
+    gson: Gson,
+    onSelectItem: (ReciboItem, Boolean) -> Unit
+) {
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
+    var showSalaryGraph by remember { mutableStateOf(false) }
     val cardsPagerState = rememberPagerState(pageCount = { if (selectedRecibo != null && selectedEspelho != null) 2 else 1 })
+
+    if (showSalaryGraph) {
+        SalaryGraphDialog(db, gson) { showSalaryGraph = false }
+    }
+
     PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = { scope.launch { isRefreshing = true; onRefresh(); delay(1000); isRefreshing = false } }, modifier = Modifier.fillMaxSize()) {
         val scrollState = rememberScrollState()
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1078,14 +1218,117 @@ fun HomeScreen(userName: String, userMatricula: String, selectedRecibo: ReciboPa
                     }
                     selectedRecibo != null -> IosWidgetReceiptFullCard(selectedRecibo, userName, userMatricula, fullCardModifier, onGoToRecibo, { onOpenPdf(selectedRecibo.pdfFilePath) })
                     selectedEspelho != null -> IosWidgetTimesheetFullCard(selectedEspelho, userName, userMatricula, fullCardModifier, onGoToPonto, { onOpenPdf(selectedEspelho.pdfFilePath) })
-                    else -> IosWidgetFinanceWideCard("Importe seus dados", "---", "Use a aba ePays para começar", Color.Gray, Icons.Outlined.CloudDownload) {}
+                    else -> IosWidgetFinanceWideCard("Importe seus dados", "---", "Use a aba ePays para começar", MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), Icons.Outlined.CloudDownload) {}
                 }
             }
             SectionHeader("Último Holerite")
-            if (selectedRecibo != null) IosWidgetFinanceWideCard("Líquido a Receber", "R$ ${selectedRecibo.valorLiquido}", selectedRecibo.periodo, Color(0xFF34C759), Icons.Outlined.AccountBalanceWallet, onGoToRecibo)
+            if (selectedRecibo != null) {
+                IosWidgetFinanceWideCard(
+                    title = "Líquido a Receber", 
+                    value = "R$ ${selectedRecibo.valorLiquido}", 
+                    subtitle = selectedRecibo.periodo, 
+                    color = Color(0xFF34C759), 
+                    icon = Icons.Outlined.AccountBalanceWallet, 
+                    onClick = { showSalaryGraph = true }
+                )
+                
+                if (selectedRecibo.descontos.isNotEmpty()) {
+                    SectionHeader("Principais Descontos")
+                    selectedRecibo.descontos.sortedByDescending { 
+                        it.valor.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 
+                    }.take(3).forEach { item ->
+                        ReceiptItemCard(item, Color(0xFFFF3B30)) {
+                            onSelectItem(item, false)
+                        }
+                    }
+                }
+            }
             SectionHeader("Banco de Horas")
             IosWidgetFinanceWideCard("Saldo Atual", selectedEspelho?.saldoFinalBH ?: "0:00", selectedEspelho?.periodo ?: "Importe um espelho", if (selectedEspelho?.saldoFinalBH?.startsWith("-") == true) Color(0xFFFF3B30) else Color(0xFF007AFF), Icons.Outlined.Schedule, onGoToPonto)
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+fun SalaryGraphDialog(db: AppDatabase, gson: Gson, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var history by remember { mutableStateOf<List<ReciboPagamento>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val list = db.reciboDao().getAll().map { it.toModel(gson) }
+                .sortedBy { it.periodo.extractStartDateForRecibo() }
+            history = list
+            isLoading = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
+        title = { Text("Evolução Salarial", fontWeight = FontWeight.Bold) },
+        text = {
+            if (isLoading) {
+                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (history.isEmpty()) {
+                Text("Nenhum dado disponível para o gráfico.")
+            } else {
+                Column(Modifier.fillMaxWidth()) {
+                    SalaryLineChart(history)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Baseado nos últimos ${history.size} meses importados.", fontSize = 12.sp, color = Color.Gray)
+                }
+            }
+        },
+        shape = RoundedCornerShape(22.dp)
+    )
+}
+
+@Composable
+fun SalaryLineChart(data: List<ReciboPagamento>) {
+    val points = data.map { it.valorLiquido.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 }
+    val maxVal = points.maxOrNull() ?: 1.0
+    val minVal = points.minOrNull() ?: 0.0
+    val range = (maxVal - minVal).coerceAtLeast(1.0)
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Column(modifier = Modifier.fillMaxWidth().height(220.dp).padding(8.dp)) {
+        Canvas(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            val width = size.width
+            val height = size.height
+            val spacing = width / (points.size - 1).coerceAtLeast(1)
+
+            val path = Path()
+            points.forEachIndexed { index, value ->
+                val x = index * spacing
+                val normalizedValue = (value - minVal) / range
+                val y = height - (normalizedValue.toFloat() * height)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                
+                // Desenhar ponto
+                drawCircle(color = primaryColor, radius = 4.dp.toPx(), center = androidx.compose.ui.geometry.Offset(x, y))
+            }
+
+            drawPath(
+                path = path,
+                color = primaryColor,
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            data.forEachIndexed { index, item ->
+                if (index == 0 || index == data.size - 1 || data.size <= 5) {
+                    val label = item.periodo.split(" ").firstOrNull() ?: ""
+                    Text(label, fontSize = 10.sp, color = Color.Gray)
+                }
+            }
         }
     }
 }
@@ -1125,11 +1368,11 @@ fun IosWidgetFinanceWideCard(title: String, value: String, subtitle: String, col
             Box(modifier = Modifier.size(50.dp).background(color.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) { Icon(icon, null, tint = color, modifier = Modifier.size(28.dp)) }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
+                Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = color)
-                Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+                Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
             }
-            Icon(Icons.Outlined.ChevronRight, null, tint = Color.LightGray)
+            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
         }
     }
 }

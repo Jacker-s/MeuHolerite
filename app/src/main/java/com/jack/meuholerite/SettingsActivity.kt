@@ -1,8 +1,10 @@
 package com.jack.meuholerite
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.webkit.CookieManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,13 +28,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.ui.EditProfileDialog
 import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 import com.jack.meuholerite.utils.BackupManager
 import com.jack.meuholerite.utils.StorageManager
 import com.jack.meuholerite.utils.UpdateManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,7 +116,7 @@ class SettingsActivity : ComponentActivity() {
                                     Text(
                                         autoUpdateInfo!!.third,
                                         fontSize = 13.sp,
-                                        color = Color.DarkGray,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                         lineHeight = 18.sp
                                     )
                                 }
@@ -155,6 +161,10 @@ fun SettingsScreen(
     var checking by remember { mutableStateOf(false) }
     var backingUp by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val auth = remember { FirebaseAuth.getInstance() }
+    val currentUser = auth.currentUser
 
     var appLockEnabled by remember { mutableStateOf(storage.isAppLockEnabled()) }
     var versionTapCount by remember { mutableStateOf(0) }
@@ -188,10 +198,33 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        if (currentUser != null) {
+                            Text(
+                                text = "Conectado como: ${currentUser.email}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Atenção: Você não está autenticado no Firebase.",
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF3B30),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
                         SettingsActionRow(
                             icon = Icons.Outlined.CloudUpload,
                             label = if (backingUp) "Fazendo backup..." else "Fazer Backup Agora"
                         ) {
+                            if (currentUser == null) {
+                                Toast.makeText(context, "Por favor, faça login novamente para ativar o backup.", Toast.LENGTH_LONG).show()
+                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().putBoolean("is_logged_in", false).apply()
+                                context.startActivity(Intent(context, LoginActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
+                                return@SettingsActionRow
+                            }
+
                             if (!backingUp) {
                                 scope.launch {
                                     backingUp = true
@@ -211,11 +244,18 @@ fun SettingsScreen(
                             icon = Icons.Outlined.CloudDownload,
                             label = if (restoring) "Restaurando..." else "Restaurar Backup"
                         ) {
+                            if (currentUser == null) {
+                                Toast.makeText(context, "Por favor, faça login para restaurar seus dados.", Toast.LENGTH_LONG).show()
+                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().putBoolean("is_logged_in", false).apply()
+                                context.startActivity(Intent(context, LoginActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
+                                return@SettingsActionRow
+                            }
+
                             if (!restoring) {
                                 scope.launch {
                                     restoring = true
                                     backupManager.restoreData().onSuccess {
-                                        Toast.makeText(context, "Restauração concluída! Reinicie o app se necessário.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Restauração concluída!", Toast.LENGTH_LONG).show()
                                     }.onFailure {
                                         Toast.makeText(context, "Falha na restauração: ${it.message}", Toast.LENGTH_LONG).show()
                                     }
@@ -281,6 +321,21 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsActionRow(icon = Icons.Outlined.Person, label = "Editar Meus Dados") { onEditProfile() }
+                        
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                        
+                        // 🗑️ APAGAR DADOS
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showDeleteConfirm = true }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Outlined.DeleteForever, null, tint = Color(0xFFFF3B30), modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text("Apagar Todos os Dados", fontSize = 16.sp, color = Color(0xFFFF3B30), modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -301,11 +356,11 @@ fun SettingsScreen(
                             }.padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Outlined.Info, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Versão do App", fontSize = 12.sp, color = Color.Gray)
-                                Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Text("Versão do App", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                         HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
@@ -345,6 +400,51 @@ fun SettingsScreen(
         }
     }
 
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Apagar todos os dados?", fontWeight = FontWeight.Bold) },
+            text = { Text("Isso removerá permanentemente todos os holerites, pontos e configurações locais. Os dados na nuvem (backup) não serão afetados.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                // 1. Limpar Banco de Dados
+                                val db = AppDatabase.getDatabase(context)
+                                db.clearAllTables()
+                                
+                                // 2. Limpar SharedPreferences
+                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+                                context.getSharedPreferences("meu_holerite_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+                                
+                                // 3. Limpar Cookies
+                                CookieManager.getInstance().removeAllCookies(null)
+                                CookieManager.getInstance().flush()
+                                
+                                // 4. Logout Firebase (opcional, mas recomendado para limpeza total)
+                                FirebaseAuth.getInstance().signOut()
+                            }
+                            
+                            showDeleteConfirm = false
+                            Toast.makeText(context, "Todos os dados foram apagados.", Toast.LENGTH_LONG).show()
+                            
+                            // Reiniciar o App para a tela de Login
+                            val intent = Intent(context, LoginActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            context.startActivity(intent)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30))
+                ) { Text("Apagar Tudo", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancelar") }
+            },
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+
     if (showEasterEgg) {
         AlertDialog(
             onDismissRequest = { showEasterEgg = false },
@@ -363,8 +463,8 @@ fun SettingsActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     ) {
         Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
-        Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f))
-        Icon(Icons.Outlined.ChevronRight, null, tint = Color.LightGray)
+        Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
+        Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
     }
 }
 
@@ -375,7 +475,7 @@ fun SettingsToggleRow(icon: ImageVector, label: String, checked: Boolean, onChec
         verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
-        Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

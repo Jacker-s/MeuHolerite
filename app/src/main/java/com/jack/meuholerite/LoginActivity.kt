@@ -31,6 +31,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
+import com.jack.meuholerite.utils.BackupManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -39,8 +40,11 @@ class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val auth = FirebaseAuth.getInstance()
         val prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("is_logged_in", false)) {
+        
+        // Verifica se está logado tanto no Prefs quanto no Firebase
+        if (prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
             return
@@ -49,10 +53,9 @@ class LoginActivity : ComponentActivity() {
         setContent {
             MeuHoleriteTheme {
                 LoginScreen(
-                    onLoginSuccess = { name, email ->
+                    onLoginSuccess = { email ->
                         prefs.edit().apply {
                             putBoolean("is_logged_in", true)
-                            putString("user_name", name)
                             putString("user_email", email)
                             apply()
                         }
@@ -66,11 +69,12 @@ class LoginActivity : ComponentActivity() {
 }
 
 @Composable
-fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
+fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
     var isLoading by remember { mutableStateOf(false) }
+    val backupManager = remember { BackupManager(context) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -122,7 +126,6 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
                                 val googleIdOption = GetGoogleIdOption.Builder()
                                     .setFilterByAuthorizedAccounts(false)
                                     .setServerClientId(context.getString(R.string.default_web_client_id))
-                                    // Se ficar dando "auto select" estranho, mude para false
                                     .setAutoSelectEnabled(true)
                                     .build()
 
@@ -135,8 +138,12 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
                                     request = request
                                 )
 
-                                val (name, email) = handleGoogleCredentialWithFirebase(result.credential)
-                                onLoginSuccess(name, email)
+                                val email = handleGoogleCredentialWithFirebase(result.credential)
+                                
+                                // Restauração automática após login bem-sucedido
+                                backupManager.restoreData()
+
+                                onLoginSuccess(email)
 
                             } catch (e: GetCredentialException) {
                                 Log.e("LoginActivity", "Error getting credential", e)
@@ -158,10 +165,9 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
                     border = BorderStroke(1.dp, Color.LightGray)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Troque por um ícone Google real (ex: R.drawable.ic_google)
                         Icon(
-                            painter = painterResource(id = android.R.drawable.ic_menu_info_details),
-                            contentDescription = null,
+                            painter = painterResource(id = R.drawable.ic_google),
+                            contentDescription = "Google Logo",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )
@@ -179,16 +185,9 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
     }
 }
 
-/**
- * Corrige o seu erro "Unexpected credential type".
- * No Credential Manager, o retorno geralmente é CustomCredential.
- * Aí extraímos o GoogleIdTokenCredential via createFrom(credential.data),
- * e logamos no Firebase para obter email/nome com consistência.
- */
-private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): Pair<String, String> {
+private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): String {
     val googleIdTokenCredential = when (credential) {
         is CustomCredential -> {
-            // Precisa ser o tipo do Google ID Token
             if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 GoogleIdTokenCredential.createFrom(credential.data)
             } else {
@@ -196,7 +195,6 @@ private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): 
             }
         }
         else -> {
-            // Pode acontecer se o sistema retornar outro tipo (password/passkey)
             throw IllegalStateException("Tipo de credencial inesperado: ${credential::class.java.simpleName}")
         }
     }
@@ -207,8 +205,5 @@ private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): 
     val authResult = FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
     val user = authResult.user ?: throw IllegalStateException("Falha ao obter usuário do Firebase.")
 
-    val name = user.displayName ?: "Usuário"
-    val email = user.email ?: "sem-email@google"
-
-    return name to email
+    return user.email ?: "sem-email@google"
 }

@@ -97,7 +97,7 @@ class UpdateManager(private val context: Context) {
     fun downloadAndInstall(url: String, version: String) {
         val fileName = "meu_holerite_$version.apk"
         val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
-        
+
         if (destination.exists()) {
             installApk(destination)
             return
@@ -131,7 +131,7 @@ class UpdateManager(private val context: Context) {
                 }
             }
         }
-        
+
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.applicationContext.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
