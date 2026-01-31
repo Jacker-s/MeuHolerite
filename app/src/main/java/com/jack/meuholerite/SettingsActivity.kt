@@ -6,28 +6,35 @@ import android.net.Uri
 import android.os.Bundle
 import android.webkit.CookieManager
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.LocaleListCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.ui.EditProfileDialog
@@ -35,17 +42,16 @@ import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 import com.jack.meuholerite.utils.BackupManager
 import com.jack.meuholerite.utils.StorageManager
-import com.jack.meuholerite.utils.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
-class SettingsActivity : ComponentActivity() {
+class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val storageManager = StorageManager(this)
-        val updateManager = UpdateManager(this)
         val backupManager = BackupManager(this)
         
         val currentVersion = try {
@@ -70,15 +76,14 @@ class SettingsActivity : ComponentActivity() {
                     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
                     var userMatricula by remember { mutableStateOf(prefs.getString("user_matricula", "") ?: "") }
                     var showEditProfile by remember { mutableStateOf(false) }
-                    var autoUpdateInfo by remember { mutableStateOf<Triple<String, String, String>?>(null) }
 
                     SettingsScreen(
                         storage = storageManager,
                         backupManager = backupManager,
                         currentVersion = currentVersion,
-                        updateManager = updateManager,
+                        userName = userName,
+                        userMatricula = userMatricula,
                         onEditProfile = { showEditProfile = true },
-                        onUpdateAvailable = { v, url, log -> autoUpdateInfo = Triple(v, url, log) },
                         isDarkTheme = useDarkTheme,
                         onToggleDarkMode = { enabled ->
                             storageManager.setDarkMode(enabled)
@@ -100,43 +105,6 @@ class SettingsActivity : ComponentActivity() {
                             }
                         )
                     }
-
-                    if (autoUpdateInfo != null) {
-                        AlertDialog(
-                            onDismissRequest = { autoUpdateInfo = null },
-                            title = { Text("Nova Atualização v${autoUpdateInfo!!.first}", fontWeight = FontWeight.Bold) },
-                            text = {
-                                Column(
-                                    modifier = Modifier
-                                        .heightIn(max = 300.dp)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text("O que há de novo:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(
-                                        autoUpdateInfo!!.third,
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                        lineHeight = 18.sp
-                                    )
-                                }
-                            },
-                            confirmButton = {
-                                Button(
-                                    onClick = {
-                                        updateManager.downloadAndInstall(autoUpdateInfo!!.second, autoUpdateInfo!!.first)
-                                        autoUpdateInfo = null
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759))
-                                ) { Text("Baixar Agora") }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { autoUpdateInfo = null }) { Text("Depois") }
-                            },
-                            shape = RoundedCornerShape(22.dp),
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    }
                 }
             }
         }
@@ -149,19 +117,19 @@ fun SettingsScreen(
     storage: StorageManager,
     backupManager: BackupManager,
     currentVersion: String,
-    updateManager: UpdateManager,
+    userName: String,
+    userMatricula: String,
     onEditProfile: () -> Unit,
-    onUpdateAvailable: (String, String, String) -> Unit,
     isDarkTheme: Boolean,
     onToggleDarkMode: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var checking by remember { mutableStateOf(false) }
     var backingUp by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     val auth = remember { FirebaseAuth.getInstance() }
     val currentUser = auth.currentUser
@@ -173,10 +141,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Ajustes", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = stringResource(id = R.string.close))
                     }
                 }
             )
@@ -187,114 +155,54 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // ☁️ BACKUP NA NUVEM
+            item { Spacer(Modifier.height(8.dp)) }
+
+            // 👤 SEÇÃO: MEU PERFIL
             item {
-                SectionHeader("BACKUP NA NUVEM")
+                SectionHeader(stringResource(id = R.string.onboarding_finish_title).uppercase())
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        if (currentUser != null) {
-                            Text(
-                                text = "Conectado como: ${currentUser.email}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        } else {
-                            Text(
-                                text = "Atenção: Você não está autenticado no Firebase.",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF3B30),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable { onEditProfile() }.padding(vertical = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(50.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(userName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text("Matrícula: $userMatricula", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                         }
 
-                        SettingsActionRow(
-                            icon = Icons.Outlined.CloudUpload,
-                            label = if (backingUp) "Fazendo backup..." else "Fazer Backup Agora"
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                        Text("Idioma do App", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            if (currentUser == null) {
-                                Toast.makeText(context, "Por favor, faça login novamente para ativar o backup.", Toast.LENGTH_LONG).show()
-                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().putBoolean("is_logged_in", false).apply()
-                                context.startActivity(Intent(context, LoginActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
-                                return@SettingsActionRow
-                            }
-
-                            if (!backingUp) {
-                                scope.launch {
-                                    backingUp = true
-                                    backupManager.backupData().onSuccess {
-                                        Toast.makeText(context, "Backup concluído com sucesso!", Toast.LENGTH_SHORT).show()
-                                    }.onFailure {
-                                        Toast.makeText(context, "Falha no backup: ${it.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                    backingUp = false
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-
-                        SettingsActionRow(
-                            icon = Icons.Outlined.CloudDownload,
-                            label = if (restoring) "Restaurando..." else "Restaurar Backup"
-                        ) {
-                            if (currentUser == null) {
-                                Toast.makeText(context, "Por favor, faça login para restaurar seus dados.", Toast.LENGTH_LONG).show()
-                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().putBoolean("is_logged_in", false).apply()
-                                context.startActivity(Intent(context, LoginActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
-                                return@SettingsActionRow
-                            }
-
-                            if (!restoring) {
-                                scope.launch {
-                                    restoring = true
-                                    backupManager.restoreData().onSuccess {
-                                        Toast.makeText(context, "Restauração concluída!", Toast.LENGTH_LONG).show()
-                                    }.onFailure {
-                                        Toast.makeText(context, "Falha na restauração: ${it.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                    restoring = false
-                                }
-                            }
+                            LanguageFlagItem(R.drawable.ic_flag_br, "Português") { changeAppLanguage("pt-BR") }
+                            LanguageFlagItem(R.drawable.ic_flag_ve, "Español") { changeAppLanguage("es-VE") }
                         }
                     }
                 }
             }
 
-            // 🔐 SEGURANÇA
+            // 🛠️ SEÇÃO: PREFERÊNCIAS E SEGURANÇA
             item {
-                SectionHeader("SEGURANÇA")
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsToggleRow(
-                            icon = Icons.Outlined.Lock,
-                            label = "Senha / Biometria",
-                            checked = appLockEnabled,
-                            onCheckedChange = { enabled ->
-                                appLockEnabled = enabled
-                                storage.setAppLockEnabled(enabled)
-                                if (enabled && !storage.hasPin()) {
-                                    Toast.makeText(context, "Configure um PIN no acesso inicial", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            // 🌙 APARÊNCIA
-            item {
-                SectionHeader("APARÊNCIA")
+                SectionHeader("PREFERÊNCIAS E SEGURANÇA")
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -307,40 +215,106 @@ fun SettingsScreen(
                             checked = isDarkTheme,
                             onCheckedChange = onToggleDarkMode
                         )
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsToggleRow(
+                            icon = Icons.Outlined.Lock,
+                            label = "Senha / Biometria ao Abrir",
+                            checked = appLockEnabled,
+                            onCheckedChange = { enabled ->
+                                appLockEnabled = enabled
+                                storage.setAppLockEnabled(enabled)
+                                if (enabled && !storage.hasPin()) {
+                                    Toast.makeText(context, "Configure seu PIN no acesso inicial", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
                     }
                 }
             }
 
-            // 👤 CONTA
+            // ☁️ SEÇÃO: DADOS E BACKUP
             item {
-                SectionHeader("CONTA")
+                SectionHeader("DADOS E BACKUP")
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsActionRow(icon = Icons.Outlined.Person, label = "Editar Meus Dados") { onEditProfile() }
-                        
-                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                        
-                        // 🗑️ APAGAR DADOS
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showDeleteConfirm = true }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        if (currentUser != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
+                                Icon(Icons.Outlined.CloudDone, null, tint = Color(0xFF34C759), modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Nuvem: ${currentUser.email}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+
+                        SettingsActionRow(
+                            icon = Icons.Outlined.CloudUpload,
+                            label = if (backingUp) "Fazendo backup..." else "Fazer Backup Agora",
+                            color = Color(0xFF007AFF)
                         ) {
-                            Icon(Icons.Outlined.DeleteForever, null, tint = Color(0xFFFF3B30), modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text("Apagar Todos os Dados", fontSize = 16.sp, color = Color(0xFFFF3B30), modifier = Modifier.weight(1f))
+                            if (currentUser == null) {
+                                Toast.makeText(context, "Faça login para ativar o backup.", Toast.LENGTH_LONG).show()
+                                return@SettingsActionRow
+                            }
+                            if (!backingUp) {
+                                scope.launch {
+                                    backingUp = true
+                                    backupManager.backupData().onSuccess {
+                                        Toast.makeText(context, "Backup concluído!", Toast.LENGTH_SHORT).show()
+                                    }.onFailure {
+                                        Toast.makeText(context, "Falha: ${it.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                    backingUp = false
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                        SettingsActionRow(
+                            icon = Icons.Outlined.CloudDownload,
+                            label = if (restoring) "Restaurando..." else "Restaurar da Nuvem",
+                            color = Color(0xFF5856D6)
+                        ) {
+                            if (currentUser == null) {
+                                Toast.makeText(context, "Faça login para restaurar dados.", Toast.LENGTH_LONG).show()
+                                return@SettingsActionRow
+                            }
+                            if (!restoring) {
+                                scope.launch {
+                                    restoring = true
+                                    backupManager.restoreData().onSuccess {
+                                        Toast.makeText(context, "Restauração concluída!", Toast.LENGTH_LONG).show()
+                                    }.onFailure {
+                                        Toast.makeText(context, "Falha: ${it.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                    restoring = false
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // ℹ️ SOBRE
+            // ⚠️ SEÇÃO: CONTA E LIMPEZA
+            item {
+                SectionHeader("CONTA E LIMPEZA")
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SettingsActionRow(Icons.Outlined.Logout, "Sair da Conta", MaterialTheme.colorScheme.primary) { showLogoutConfirm = true }
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsActionRow(Icons.Outlined.DeleteForever, "Apagar Todos os Dados", Color(0xFFFF3B30)) { showDeleteConfirm = true }
+                    }
+                }
+            }
+
+            // ℹ️ SEÇÃO: SOBRE
             item {
                 SectionHeader("SOBRE")
                 Surface(
@@ -353,83 +327,88 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 versionTapCount++
                                 if (versionTapCount >= 7) { versionTapCount = 0; showEasterEgg = true }
-                            }.padding(vertical = 4.dp),
+                            }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Versão do App", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                                Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Versão", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             }
                         }
-                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                        SettingsActionRow(Icons.Outlined.Code, "Código Fonte (GitHub)") {
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsActionRow(Icons.Outlined.Code, "Código Fonte (GitHub)", Color(0xFF8E8E93)) {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Jacker-s/MeuHolerite")))
                         }
                     }
                 }
             }
+            
+            item { Spacer(Modifier.height(32.dp)) }
+        }
+    }
 
-            // ⚙️ SISTEMA
-            item {
-                SectionHeader("SISTEMA")
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            title = { Text("Sair da Conta?", fontWeight = FontWeight.Bold) },
+            text = { Text("Isso removerá seu acesso e limpará os arquivos salvos localmente (PDFs, banco de dados e cookies). Certifique-se de ter feito backup na nuvem.") },
+            confirmButton = {
                 Button(
                     onClick = {
                         scope.launch {
-                            checking = true
-                            updateManager.checkForUpdates(
-                                currentVersion = currentVersion,
-                                onUpdateAvailable = onUpdateAvailable,
-                                onNoUpdate = { Toast.makeText(context, "Você já está na versão mais recente.", Toast.LENGTH_SHORT).show() },
-                                onError = { Toast.makeText(context, "Erro ao verificar atualizações.", Toast.LENGTH_SHORT).show() }
-                            )
-                            checking = false
+                            withContext(Dispatchers.IO) {
+                                val db = AppDatabase.getDatabase(context)
+                                db.clearAllTables()
+                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+                                val pdfDir = File(context.filesDir, "pdfs")
+                                if (pdfDir.exists()) pdfDir.deleteRecursively()
+                                withContext(Dispatchers.Main) {
+                                    CookieManager.getInstance().removeAllCookies(null)
+                                    CookieManager.getInstance().flush()
+                                }
+                                FirebaseAuth.getInstance().signOut()
+                            }
+                            showLogoutConfirm = false
+                            val intent = Intent(context, LoginActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            context.startActivity(intent)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = !checking,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
-                ) {
-                    if (checking) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                    else Text("Verificar Atualizações", fontWeight = FontWeight.Bold)
-                }
-            }
-            item { Spacer(Modifier.height(32.dp)) }
-        }
+                    }
+                ) { Text("Sair e Limpar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancelar") }
+            },
+            shape = RoundedCornerShape(22.dp)
+        )
     }
 
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Apagar todos os dados?", fontWeight = FontWeight.Bold) },
-            text = { Text("Isso removerá permanentemente todos os holerites, pontos e configurações locais. Os dados na nuvem (backup) não serão afetados.") },
+            text = { Text("Isso removerá permanentemente todos os holerites, pontos e configurações locais, além do seu backup na nuvem.") },
             confirmButton = {
                 Button(
                     onClick = {
                         scope.launch {
+                            backupManager.deleteBackup()
                             withContext(Dispatchers.IO) {
-                                // 1. Limpar Banco de Dados
                                 val db = AppDatabase.getDatabase(context)
                                 db.clearAllTables()
-                                
-                                // 2. Limpar SharedPreferences
                                 context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().clear().apply()
                                 context.getSharedPreferences("meu_holerite_prefs", Context.MODE_PRIVATE).edit().clear().apply()
-                                
-                                // 3. Limpar Cookies
-                                CookieManager.getInstance().removeAllCookies(null)
-                                CookieManager.getInstance().flush()
-                                
-                                // 4. Logout Firebase (opcional, mas recomendado para limpeza total)
+                                val pdfDir = File(context.filesDir, "pdfs")
+                                if (pdfDir.exists()) pdfDir.deleteRecursively()
+                                withContext(Dispatchers.Main) {
+                                    CookieManager.getInstance().removeAllCookies(null)
+                                    CookieManager.getInstance().flush()
+                                }
                                 FirebaseAuth.getInstance().signOut()
                             }
-                            
                             showDeleteConfirm = false
-                            Toast.makeText(context, "Todos os dados foram apagados.", Toast.LENGTH_LONG).show()
-                            
-                            // Reiniciar o App para a tela de Login
                             val intent = Intent(context, LoginActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             context.startActivity(intent)
@@ -456,13 +435,45 @@ fun SettingsScreen(
 }
 
 @Composable
-fun SettingsActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+fun LanguageFlagItem(resId: Int, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Surface(
+            modifier = Modifier.size(48.dp).clip(CircleShape),
+            shape = CircleShape,
+            tonalElevation = 1.dp,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+        ) {
+            Image(
+                painter = painterResource(id = resId),
+                contentDescription = label,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+private fun changeAppLanguage(languageCode: String) {
+    val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(languageCode)
+    AppCompatDelegate.setApplicationLocales(appLocale)
+}
+
+@Composable
+fun SettingsActionRow(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(12.dp))
+        Box(modifier = Modifier.size(32.dp).background(color.copy(alpha = 0.1f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(16.dp))
         Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
         Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
     }
@@ -471,10 +482,12 @@ fun SettingsActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
 @Composable
 fun SettingsToggleRow(icon: ImageVector, label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(12.dp))
+        Box(modifier = Modifier.size(32.dp).background(Color(0xFF007AFF).copy(alpha = 0.1f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = Color(0xFF007AFF), modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(16.dp))
         Text(label, fontSize = 16.sp, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
         Switch(
             checked = checked,

@@ -5,22 +5,30 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.LocaleListCompat
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -35,7 +43,7 @@ import com.jack.meuholerite.utils.BackupManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class LoginActivity : ComponentActivity() {
+class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +51,6 @@ class LoginActivity : ComponentActivity() {
         val auth = FirebaseAuth.getInstance()
         val prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         
-        // Verifica se está logado tanto no Prefs quanto no Firebase
         if (prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
@@ -87,6 +94,26 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LanguageFlag(
+                    resId = R.drawable.ic_flag_br,
+                    contentDescription = "Português",
+                    onClick = { changeLanguage("pt-BR") }
+                )
+                Spacer(modifier = Modifier.width(24.dp))
+                LanguageFlag(
+                    resId = R.drawable.ic_flag_ve,
+                    contentDescription = "Español",
+                    onClick = { changeLanguage("es-VE") }
+                )
+            }
+
             Icon(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = null,
@@ -97,7 +124,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Bem-vindo ao\nMeu Holerite",
+                text = stringResource(id = R.string.onboarding_welcome_title),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -107,7 +134,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Acesse seus holerites e banco de horas de forma simples e segura.",
+                text = stringResource(id = R.string.onboarding_welcome_desc),
                 fontSize = 16.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -139,10 +166,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
 
                                 val email = handleGoogleCredentialWithFirebase(result.credential)
-                                
-                                // Restauração automática após login bem-sucedido
                                 backupManager.restoreData()
-
                                 onLoginSuccess(email)
 
                             } catch (e: GetCredentialException) {
@@ -185,6 +209,32 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     }
 }
 
+@Composable
+fun LanguageFlag(resId: Int, contentDescription: String, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        shape = CircleShape,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+    ) {
+        Image(
+            painter = painterResource(id = resId),
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+private fun changeLanguage(languageCode: String) {
+    val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(languageCode)
+    AppCompatDelegate.setApplicationLocales(appLocale)
+}
+
 private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): String {
     val googleIdTokenCredential = when (credential) {
         is CustomCredential -> {
@@ -200,7 +250,6 @@ private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): 
     }
 
     val idToken = googleIdTokenCredential.idToken
-
     val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
     val authResult = FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
     val user = authResult.user ?: throw IllegalStateException("Falha ao obter usuário do Firebase.")

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.MeuHolerite" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Alterado para herdar de Theme.AppCompat para compatibilidade com AppCompatActivity e troca de idiomas -->
+    <style name="Theme.MeuHolerite" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>

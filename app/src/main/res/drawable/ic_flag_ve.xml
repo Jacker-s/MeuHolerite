@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M0,0h24v8H0z" />
+    <path
+        android:fillColor="#003893"
+        android:pathData="M0,8h24v8H0z" />
+    <path
+        android:fillColor="#CE1126"
+        android:pathData="M0,16h24v8H0z" />
+    <!-- Simplificação das estrelas para o ícone pequeno -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,10.5l0.3,0.8h0.9l-0.7,0.5l0.3,0.8l-0.8,-0.5l-0.8,0.5l0.3,-0.8l-0.7,-0.5h0.9z" />
+</vector>

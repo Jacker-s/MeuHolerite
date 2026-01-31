@@ -38,7 +38,7 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 15
+        versionCode = 17
         versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
