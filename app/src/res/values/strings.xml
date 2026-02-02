@@ -1,0 +1,195 @@
+<resources>
+    <string name="app_name">Meu Holerite</string>
+    <string name="home">Início</string>
+    <string name="summary">Resumo</string>
+    <string name="history">Histórico</string>
+    <string name="timesheet">Ponto</string>
+    <string name="language">Idioma</string>
+    <string name="select_pdf">Selecione um PDF</string>
+    <string name="import_new_pdf">Importar Novo PDF</string>
+    <string name="bank_hours">BANCO DE HORAS</string>
+    <string name="bank_balance">Saldo Banco de Horas</string>
+    <string name="import_another_period">Importar Outro Período</string>
+    <string name="saved_periods">Períodos salvos no dispositivo</string>
+    <string name="no_periods_saved">Nenhum período salvo ainda.</string>
+    <string name="open_epays">Abrir ePays</string>
+    <string name="epays_label">ePays</string>
+    <string name="receipts">Recibos</string>
+    <string name="no_receipts_saved">Nenhum recibo salvo ainda.</string>
+    <string name="net_pay">Líquido a Receber</string>
+    <string name="earnings">Proventos</string>
+    <string name="deductions">Descontos</string>
+    <string name="alelo">Alelo</string>
+
+    <!-- Configurações -->
+    <string name="settings_title">Ajustes</string>
+    <string name="dark_mode">Modo Escuro</string>
+    <string name="app_lock">Senha / Biometria</string>
+    <string name="backup_section">DADOS E BACKUP</string>
+    <string name="account_section">CONTA E LIMPEZA</string>
+    <string name="logout">Sair da Conta</string>
+    <string name="delete_data">Apagar Todos os Dados</string>
+    <string name="logout_confirm">Deseja realmente sair e limpar os dados locais?</string>
+    <string name="delete_confirm">Isso apagará permanentemente todos os seus dados. Continuar?</string>
+    <string name="portuguese">Português</string>
+    <string name="spanish">Español</string>
+    <string name="profile_photo">Foto do Perfil</string>
+    <string name="app_language">Idioma do App</string>
+    <string name="preferences_security">PREFERÊNCIAS E SEGURANÇA</string>
+
+    <!-- Google Login -->
+    <string name="default_web_client_id">YOUR_CLIENT_ID_HERE.apps.googleusercontent.com</string>
+
+    <!-- Rótulos do PDF -->
+    <string name="label_worked_hours">Horas Trabalhadas</string>
+    <string name="label_night_allowance">Adicional Noturno</string>
+    <string name="label_interval_delay">Atraso no Intervalo</string>
+    <string name="label_early_departure">Saída Antecipada</string>
+    <string name="label_extra_hours_50">Horas Extras 50%</string>
+    <string name="label_extra_hours_100">Horas Extras 100%</string>
+    <string name="label_excused_absence">Horas Abonadas</string>
+    <string name="label_absences">Faltas</string>
+    <string name="label_previous_balance">Saldo Anterior</string>
+    <string name="label_period_balance">Saldo do Período</string>
+    <string name="label_unknown">Desconhecido</string>
+    <string name="label_work_schedule">Jornada de Trabalho</string>
+    <string name="label_standard_schedule">Escala de Trabalho</string>
+
+    <!-- Descrições de Ponto Detalhadas -->
+    <string name="desc_ponto_total_trabalhadas">Soma de todas as horas registradas nas batidas do seu ponto durante o período. Este é o total bruto de tempo em que você esteve na empresa.</string>
+    <string name="desc_ponto_total_debitos">Soma de todas as horas negativas registradas, incluindo atrasos, saídas antecipadas ou faltas não justificadas. Este valor é subtraído do seu saldo.</string>
+    <string name="desc_ponto_credito_he">Total de horas extras trabalhadas que foram adicionadas ao seu Banco de Horas (B.H.) no período, com o respectivo adicional (50% ou 100%).</string>
+    <string name="desc_ponto_saldo_anterior">O total de horas extras ou negativas que você acumulou até o final do período anterior. Este saldo é a base para o cálculo do saldo final do mês.</string>
+    <string name="desc_ponto_saldo_final">O saldo final consolidado do seu Banco de Horas no final do período. Se positivo (+), são horas a seu crédito; se negativo (-), são horas que você deve compensar.</string>
+    <string name="desc_ponto_horas_abonadas">Horas de ausência que foram compensadas ou justificadas por meio de atestado ou acordo. Estas horas não geram desconto ou acúmulo negativo no B.H.</string>
+    <string name="desc_ponto_horas_noturnas">Compensação paga por horas trabalhadas entre 22:00 e 05:00. Cada hora noturna é computada com redução, resultando em mais tempo no cálculo final.</string>
+    <string name="desc_ponto_default">Esta é uma informação detalhada do seu espelho de ponto para ajudar você a entender melhor seu banco de horas.</string>
+    <string name="desc_ponto_saida_antecipada">Tempo referente a encerramento da jornada antes do horário contratual previsto.</string>
+    <string name="desc_ponto_atraso_intervalo">Tempo de intervalo para descanso e refeição que não foi totalmente cumprido ou foi iniciado com atraso.</string>
+    <string name="desc_ponto_faltas">Horas não trabalhadas decorrentes de ausências. Podem ser descontadas diretamente ou debitadas do seu saldo de banco de horas.</string>
+    <string name="desc_ponto_saldo_periodo">O saldo de horas gerado exclusivamente dentro deste mês de apuração.</string>
+    <string name="desc_ponto_jornada">Seu horário contratual planejado, incluindo entradas, saídas e intervalos conforme registrado no sistema da empresa.</string>
+
+    <!-- Descrições de Itens de Holerite -->
+    <string name="desc_item_salario">Seu salário base mensal registrado em contrato.</string>
+    <string name="desc_item_hora_extra">Pagamento pelas horas trabalhadas além da sua jornada normal.</string>
+    <string name="desc_item_adicional_noturno">Compensação financeira para quem trabalha entre as 22h e 5h.</string>
+    <string name="desc_item_ferias">Pagamento referente ao seu período de descanso anual.</string>
+    <string name="desc_item_13o">Décimo Terceiro Salário (13º).</string>
+    <string name="desc_item_periculosidade">Adicional de 30% pago a profissionais expostos a riscos.</string>
+    <string name="desc_item_insalubridade">Adicional pago por exposição a agentes nocivos à saúde.</string>
+    <string name="desc_item_dsr">Descanso Semanal Remunerado.</string>
+    <string name="desc_item_premio">Valor extra pago como reconhecimento por desempenho.</string>
+    <string name="desc_item_beneficio">Benefício ou ajuda de custo paga pela empresa.</string>
+    <string name="desc_item_provento_default">Provento que compõe seu salário bruto.</string>
+
+    <string name="desc_item_inss">Contribuição obrigatória para a Previdência Social.</string>
+    <string name="desc_item_irrf">Imposto de Renda Retido na Fonte.</string>
+    <string name="desc_item_vt">Coparticipação no benefício de transporte.</string>
+    <string name="desc_item_vr">Desconto referente ao custo de refeição ou alimentação.</string>
+    <string name="desc_item_saude">Coparticipação em plano de saúde ou odontológico.</string>
+    <string name="desc_item_sindicato">Contribuição voltada ao sindicato da categoria.</string>
+    <string name="desc_item_falta">Desconto por ausência não justificada.</string>
+    <string name="desc_item_atraso">Desconto por atraso no horário de entrada.</string>
+    <string name="desc_item_emprestimo">Parcela de empréstimo descontada em folha.</string>
+    <string name="desc_item_adiantamento">Valor pago antecipadamente no mês.</string>
+    <string name="desc_item_desconto_default">Desconto específico da sua folha de pagamento.</string>
+
+    <!-- Avisos -->
+    <string name="warning_absences">Atenção: Foram detectadas faltas neste período. Verifique seu espelho de ponto detalhado.</string>
+
+    <!-- Sobre -->
+    <string name="about_title">Sobre o Aplicativo</string>
+    <string name="developer_label">Desenvolvedor</string>
+    <string name="developer_name">Jackson silva</string>
+    <string name="developer_phone">14991717549</string>
+    <string name="developer_email">ssj53415170@gmail.com</string>
+    <string name="version_label">Versão</string>
+    <string name="version_value">2.1.6</string>
+    <string name="close">Fechar</string>
+    <string name="suggestions_label">Sugestões</string>
+    <string name="suggestions_email">jacksonsu.silva@gmail.com</string>
+    <string name="suggestions_subject">Sugestão - Meu Holerite</string>
+    <string name="source_code_label">Código Fonte no GitHub</string>
+    <string name="github_url">https://github.com/Jacker-s/MeuHolerite</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bem-vindo ao Meu Holerite</string>
+    <string name="onboarding_welcome_desc">Sua ferramenta completa para gerenciar pontos e recibos de forma simples e privada.</string>
+    <string name="onboarding_import_title">Importação Integrada</string>
+    <string name="onboarding_import_desc">Acesse o portal ePays diretamente pelo app. Ao baixar um PDF de Holerite ou Ponto, nós o importamos automaticamente para você.</string>
+    <string name="onboarding_receipts_title">Seu Dinheiro no Detalhe</string>
+    <string name="onboarding_receipts_desc">Visualize seus proventos e descontos de forma clara. Saiba exatamente quanto vai receber com gráficos e resumos intuitivos.</string>
+    <string name="onboarding_ponto_title">Controle de Horas</string>
+    <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos automáticos sobre faltas detectadas no período.</string>
+    <string name="onboarding_privacy_title">Privacidade Total</string>
+    <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processcedo e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
+    <string name="onboarding_finish_title">Pronto para Começar!</string>
+    <string name="onboarding_finish_desc">Aproveite todas as funcionalidades do Meu Holerite de forma gratuita e segura.</string>
+    <string name="next">Próximo</string>
+    <string name="start">Começar</string>
+    <string name="phone_label">Telefone</string>
+    <string name="email_label">E-mail</string>
+    <string name="help_developer">Ajude o Desenvolvedor</string>
+    <string name="check_updates">Verificar Atualizações</string>
+    <string name="new_version_available">Nova versão v%1$s</string>
+    <string name="whats_new">O que há de novo:</string>
+    <string name="update_now">Atualizar Agora</string>
+    <string name="thanks_support">Obrigado pelo Apoio!</string>
+    <string name="ad_help_desc">Visualizar este anúncio ajuda a manter o aplicativo gratuito.</string>
+    <string name="very_thanks">Muito obrigado!</string>
+    <string name="support_fundamental">Seu apoio é fundamental para continuarmos melhorando o app.</string>
+    <string name="loading_ad">Carregando anúncio...</string>
+    <string name="ad_thanks_toast">Obrigado por assistir! Seu apoio ajuda muito.</string>
+
+    <!-- MainActivity UI -->
+    <string name="greeting_morning">Bom dia,</string>
+    <string name="greeting_afternoon">Boa tarde,</string>
+    <string name="greeting_evening">Boa noite,</string>
+    <string name="welcome_user">Bem-vindo</string>
+    <string name="user_label">Usuário</string>
+    <string name="matricula_label">Matrícula</string>
+    <string name="edit_data">Editar Meus Dados</string>
+    <string name="about_app">Sobre a App</string>
+    <string name="absence_alerts">Avisos de Falta</string>
+    <string name="absence_alerts_desc">Notificações de faltas detectadas no espelho de ponto</string>
+    <string name="absences_detected">Faltas Detectadas</string>
+    <string name="absences_detected_msg">Foram detectadas %1$d faltas no período %2$s.</string>
+    <string name="notification_denied">Permissão de notificação negada. Você não receberá avisos de falta.</string>
+    <string name="pdf_not_available">Arquivo PDF não disponível</string>
+    <string name="file_not_found">Arquivo não encontrado</string>
+    <string name="open_pdf_with">Abrir PDF com...</string>
+    <string name="no_pdf_app">Nenhum aplicativo encontrado para abrir PDF</string>
+    <string name="version_up_to_date">Versão atualizada!</string>
+    <string name="update_error">Erro na atualização</string>
+    <string name="import_ponto_success">Espelho de ponto importado!</string>
+    <string name="import_recibo_success">Recibo de pagamento importado!</string>
+    <string name="pdf_not_identified">PDF não identificado. Verifique se é um espelho ou recibo.</string>
+    <string name="new_update_title">Nova Atualização Disponível</string>
+    <string name="new_update_msg">Uma nova versão (v%1$s) está disponível para download. Deseja atualizar agora?</string>
+    <string name="update">Atualizar</string>
+    <string name="later">Depois</string>
+    <string name="highlights">DESTAQUES</string>
+    <string name="last_receipt">Último Holerite</string>
+    <string name="bank_hours_label">Banco de Horas</string>
+    <string name="other_deductions">Outros Descontos</string>
+    <string name="import_data">Importe seus dados</string>
+    <string name="use_epays_tab">Use a aba ePays para Começar</string>
+    <string name="net_pay_label">Líquido a Receber</string>
+    <string name="import_receipt">Importe um recibo</string>
+    <string name="current_balance">Saldo Atual</string>
+    <string name="import_timesheet">Importe um espelho de ponto</string>
+    <string name="loan">EMPRÉSTIMO</string>
+    <string name="social_security">INSS</string>
+    <string name="additional_deduction">Dedução Adicional</string>
+    <string name="no_deductions">Sem Descontos</string>
+    <string name="no_deductions_desc">Este recibo não possui descontos detalhados.</string>
+    <string name="import_receipt_desc">Importe um recibo para visualizar os detalhes</string>
+    <string name="worked">TRABALHADAS</string>
+    <string name="period_balance">SALDO PERÍODO</string>
+    <string name="full_name">Nome Completo</string>
+    <string name="no_connection">Sem Conexão</string>
+    <string name="connection_error_desc">Não foi possível carregar o portal. Verifique sua internet.</string>
+    <string name="try_again">Tentar Novamente</string>
+    <string name="work_schedule">JORNADA</string>
+</resources>
