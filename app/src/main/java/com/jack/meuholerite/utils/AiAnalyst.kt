@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 class AiAnalyst(private val context: Context) {
     
     // API Key configurada para o Gemini
-    private val apiKey = "AIzaSyBsB_dd0P7MR03OPF3hbVa5scBXleJpzOE" 
+    private val apiKey = " SUA API KEY DO GEMINI AQUI" 
     
     private val generativeModel = GenerativeModel(
         modelName = "gemini-2.5-flash",
