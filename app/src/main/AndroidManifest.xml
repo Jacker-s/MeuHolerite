@@ -64,10 +64,50 @@
                 <data android:scheme="file" />
                 <data android:mimeType="application/pdf" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
         </activity>
 
         <activity
+            android:name=".RecibosActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
             android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".EpaysActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".PontoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".VacationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".ThirteenthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".ResignationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".FgtsActivity"
             android:exported="false"
             android:theme="@style/Theme.MeuHolerite" />
 

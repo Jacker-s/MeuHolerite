@@ -13,6 +13,7 @@
     <string name="saved_periods">Períodos salvos no dispositivo</string>
     <string name="no_periods_saved">Nenhum período salvo ainda.</string>
     <string name="open_epays">Abrir ePays</string>
+    <string name="epays_label">ePays</string>
     <string name="receipts">Recibos</string>
     <string name="no_receipts_saved">Nenhum recibo salvo ainda.</string>
     <string name="net_pay">Líquido a Receber</string>
@@ -28,13 +29,29 @@
     <string name="account_section">CONTA E LIMPEZA</string>
     <string name="logout">Sair da Conta</string>
     <string name="delete_data">Apagar Todos os Dados</string>
-    <string name="logout_confirm">Deseja realmente sair e limpar os dados locais?</string>
-    <string name="delete_confirm">Isso apagará permanentemente todos os seus dados. Continuar?</string>
+    <string name="logout_confirm">Isso removerá seu acesso e limpará os arquivos salvos localmente (PDFs, banco de dados e cookies). Certifique-se de ter feito backup na nuvem.</string>
+    <string name="delete_confirm">Isso removerá permanentemente todos os holerites, pontos e configurações locais, além do seu backup na nuvem.</string>
     <string name="portuguese">Português</string>
     <string name="spanish">Español</string>
     <string name="profile_photo">Foto do Perfil</string>
     <string name="app_language">Idioma do App</string>
     <string name="preferences_security">PREFERÊNCIAS E SEGURANÇA</string>
+    <string name="profile_section">MEU PERFIL</string>
+    <string name="backup_now">Fazer Backup Agora</string>
+    <string name="backing_up">Fazendo backup...</string>
+    <string name="restore_cloud">Restaurar da Nuvem</string>
+    <string name="restoring">Restaurando...</string>
+    <string name="logout_confirm_title">Sair da Conta?</string>
+    <string name="delete_confirm_title">Apagar todos os dados?</string>
+    <string name="source_code_github">Código Fonte (GitHub)</string>
+    <string name="backup_needed_toast">Faça login para ativar o backup.</string>
+    <string name="restore_needed_toast">Faça login para restaurar dados.</string>
+    <string name="backup_success_toast">Backup concluído!</string>
+    <string name="restore_success_toast">Restauração concluída!</string>
+    <string name="pin_toast">Configure seu PIN no acesso inicial</string>
+    <string name="about_section">SOBRE</string>
+    <string name="exit_and_clear">Sair e Limpar</string>
+    <string name="delete_all">Apagar Tudo</string>
 
     <!-- Google Login -->
     <string name="default_web_client_id">YOUR_CLIENT_ID_HERE.apps.googleusercontent.com</string>
@@ -51,6 +68,8 @@
     <string name="label_previous_balance">Saldo Anterior</string>
     <string name="label_period_balance">Saldo do Período</string>
     <string name="label_unknown">Desconhecido</string>
+    <string name="label_work_schedule">Jornada de Trabalho</string>
+    <string name="label_standard_schedule">Horário Padronizado</string>
 
     <!-- Descrições de Ponto Detalhadas -->
     <string name="desc_ponto_total_trabalhadas">Soma de todas as horas registradas nas batidas do seu ponto durante o período. Este é o total bruto de tempo em que você esteve na empresa.</string>
@@ -65,31 +84,32 @@
     <string name="desc_ponto_atraso_intervalo">Tempo de intervalo para descanso e refeição que não foi totalmente cumprido ou foi iniciado com atraso.</string>
     <string name="desc_ponto_faltas">Horas não trabalhadas decorrentes de ausências. Podem ser descontadas diretamente ou debitadas do seu saldo de banco de horas.</string>
     <string name="desc_ponto_saldo_periodo">O saldo de horas gerado exclusivamente dentro deste mês de apuração.</string>
+    <string name="desc_ponto_jornada">Seu horário contratual planejado, incluindo entradas, saídas e intervalos conforme registrado no sistema da empresa.</string>
 
     <!-- Descrições de Itens de Holerite -->
-    <string name="desc_item_salario">Seu salário base mensal registrado em contrato.</string>
-    <string name="desc_item_hora_extra">Pagamento pelas horas trabalhadas além da sua jornada normal.</string>
-    <string name="desc_item_adicional_noturno">Compensação financeira para quem trabalha entre as 22h e 5h.</string>
-    <string name="desc_item_ferias">Pagamento referente ao seu período de descanso anual.</string>
-    <string name="desc_item_13o">Décimo Terceiro Salário (13º).</string>
-    <string name="desc_item_periculosidade">Adicional de 30% pago a profissionais expostos a riscos.</string>
-    <string name="desc_item_insalubridade">Adicional pago por exposição a agentes nocivos à saúde.</string>
-    <string name="desc_item_dsr">Descanso Semanal Remunerado.</string>
-    <string name="desc_item_premio">Valor extra pago como reconhecimento por desempenho.</string>
+    <string name="desc_item_salario">Seu salário base mensal registrado em contrato, proporcional aos dias trabalhados no mês.</string>
+    <string name="desc_item_hora_extra">Pagamento pelas horas trabalhadas além da sua jornada normal. Geralmente com adicional de 50% ou 100%.</string>
+    <string name="desc_item_adicional_noturno">Compensação financeira para quem trabalha entre as 22h e 5h, devido ao desgaste maior do trabalho noturno.</string>
+    <string name="desc_item_ferias">Pagamento referente ao seu período de descanso anual, incluindo o adicional de 1/3 constitucional.</string>
+    <string name="desc_item_13o">Décimo Terceiro Salário (13º), uma gratificação de Natal paga em uma ou duas parcelas ao final do ano.</string>
+    <string name="desc_item_periculosidade">Adicional de 30% sobre o salário-base, pago a profissionais expostos a atividades de risco.</string>
+    <string name="desc_item_insalubridade">Adicional pago a trabalhadores expostos a agentes nocivos à saúde.</string>
+    <string name="desc_item_dsr">Descanso Semanal Remunerado. Pagamento referente ao domingo ou feriado.</string>
+    <string name="desc_item_premio">Valor extra pago como reconhecimento por metas atingidas ou desempenho excepcional.</string>
     <string name="desc_item_beneficio">Benefício ou ajuda de custo paga pela empresa.</string>
-    <string name="desc_item_provento_default">Provento que compõe seu salário bruto.</string>
+    <string name="desc_item_provento_default">Este é um provento (ganho) que compõe seu salário bruto.</string>
 
-    <string name="desc_item_inss">Contribuição obrigatória para a Previdência Social.</string>
-    <string name="desc_item_irrf">Imposto de Renda Retido na Fonte.</string>
-    <string name="desc_item_vt">Coparticipação no benefício de transporte.</string>
-    <string name="desc_item_vr">Desconto referente ao custo de refeição ou alimentação.</string>
-    <string name="desc_item_saude">Coparticipação em plano de saúde ou odontológico.</string>
-    <string name="desc_item_sindicato">Contribuição voltada ao sindicato da categoria.</string>
-    <string name="desc_item_falta">Desconto por ausência não justificada.</string>
-    <string name="desc_item_atraso">Desconto por atraso no horário de entrada.</string>
-    <string name="desc_item_emprestimo">Parcela de empréstimo descontada em folha.</string>
-    <string name="desc_item_adiantamento">Valor pago antecipadamente no mês.</string>
-    <string name="desc_item_desconto_default">Desconto específico da sua folha de pagamento.</string>
+    <string name="desc_item_inss">Contribuição obrigatória para a Previdência Social. Garante sua aposentadoria e auxílio-doença.</string>
+    <string name="desc_item_irrf">Imposto de Renda Retido na Fonte. É o imposto pago ao Governo Federal sobre o que você ganha.</string>
+    <string name="desc_item_vt">Sua coparticipação no benefício de transporte fornecido pela empresa.</string>
+    <string name="desc_item_vr">Desconto referente à sua parte no custo dos cartões de refeição ou alimentação.</string>
+    <string name="desc_item_saude">Coparticipação ou mensalidade do seu plano de saúde ou odontológico.</string>
+    <string name="desc_item_sindicato">Contribuição voltada ao sindicato da sua categoria.</string>
+    <string name="desc_item_falta">Desconto referente a dias ou horas de ausência não justificadas.</string>
+    <string name="desc_item_atraso">Desconto pelo tempo em que você chegou após o horário de entrada.</string>
+    <string name="desc_item_emprestimo">Pagamento de parcela de Empréstimo Consignado.</string>
+    <string name="desc_item_adiantamento">Valor de adiantamento salarial (vale) pago antecipadamente no mês.</string>
+    <string name="desc_item_desconto_default">Este é um desconto específico da sua folha de pagamento.</string>
 
     <!-- Avisos -->
     <string name="warning_absences">Atenção: Foram detectadas faltas neste período. Verifique seu espelho de ponto detalhado.</string>
@@ -120,8 +140,8 @@
     <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos automáticos sobre faltas detectadas no período.</string>
     <string name="onboarding_privacy_title">Privacidade Total</string>
     <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processcedo e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
-    <string name="onboarding_finish_title">Vamos Começar?</string>
-    <string name="onboarding_finish_desc">Informe seu nome e matrícula para personalizar seus relatórios e widgets.</string>
+    <string name="onboarding_finish_title">Pronto para Começar!</string>
+    <string name="onboarding_finish_desc">Aproveite todas as funcionalidades do Meu Holerite de forma gratuita e segura.</string>
     <string name="next">Próximo</string>
     <string name="start">Começar</string>
     <string name="phone_label">Telefone</string>
@@ -171,7 +191,7 @@
     <string name="other_deductions">Outros Descontos</string>
     <string name="import_data">Importe seus dados</string>
     <string name="use_epays_tab">Use a aba ePays para Começar</string>
-    <string name="net_pay_label">Líquido a Receber</string>
+    <string name="net_pay_label">Líquido a receber</string>
     <string name="import_receipt">Importe um recibo</string>
     <string name="current_balance">Saldo Atual</string>
     <string name="import_timesheet">Importe um espelho de ponto</string>
@@ -181,10 +201,55 @@
     <string name="no_deductions">Sem Descontos</string>
     <string name="no_deductions_desc">Este recibo não possui descontos detalhados.</string>
     <string name="import_receipt_desc">Importe um recibo para visualizar os detalhes</string>
-    <string name="worked">TRABAJADAS</string>
+    <string name="worked">TRABALHADAS</string>
     <string name="period_balance">SALDO PERÍODO</string>
     <string name="full_name">Nome Completo</string>
     <string name="no_connection">Sem Conexão</string>
     <string name="connection_error_desc">Não foi possível carregar o portal. Verifique sua internet.</string>
     <string name="try_again">Tentar Novamente</string>
+    <string name="work_schedule">JORNADA</string>
+    <string name="understood">Entendido</string>
+    <string name="salary_evolution">Evolução Salarial</string>
+    <string name="no_chart_data">Nenhum dado disponível para o gráfico.</string>
+    <string name="chart_basis">Baseado nos últimos %1$d meses importados.</string>
+    <string name="main_deductions">Principais Descontos</string>
+    <string name="greeting_generic">Olá,</string>
+    <string name="save">Salvar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="what_is_earning">O que é este ganho?</string>
+    <string name="what_is_deduction">O que é este desconto?</string>
+    <string name="value_label">Valor: %1$s</string>
+    <string name="reference_label">Referência: %1$s</string>
+    <string name="absences_in_period">FALTAS NO PERÍODO</string>
+    <string name="matricula_placeholder">Matrícula: %1$s</string>
+    <string name="current_balance_label">SALDO ATUAL</string>
+    <string name="worked_label">TRABALHADAS</string>
+    <string name="credit_he_label">CRÉDITO H.E.</string>
+    <string name="what_item_means">O que este item significa?</string>
+    <string name="desc_ponto_saldo_anterior_bh">O total de horas extras ou negativas que você acumulou até o final do período anterior. Este saldo é a base para o cálculo do saldo final do mês.</string>
+    <string name="desc_ponto_total_debitos_bh">Soma de todas as horas negativas registradas, incluindo atrasos, saídas antecipadas ou faltas não justificadas. Este valor é subtraído do seu saldo.</string>
+    <string name="pdf_file_not_found">Arquivo PDF não encontrado</string>
+    <string name="physical_file_missing">O arquivo físico não existe no armazenamento</string>
+    <string name="export_receipt_chooser">Exportar Holerite</string>
+    <string name="export_timesheet_chooser">Exportar Espelho de Ponto</string>
+    <string name="export_pdf_error">Erro ao exportar PDF: %1$s</string>
+    <string name="net_value_label">Líquido: %1$s</string>
+    <string name="timesheet_history">Histórico de Pontos</string>
+    <string name="balance_label">Saldo: %1$s</string>
+    <string name="back">Voltar</string>
+    <string name="export_pdf">Exportar PDF</string>
+    <string name="edit_profile">Editar Meus Dados</string>
+    <string name="ponto_history_title">Histórico de Pontos</string>
+    <string name="what_item_means_desc">O que este item significa?</string>
+
+    <!-- Férias -->
+    <string name="vacation_management">Gestão de Férias</string>
+    <string name="admission_date_label">Data de Admissão</string>
+    <string name="tap_to_select">Toque para selecionar</string>
+    <string name="vacation_summary">Resumo de Férias</string>
+    <string name="accrued_days">Dias Acumulados</string>
+    <string name="deadline_title">Data Limite</string>
+    <string name="financial_projection">Projeção Financeira</string>
+    <string name="one_third_vacation">1/3 de Férias</string>
+    <string name="select_admission_instruction">Selecione sua data de admissão para calcular suas férias.</string>
 </resources>

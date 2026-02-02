@@ -64,6 +64,9 @@ interface EspelhoDao {
 
     @Delete
     suspend fun delete(espelho: EspelhoEntity)
+
+    @Query("DELETE FROM espelhos")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -82,6 +85,9 @@ interface ReciboDao {
 
     @Delete
     suspend fun delete(recibo: ReciboEntity)
+
+    @Query("DELETE FROM recibos")
+    suspend fun deleteAll()
 }
 
 @Database(entities = [EspelhoEntity::class, ReciboEntity::class], version = 9)

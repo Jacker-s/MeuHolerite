@@ -60,10 +60,12 @@ class LoginActivity : AppCompatActivity() {
         setContent {
             MeuHoleriteTheme {
                 LoginScreen(
-                    onLoginSuccess = { email ->
+                    onLoginSuccess = { email, name, photoUrl ->
                         prefs.edit().apply {
                             putBoolean("is_logged_in", true)
                             putString("user_email", email)
+                            putString("user_name", name)
+                            putString("user_photo", photoUrl)
                             apply()
                         }
                         startActivity(Intent(this, MainActivity::class.java))
@@ -76,11 +78,12 @@ class LoginActivity : AppCompatActivity() {
 }
 
 @Composable
-fun LoginScreen(onLoginSuccess: (String) -> Unit) {
+fun LoginScreen(onLoginSuccess: (String, String, String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
     var isLoading by remember { mutableStateOf(false) }
+    var loadingText by remember { mutableStateOf("") }
     val backupManager = remember { BackupManager(context) }
 
     Surface(
@@ -131,23 +134,19 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                 lineHeight = 34.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(id = R.string.onboarding_welcome_desc),
-                fontSize = 16.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-
             Spacer(modifier = Modifier.height(48.dp))
 
             if (isLoading) {
                 CircularProgressIndicator()
+                if (loadingText.isNotEmpty()) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(loadingText, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                }
             } else {
                 Button(
                     onClick = {
                         isLoading = true
+                        loadingText = "Autenticando..."
                         scope.launch {
                             try {
                                 val googleIdOption = GetGoogleIdOption.Builder()
@@ -160,48 +159,40 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                     .addCredentialOption(googleIdOption)
                                     .build()
 
-                                val result = credentialManager.getCredential(
-                                    context = context,
-                                    request = request
-                                )
+                                val result = credentialManager.getCredential(context, request)
+                                val (email, name, photoUrl) = handleGoogleCredentialWithFirebase(result.credential)
+                                
+                                loadingText = "Restaurando seus dados da nuvem..."
+                                backupManager.restoreData().onSuccess {
+                                    Log.d("LoginActivity", "Restauração automática concluída")
+                                }.onFailure {
+                                    Log.e("LoginActivity", "Restauração falhou: ${it.message}")
+                                }
 
-                                val email = handleGoogleCredentialWithFirebase(result.credential)
-                                backupManager.restoreData()
-                                onLoginSuccess(email)
+                                onLoginSuccess(email, name, photoUrl)
 
                             } catch (e: GetCredentialException) {
                                 Log.e("LoginActivity", "Error getting credential", e)
-                                Toast.makeText(context, "Login cancelado ou falhou.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Login cancelado.", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
                                 Log.e("LoginActivity", "Unexpected login error", e)
-                                Toast.makeText(context, "Erro no login: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
                             } finally {
                                 isLoading = false
+                                loadingText = ""
                             }
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                     border = BorderStroke(1.dp, Color.LightGray)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_google),
-                            contentDescription = "Google Logo",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Entrar com Google",
-                            color = Color.Black,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Icon(painterResource(id = R.drawable.ic_google), "Google", tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Text("Entrar com Google", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -212,21 +203,13 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 @Composable
 fun LanguageFlag(resId: Int, contentDescription: String, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .clickable { onClick() },
+        modifier = Modifier.size(48.dp).clip(CircleShape).clickable { onClick() },
         shape = CircleShape,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp,
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
     ) {
-        Image(
-            painter = painterResource(id = resId),
-            contentDescription = contentDescription,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        Image(painterResource(id = resId), contentDescription, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
     }
 }
 
@@ -235,24 +218,26 @@ private fun changeLanguage(languageCode: String) {
     AppCompatDelegate.setApplicationLocales(appLocale)
 }
 
-private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): String {
+private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): Triple<String, String, String> {
     val googleIdTokenCredential = when (credential) {
         is CustomCredential -> {
             if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 GoogleIdTokenCredential.createFrom(credential.data)
             } else {
-                throw IllegalStateException("Credencial inesperada (type=${credential.type}).")
+                throw IllegalStateException("Credencial inesperada.")
             }
         }
-        else -> {
-            throw IllegalStateException("Tipo de credencial inesperado: ${credential::class.java.simpleName}")
-        }
+        else -> throw IllegalStateException("Tipo de credencial inesperado.")
     }
 
     val idToken = googleIdTokenCredential.idToken
     val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
     val authResult = FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
-    val user = authResult.user ?: throw IllegalStateException("Falha ao obter usuário do Firebase.")
+    val user = authResult.user ?: throw IllegalStateException("Falha ao obter usuário.")
 
-    return user.email ?: "sem-email@google"
+    return Triple(
+        user.email ?: "sem-email@google",
+        user.displayName ?: "",
+        user.photoUrl?.toString() ?: ""
+    )
 }

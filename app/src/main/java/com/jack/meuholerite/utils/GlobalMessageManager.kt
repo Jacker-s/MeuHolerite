@@ -19,6 +19,8 @@ class GlobalMessageManager(private val context: Context) {
 
     suspend fun fetchLatestMessage(): GlobalMessage? {
         return try {
+            Log.d("GlobalMessage", "Buscando mensagem mais recente...")
+            // Voltando com a ordenação por timestamp para pegar sempre a última postada
             val snapshot = firestore.collection("global_messages")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(1)
@@ -27,17 +29,24 @@ class GlobalMessageManager(private val context: Context) {
 
             if (!snapshot.isEmpty) {
                 val document = snapshot.documents[0]
-                GlobalMessage(
-                    id = document.id,
-                    title = document.getString("title") ?: "",
-                    content = document.getString("content") ?: "",
-                    timestamp = document.getLong("timestamp") ?: 0
-                )
+                Log.d("GlobalMessage", "Documento encontrado: ${document.id}")
+                
+                val title = document.getString("title") ?: ""
+                val content = document.getString("content") ?: ""
+                val timestamp = document.getLong("timestamp") ?: 0L
+
+                // Se vier vazio, avisar no log qual o problema
+                if (title.isEmpty() && content.isEmpty()) {
+                    Log.e("GlobalMessage", "ERRO: O documento existe mas os campos 'title' ou 'content' não foram encontrados. Verifique os nomes no Firebase!")
+                }
+
+                GlobalMessage(id = document.id, title = title, content = content, timestamp = timestamp)
             } else {
+                Log.d("GlobalMessage", "Nenhuma mensagem encontrada na coleção.")
                 null
             }
         } catch (e: Exception) {
-            Log.e("GlobalMessageManager", "Erro ao buscar mensagem global", e)
+            Log.e("GlobalMessageManager", "Erro ao buscar mensagem: ${e.message}")
             null
         }
     }

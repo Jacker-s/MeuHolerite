@@ -14,6 +14,10 @@ plugins {
 android {
     namespace = "com.jack.meuholerite"
     compileSdk = 35
+    
+    // Define a versão do NDK para garantir a extração correta dos símbolos de depuração
+    // Se não tiver uma versão específica instalada, o Gradle baixará a padrão para o seu SDK.
+    ndkVersion = "26.1.10909125" 
 
     // Carregar propriedades da chave
     val keystoreProperties = Properties()
@@ -38,22 +42,33 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 17
-        versionName = "1.2"
+        versionCode = 23
+        versionName = "1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Habilita a ofuscação e redução de código (R8)
+            isMinifyEnabled = true
+            
+            // Remove recursos (drawables, layouts) não utilizados
+            isShrinkResources = true
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfigs.findByName("release")?.let { signingConfig = it }
+
+            // Inclui símbolos de depuração nativos no App Bundle (.aab)
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
 
         debug {
+            isMinifyEnabled = false
         }
     }
 
@@ -61,7 +76,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
     buildFeatures {
         compose = true
@@ -79,8 +97,13 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
 
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    // Biometric
+    implementation(libs.androidx.biometric)
+
+    // Image Loading
+    implementation(libs.coil.compose)
 
     // Google AdMob
     implementation(libs.play.services.ads)
@@ -96,11 +119,11 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Biometric Authentication
-    implementation(libs.androidx.biometric)
-
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Google Login / Credentials Manager
     implementation(libs.androidx.credentials)
@@ -108,10 +131,13 @@ dependencies {
     implementation(libs.googleid)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Gemini AI
+    implementation(libs.google.generativeai)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

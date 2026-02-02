@@ -14,8 +14,31 @@ class PontoParser {
             .find(text)?.groupValues?.get(1)?.trim() ?: "Não encontrado"
 
         // Extração de Jornada (Horários) considerando quebras de linha
-        val jornadaRegex = "(?:Horário\\s+Padronizado|Jornada):?\\s*((?:\\d{2}:\\d{2}[\\s\\n]*)+)".toRegex(RegexOption.IGNORE_CASE)
-        val jornada = jornadaRegex.find(text)?.groupValues?.get(1)?.trim()?.replace("\\s+".toRegex(), " ") ?: ""
+        // O usuário informou que deve exibir apenas os 4 horários principais
+        val timeRegex = "\\d{2}:\\d{2}".toRegex()
+        val jornadaRegex = "(?:Horário\\s+Padronizado|Jornada|Horas\\s+Trabalhadas)[:\\s]*((?:\\d{2,}:\\d{2}[\\s\\n]*)+)".toRegex(RegexOption.IGNORE_CASE)
+        val jornadaMatches = jornadaRegex.findAll(text)
+        var jornada = ""
+        
+        // Procuramos por uma sequência que contenha múltiplos horários (típico de jornada: 08:00 12:00...)
+        for (match in jornadaMatches) {
+            val raw = match.groupValues[1]
+            val timesFound = timeRegex.findAll(raw).map { it.value }.toList()
+            if (timesFound.size > 1) {
+                // Pegamos apenas os 4 primeiros horários principais
+                jornada = timesFound.take(4).joinToString(" ")
+                break
+            }
+        }
+        
+        // Se não encontramos uma sequência longa, tentamos extrair do primeiro match encontrado
+        if (jornada.isEmpty()) {
+            val match = jornadaRegex.find(text)
+            if (match != null) {
+                val timesFound = timeRegex.findAll(match.groupValues[1]).map { it.value }.toList()
+                jornada = timesFound.take(4).joinToString(" ")
+            }
+        }
 
         // Extração de Jornada Realizada considerando quebras de linha
         val jornadaRealizadaRegex = "Jornada\\s+Realizada:?\\s*([\\d:\\s\\n]+)".toRegex(RegexOption.IGNORE_CASE)

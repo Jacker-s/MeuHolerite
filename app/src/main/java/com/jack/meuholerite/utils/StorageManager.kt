@@ -29,6 +29,17 @@ class StorageManager(context: Context) {
     }
 
     // ======================
+    // 🗓️ FÉRIAS / ADMISSÃO
+    // ======================
+    fun setAdmissionDate(date: String) {
+        prefs.edit().putString("admission_date", date).apply()
+    }
+
+    fun getAdmissionDate(): String? {
+        return prefs.getString("admission_date", null)
+    }
+
+    // ======================
     // 🌙 DARK MODE
     // ======================
     fun setDarkMode(enabled: Boolean) {

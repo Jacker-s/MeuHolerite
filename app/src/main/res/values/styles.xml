@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MeuHolerite" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowEnterTransition">@android:transition/fade</item>
-        <item name="android:windowExitTransition">@android:transition/fade</item>
-    </style>
+    <!-- Styles moved to themes.xml to avoid duplication -->
 </resources>

@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.ui.EditProfileDialog
@@ -53,7 +55,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val storageManager = StorageManager(this)
         val backupManager = BackupManager(this)
-        
+
         val currentVersion = try {
             packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
         } catch (_: Exception) {
@@ -75,14 +77,16 @@ class SettingsActivity : AppCompatActivity() {
                     val prefs = remember { getSharedPreferences("user_prefs", MODE_PRIVATE) }
                     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
                     var userMatricula by remember { mutableStateOf(prefs.getString("user_matricula", "") ?: "") }
+                    val userPhoto by remember { mutableStateOf(prefs.getString("user_photo", "") ?: "") }
                     var showEditProfile by remember { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
 
                     SettingsScreen(
                         storage = storageManager,
                         backupManager = backupManager,
                         currentVersion = currentVersion,
                         userName = userName,
-                        userMatricula = userMatricula,
+                        userPhoto = userPhoto,
                         onEditProfile = { showEditProfile = true },
                         isDarkTheme = useDarkTheme,
                         onToggleDarkMode = { enabled ->
@@ -100,8 +104,12 @@ class SettingsActivity : AppCompatActivity() {
                             onSave = { name, matricula ->
                                 userName = name
                                 userMatricula = matricula
-                                prefs.edit().putString("user_name", name).putString("user_matricula", matricula).apply()
+                                prefs.edit()
+                                    .putString("user_name", name)
+                                    .putString("user_matricula", matricula)
+                                    .apply()
                                 showEditProfile = false
+                                scope.launch { backupManager.backupData() }
                             }
                         )
                     }
@@ -118,7 +126,7 @@ fun SettingsScreen(
     backupManager: BackupManager,
     currentVersion: String,
     userName: String,
-    userMatricula: String,
+    userPhoto: String,
     onEditProfile: () -> Unit,
     isDarkTheme: Boolean,
     onToggleDarkMode: (Boolean) -> Unit,
@@ -135,18 +143,22 @@ fun SettingsScreen(
     val currentUser = auth.currentUser
 
     var appLockEnabled by remember { mutableStateOf(storage.isAppLockEnabled()) }
-    var versionTapCount by remember { mutableStateOf(0) }
+    var versionTapCount by remember { mutableIntStateOf(0) }
     var showEasterEgg by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(id = R.string.language), fontWeight = FontWeight.Bold) },
+            TopAppBar(
+                title = { Text(stringResource(id = R.string.settings_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = stringResource(id = R.string.close))
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         }
     ) { innerPadding ->
@@ -161,7 +173,7 @@ fun SettingsScreen(
 
             // 👤 SEÇÃO: MEU PERFIL
             item {
-                SectionHeader(stringResource(id = R.string.onboarding_finish_title).uppercase())
+                SectionHeader(stringResource(R.string.profile_section))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -172,29 +184,38 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().clickable { onEditProfile() }.padding(vertical = 8.dp)
                         ) {
-                            Box(
-                                modifier = Modifier.size(50.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                            if (userPhoto.isNotEmpty()) {
+                                AsyncImage(
+                                    model = userPhoto,
+                                    contentDescription = stringResource(R.string.profile_photo),
+                                    modifier = Modifier.size(50.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier.size(50.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                                }
                             }
                             Spacer(Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(userName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                                Text("Matrícula: $userMatricula", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(userName.ifEmpty { stringResource(R.string.user_label) }, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text(currentUser?.email ?: "", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                             }
                             Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                         }
 
                         HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
 
-                        Text("Idioma do App", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 12.dp))
+                        Text(stringResource(R.string.app_language), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 12.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            LanguageFlagItem(R.drawable.ic_flag_br, "Português") { changeAppLanguage("pt-BR") }
-                            LanguageFlagItem(R.drawable.ic_flag_ve, "Español") { changeAppLanguage("es-VE") }
+                            LanguageFlagItem(R.drawable.ic_flag_br, stringResource(R.string.portuguese)) { changeAppLanguage("pt-BR") }
+                            LanguageFlagItem(R.drawable.ic_flag_ve, stringResource(R.string.spanish)) { changeAppLanguage("es-VE") }
                         }
                     }
                 }
@@ -202,7 +223,7 @@ fun SettingsScreen(
 
             // 🛠️ SEÇÃO: PREFERÊNCIAS E SEGURANÇA
             item {
-                SectionHeader("PREFERÊNCIAS E SEGURANÇA")
+                SectionHeader(stringResource(R.string.preferences_security))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -211,60 +232,60 @@ fun SettingsScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsToggleRow(
                             icon = Icons.Outlined.NightsStay,
-                            label = "Modo Escuro",
+                            label = stringResource(R.string.dark_mode),
                             checked = isDarkTheme,
                             onCheckedChange = onToggleDarkMode
                         )
                         HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                         SettingsToggleRow(
                             icon = Icons.Outlined.Lock,
-                            label = "Senha / Biometria ao Abrir",
+                            label = stringResource(R.string.app_lock),
                             checked = appLockEnabled,
                             onCheckedChange = { enabled ->
                                 appLockEnabled = enabled
                                 storage.setAppLockEnabled(enabled)
                                 if (enabled && !storage.hasPin()) {
-                                    Toast.makeText(context, "Configure seu PIN no acesso inicial", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.pin_toast), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsActionRow(
+                            icon = Icons.Outlined.BeachAccess,
+                            label = stringResource(R.string.vacation_management),
+                            color = Color(0xFF34C759)
+                        ) {
+                            context.startActivity(Intent(context, VacationActivity::class.java))
+                        }
                     }
                 }
             }
 
             // ☁️ SEÇÃO: DADOS E BACKUP
             item {
-                SectionHeader("DADOS E BACKUP")
+                SectionHeader(stringResource(R.string.backup_section))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        if (currentUser != null) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
-                                Icon(Icons.Outlined.CloudDone, null, tint = Color(0xFF34C759), modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Nuvem: ${currentUser.email}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                            }
-                        }
-
                         SettingsActionRow(
                             icon = Icons.Outlined.CloudUpload,
-                            label = if (backingUp) "Fazendo backup..." else "Fazer Backup Agora",
+                            label = if (backingUp) stringResource(R.string.backing_up) else stringResource(R.string.backup_now),
                             color = Color(0xFF007AFF)
                         ) {
                             if (currentUser == null) {
-                                Toast.makeText(context, "Faça login para ativar o backup.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.backup_needed_toast), Toast.LENGTH_LONG).show()
                                 return@SettingsActionRow
                             }
                             if (!backingUp) {
                                 scope.launch {
                                     backingUp = true
                                     backupManager.backupData().onSuccess {
-                                        Toast.makeText(context, "Backup concluído!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.backup_success_toast), Toast.LENGTH_SHORT).show()
                                     }.onFailure {
-                                        Toast.makeText(context, "Falha: ${it.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "${context.getString(R.string.update_error)}: ${it.message}", Toast.LENGTH_LONG).show()
                                     }
                                     backingUp = false
                                 }
@@ -275,20 +296,20 @@ fun SettingsScreen(
 
                         SettingsActionRow(
                             icon = Icons.Outlined.CloudDownload,
-                            label = if (restoring) "Restaurando..." else "Restaurar da Nuvem",
+                            label = if (restoring) stringResource(R.string.restoring) else stringResource(R.string.restore_cloud),
                             color = Color(0xFF5856D6)
                         ) {
                             if (currentUser == null) {
-                                Toast.makeText(context, "Faça login para restaurar dados.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.restore_needed_toast), Toast.LENGTH_LONG).show()
                                 return@SettingsActionRow
                             }
                             if (!restoring) {
                                 scope.launch {
                                     restoring = true
                                     backupManager.restoreData().onSuccess {
-                                        Toast.makeText(context, "Restauração concluída!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, context.getString(R.string.restore_success_toast), Toast.LENGTH_LONG).show()
                                     }.onFailure {
-                                        Toast.makeText(context, "Falha: ${it.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "${context.getString(R.string.update_error)}: ${it.message}", Toast.LENGTH_LONG).show()
                                     }
                                     restoring = false
                                 }
@@ -300,23 +321,23 @@ fun SettingsScreen(
 
             // ⚠️ SEÇÃO: CONTA E LIMPEZA
             item {
-                SectionHeader("CONTA E LIMPEZA")
+                SectionHeader(stringResource(R.string.account_section))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsActionRow(Icons.Outlined.Logout, "Sair da Conta", MaterialTheme.colorScheme.primary) { showLogoutConfirm = true }
+                        SettingsActionRow(Icons.AutoMirrored.Outlined.Logout, stringResource(R.string.logout), MaterialTheme.colorScheme.primary) { showLogoutConfirm = true }
                         HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                        SettingsActionRow(Icons.Outlined.DeleteForever, "Apagar Todos os Dados", Color(0xFFFF3B30)) { showDeleteConfirm = true }
+                        SettingsActionRow(Icons.Outlined.DeleteForever, stringResource(R.string.delete_data), Color(0xFFFF3B30)) { showDeleteConfirm = true }
                     }
                 }
             }
 
             // ℹ️ SEÇÃO: SOBRE
             item {
-                SectionHeader("SOBRE")
+                SectionHeader(stringResource(R.string.about_section))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -333,18 +354,18 @@ fun SettingsScreen(
                             Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Versão", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(stringResource(R.string.version_label), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                 Text(currentVersion, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                         HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                        SettingsActionRow(Icons.Outlined.Code, "Código Fonte (GitHub)", Color(0xFF8E8E93)) {
+                        SettingsActionRow(Icons.Outlined.Code, stringResource(R.string.source_code_github), Color(0xFF8E8E93)) {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Jacker-s/MeuHolerite")))
                         }
                     }
                 }
             }
-            
+
             item { Spacer(Modifier.height(32.dp)) }
         }
     }
@@ -352,8 +373,8 @@ fun SettingsScreen(
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
-            title = { Text("Sair da Conta?", fontWeight = FontWeight.Bold) },
-            text = { Text("Isso removerá seu acesso e limpará os arquivos salvos localmente (PDFs, banco de dados e cookies). Certifique-se de ter feito backup na nuvem.") },
+            title = { Text(stringResource(R.string.logout_confirm_title), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.logout_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -376,10 +397,10 @@ fun SettingsScreen(
                             context.startActivity(intent)
                         }
                     }
-                ) { Text("Sair e Limpar") }
+                ) { Text(stringResource(R.string.exit_and_clear)) }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancelar") }
+                TextButton(onClick = { showLogoutConfirm = false }) { Text(stringResource(R.string.cancel)) }
             },
             shape = RoundedCornerShape(22.dp)
         )
@@ -388,8 +409,8 @@ fun SettingsScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Apagar todos os dados?", fontWeight = FontWeight.Bold) },
-            text = { Text("Isso removerá permanentemente todos os holerites, pontos e configurações locais, além do seu backup na nuvem.") },
+            title = { Text(stringResource(R.string.delete_confirm_title), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.delete_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -415,10 +436,10 @@ fun SettingsScreen(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30))
-                ) { Text("Apagar Tudo", color = Color.White) }
+                ) { Text(stringResource(R.string.delete_all), color = Color.White) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.cancel)) }
             },
             shape = RoundedCornerShape(22.dp)
         )
@@ -429,7 +450,7 @@ fun SettingsScreen(
             onDismissRequest = { showEasterEgg = false },
             title = { Text("🎉 Easter Egg!") },
             text = { Text("Meu Holerite - Desenvolvido com ❤️\n Jackson") },
-            confirmButton = { TextButton(onClick = { showEasterEgg = false }) { Text("Fechar") } }
+            confirmButton = { TextButton(onClick = { showEasterEgg = false }) { Text(stringResource(R.string.close)) } }
         )
     }
 }

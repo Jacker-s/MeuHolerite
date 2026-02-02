@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Alterado para herdar de Theme.AppCompat para compatibilidade com AppCompatActivity e troca de idiomas -->
-    <style name="Theme.MeuHolerite" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.MeuHolerite" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowEnterTransition">@android:transition/fade</item>
+        <item name="android:windowExitTransition">@android:transition/fade</item>
+    </style>
 </resources>

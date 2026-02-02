@@ -7,16 +7,22 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.TrendingDown
+import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,12 +31,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.database.toModel
+import com.jack.meuholerite.model.EspelhoItem
 import com.jack.meuholerite.model.EspelhoPonto
 import com.jack.meuholerite.ui.AbsenceDetailCard
 import com.jack.meuholerite.ui.EditProfileDialog
@@ -109,7 +117,7 @@ class PontoActivity : ComponentActivity() {
 
         if (selectedPontoItemForPopup != null) {
             PontoDetailDialog(
-                label = selectedPontoItemForPopup!!.first,
+                labelKey = selectedPontoItemForPopup!!.first,
                 value = selectedPontoItemForPopup!!.second,
                 isNegative = selectedPontoItemForPopup!!.third,
                 onDismiss = { selectedPontoItemForPopup = null }
@@ -123,6 +131,13 @@ class PontoActivity : ComponentActivity() {
                     navigationIcon = {
                         IconButton(onClick = { finish() }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        }
+                    },
+                    actions = {
+                        if (selectedEspelho != null) {
+                            IconButton(onClick = { sharePdf(selectedEspelho?.pdfFilePath) }) {
+                                Icon(Icons.Default.Share, contentDescription = "Exportar PDF")
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -140,7 +155,7 @@ class PontoActivity : ComponentActivity() {
                     userMatricula = userMatricula,
                     onEditProfile = { showEditProfile = true },
                     onSelect = { selectedEspelho = it },
-                    onOpen = { openPdf(it) },
+                    onOpen = { sharePdf(it) },
                     onRefresh = { scope.launch { refreshData() } },
                     onSelectItem = { label, value, isNegative ->
                         selectedPontoItemForPopup = Triple(label, value, isNegative)
@@ -150,22 +165,36 @@ class PontoActivity : ComponentActivity() {
         }
     }
 
-    private fun openPdf(filePath: String?) {
-        if (filePath == null) return
-        val file = File(filePath)
-        if (!file.exists()) return
-        val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
-        val intentView = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/pdf")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+    private fun sharePdf(filePath: String?) {
+        if (filePath == null) {
+            Toast.makeText(this, "Arquivo PDF não encontrado", Toast.LENGTH_SHORT).show()
+            return
         }
+        val file = File(filePath)
+        if (!file.exists()) {
+            Toast.makeText(this, "O arquivo físico não existe no armazenamento", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         try {
-            startActivity(Intent.createChooser(intentView, "Abrir PDF com..."))
-        } catch (_: Exception) {
-            Toast.makeText(this, "Nenhum aplicativo encontrado para abrir PDF", Toast.LENGTH_SHORT).show()
+            val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+            val intentShare = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intentShare, "Exportar Espelho de Ponto"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao exportar PDF: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+}
+
+@Composable
+fun resolveLabel(label: String): String {
+    val context = LocalContext.current
+    val resId = context.resources.getIdentifier(label, "string", context.packageName)
+    return if (resId != 0) stringResource(resId) else label
 }
 
 @Composable
@@ -235,6 +264,26 @@ fun TimesheetScreen(
             if (espelho.hasAbsences) {
                 item { AbsenceDetailCard(espelho) }
             }
+
+            // Banco de Horas
+            item {
+                Text(
+                    text = stringResource(R.string.bank_hours).uppercase(),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IosWidgetCardClickable(
+                        title = stringResource(R.string.label_period_balance),
+                        value = espelho.saldoPeriodoBH,
+                        color = if (espelho.saldoPeriodoBH.startsWith("-")) Color(0xFFFF3B30) else Color(0xFF34C759),
+                        icon = Icons.Outlined.History,
+                        onClick = { onSelectItem("label_period_balance", espelho.saldoPeriodoBH, espelho.saldoPeriodoBH.startsWith("-")) }
+                    )
+                }
+            }
+
             val proventos = espelho.resumoItens.filter { !it.isNegative }
             val descontos = espelho.resumoItens.filter { it.isNegative }
 
@@ -248,13 +297,13 @@ fun TimesheetScreen(
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         proventos.forEach { item ->
-                            val label = if (item.label == "label_worked_hours") "Total de Horas Trabalhadas" else item.label
+                            val displayLabel = resolveLabel(item.label)
                             IosWidgetCardClickable(
-                                title = label,
+                                title = displayLabel,
                                 value = item.value,
                                 color = Color(0xFF007AFF),
                                 icon = getIconForLabel(item.label, item.isNegative),
-                                onClick = { onSelectItem(label, item.value, item.isNegative) }
+                                onClick = { onSelectItem(item.label, item.value, item.isNegative) }
                             )
                         }
                     }
@@ -270,12 +319,55 @@ fun TimesheetScreen(
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         descontos.forEach { item ->
+                            val displayLabel = resolveLabel(item.label)
                             IosWidgetCardClickable(
-                                title = item.label,
+                                title = displayLabel,
                                 value = item.value,
                                 color = Color(0xFFFF3B30),
                                 icon = getIconForLabel(item.label, item.isNegative),
                                 onClick = { onSelectItem(item.label, item.value, item.isNegative) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Jornada
+            item {
+                Text(
+                    text = stringResource(R.string.work_schedule),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable { onSelectItem("label_work_schedule", espelho.jornada, false) },
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(36.dp).background(Color(0xFF8E8E93).copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Outlined.Schedule, null, tint = Color(0xFF8E8E93), modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.label_standard_schedule),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                espelho.jornada,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -324,7 +416,8 @@ fun TimesheetHistoryDialog(
 }
 
 @Composable
-fun PontoDetailDialog(label: String, value: String, isNegative: Boolean, onDismiss: () -> Unit) {
+fun PontoDetailDialog(labelKey: String, value: String, isNegative: Boolean, onDismiss: () -> Unit) {
+    val displayLabel = resolveLabel(labelKey)
     val color = if (isNegative) Color(0xFFFF3B30) else Color(0xFF007AFF)
     val icon = if (isNegative) Icons.Outlined.TrendingDown else Icons.Outlined.TrendingUp
     AlertDialog(
@@ -334,7 +427,7 @@ fun PontoDetailDialog(label: String, value: String, isNegative: Boolean, onDismi
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, null, tint = color)
                 Spacer(Modifier.width(8.dp))
-                Text(label, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text(displayLabel, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
         },
         text = {
@@ -343,7 +436,7 @@ fun PontoDetailDialog(label: String, value: String, isNegative: Boolean, onDismi
                 HorizontalDivider()
                 Text("O que este item significa?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    getDetalheParaResumoItem(label),
+                    getDetalheParaResumoItem(labelKey),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     lineHeight = 20.sp
                 )
@@ -353,15 +446,67 @@ fun PontoDetailDialog(label: String, value: String, isNegative: Boolean, onDismi
     )
 }
 
+@Composable
 fun getDetalheParaResumoItem(label: String): String {
-    val key = label.uppercase().trim()
-    return when {
-        key == "SALDO ANTERIOR B.H." -> "O total de horas extras ou negativas acumuladas até o período anterior."
-        key.contains("CRÉDITO H.E.") -> "Total de horas extras trabalhadas que foram adicionadas ao seu Banco de Horas."
-        key == "TOTAL DE HORAS TRABALHADAS" -> "Soma de todas as horas registradas nas batidas do seu ponto."
-        key == "HORAS FALTAS JUSTIFICADAS" -> "Horas de ausência que foram compensadas ou justificadas por atestado."
-        key == "TOTAL DE DÉBITOS" -> "Soma de todas as horas negativas registradas (atrasos, faltas)."
-        key == "SALDO FINAL B.H." -> "O saldo final consolidado do seu Banco de Horas no final do período."
-        else -> "Esta é uma informação de resumo do seu espelho de ponto."
+    return when (label) {
+        "label_worked_hours" -> stringResource(R.string.desc_ponto_total_trabalhadas)
+        "label_night_allowance" -> stringResource(R.string.desc_ponto_horas_noturnas)
+        "label_interval_delay" -> stringResource(R.string.desc_ponto_atraso_intervalo)
+        "label_early_departure" -> stringResource(R.string.desc_ponto_saida_antecipada)
+        "label_extra_hours_50" -> stringResource(R.string.desc_ponto_credito_he)
+        "label_extra_hours_100" -> stringResource(R.string.desc_ponto_credito_he)
+        "label_excused_absence" -> stringResource(R.string.desc_ponto_horas_abonadas)
+        "label_absences" -> stringResource(R.string.desc_ponto_faltas)
+        "label_period_balance" -> stringResource(R.string.desc_ponto_saldo_periodo)
+        "label_previous_balance" -> stringResource(R.string.desc_ponto_saldo_anterior)
+        "label_work_schedule" -> stringResource(R.string.desc_ponto_jornada)
+        else -> {
+            val key = label.uppercase().trim()
+            when {
+                key.contains("SALDO ANTERIOR") -> stringResource(R.string.desc_ponto_saldo_anterior)
+                key.contains("CRÉDITO H.E.") -> stringResource(R.string.desc_ponto_credito_he)
+                key == "TOTAL DE HORAS TRABALHADAS" -> stringResource(R.string.desc_ponto_total_trabalhadas)
+                key == "HORAS FALTAS JUSTIFICADAS" -> stringResource(R.string.desc_ponto_horas_abonadas)
+                key == "TOTAL DE DÉBITOS" -> stringResource(R.string.desc_ponto_total_debitos)
+                key == "SALDO FINAL B.H." -> stringResource(R.string.desc_ponto_saldo_final)
+                else -> stringResource(R.string.desc_ponto_default)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PontoScreenPreview() {
+    val sampleEspelho = EspelhoPonto(
+        funcionario = "Usuário de Teste",
+        empresa = "Empresa Exemplo",
+        periodo = "01/10/2023 a 31/10/2023",
+        jornada = "08:00 12:00 13:00 17:00",
+        resumoItens = listOf(
+            EspelhoItem("label_worked_hours", "160:00", false),
+            EspelhoItem("label_extra_hours_50", "10:00", false),
+            EspelhoItem("label_absences", "02:00", true)
+        ),
+        saldoFinalBH = "08:00",
+        saldoPeriodoBH = "05:00",
+        detalhesSaldoBH = "Saldo anterior: 03:00"
+    )
+
+    MeuHoleriteTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            TimesheetScreen(
+                espelho = sampleEspelho,
+                db = AppDatabase.getDatabase(LocalContext.current),
+                gson = Gson(),
+                userName = "Jackson",
+                userMatricula = "12345",
+                onEditProfile = {},
+                onSelect = {},
+                onOpen = {},
+                onRefresh = {},
+                onSelectItem = { _, _, _ -> }
+            )
+        }
     }
 }
