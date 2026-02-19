@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Holerite - Dashboard de Mensagens</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; text-align: center; margin-bottom: 25px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 15px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+        .status { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; text-align: center; }
+        .success { display: block; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { display: block; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { font-size: 12px; color: #7f8c8d; margin-top: -15px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🚀 Enviar Mensagem para o App</h2>
+
+    <label for="serverKey">FCM Server Key (Legacy):</label>
+    <input type="password" id="serverKey" placeholder="Insira a Chave do Servidor do Firebase">
+    <p class="info">Obtenha em: Console Firebase > Configurações > Cloud Messaging.</p>
+
+    <label for="deviceToken">Token do Dispositivo (FCM Token):</label>
+    <input type="text" id="deviceToken" placeholder="Cole o token gerado pelo seu celular">
+
+    <label for="title">Título da Notificação:</label>
+    <input type="text" id="title" value="Novidade no Meu Holerite!">
+
+    <label for="content">Conteúdo / Mensagem:</label>
+    <textarea id="content" rows="4" placeholder="Escreva sua mensagem aqui...">Olá! Temos uma nova atualização disponível para você.</textarea>
+
+    <label for="imageUrl">URL da Imagem (Opcional):</label>
+    <input type="text" id="imageUrl" placeholder="https://exemplo.com/imagem.png">
+
+    <button onclick="sendMessage()">Enviar Mensagem Agora</button>
+
+    <div id="status" class="status"></div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const key = document.getElementById('serverKey').value;
+        const token = document.getElementById('deviceToken').value;
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        const imageUrl = document.getElementById('imageUrl').value;
+        const statusDiv = document.getElementById('status');
+
+        if (!key || !token) {
+            showStatus("Por favor, preencha a Chave do Servidor e o Token do Dispositivo.", "error");
+            return;
+        }
+
+        statusDiv.innerText = "Enviando...";
+        statusDiv.className = "status";
+        statusDiv.style.display = "block";
+
+        const payload = {
+            to: token,
+            notification: {
+                title: title,
+                body: content,
+                image: imageUrl
+            },
+            data: {
+                title: title,
+                content: content,
+                imageUrl: imageUrl,
+                click_action: "FLUTTER_NOTIFICATION_CLICK"
+            },
+            priority: "high"
+        };
+
+        try {
+            const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'key=' + key
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showStatus("✅ Mensagem enviada com sucesso! ID: " + result.results[0].message_id, "success");
+            } else {
+                showStatus("❌ Erro ao enviar: " + (result.error || JSON.stringify(result)), "error");
+            }
+        } catch (error) {
+            showStatus("❌ Erro na requisição: " + error.message, "error");
+        }
+    }
+
+    function showStatus(msg, type) {
+        const statusDiv = document.getElementById('status');
+        statusDiv.innerText = msg;
+        statusDiv.className = "status " + type;
+    }
+</script>
+
+</body>
+</html>

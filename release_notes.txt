@@ -1,0 +1,17 @@
+🌟 **Novidades e Melhorias - Versão 1.6.1** 🌟
+
+Estamos felizes em anunciar uma atualização importante para o Meu Holerite, focada em tornar o gerenciamento de seus documentos financeiros ainda mais fácil e inteligente!
+
+✨ **Principais Destaques:**
+
+*   **Escaneamento Automático de PDFs:** Agora, o aplicativo pode vasculhar o armazenamento do seu dispositivo de forma inteligente, identificando e sugerindo novos recibos e espelhos de ponto para importação. Mantenha seus documentos sempre atualizados sem esforço! (Pode solicitar permissão de armazenamento em algumas versões do Android).
+
+*   **Widget Financeiro Aprimorado:** O nosso widget da tela inicial foi otimizado para funcionar perfeitamente, exibindo um resumo claro e atualizado de suas finanças com maior estabilidade e confiabilidade.
+
+*   **Otimizações Internas:** Realizamos melhorias significativas na inicialização e integração dos serviços Google AdMob e Firebase, resultando em um aplicativo mais estável, rápido e com menor consumo de bateria.
+
+*   **Base de Dados Inteligente:** Aprimoramos a estrutura interna do banco de dados para gerenciar de forma mais eficiente os PDFs escaneados, garantindo que você nunca duplique documentos e que o processamento seja ágil.
+
+*   **Correções de Bugs:** Diversas pequenas correções e ajustes foram feitos para uma experiência de usuário ainda mais fluida e sem interrupções.
+
+Agradecemos seu feedback contínuo e esperamos que você aproveite estas melhorias!
