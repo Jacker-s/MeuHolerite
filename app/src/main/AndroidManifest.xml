@@ -2,6 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <queries>
+        <package android:name="com.android.vending" />
+
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
+
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
+    </queries>
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -13,6 +34,16 @@
     <!-- opcional para versões antigas -->
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
+    <!-- AdMob Permission -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
+    <!-- Permissões para recursos do Chrome no WebView -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -22,16 +53,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MeuHolerite"
-        android:localeConfig="@xml/locales_config">
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules">
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7931782163570852~9037019125" />
-
-        <!-- Correção para o erro 'Unable to obtain a JavascriptEngine' -->
-        <meta-data
-            android:name="com.google.android.gms.ads.flag.JS_SANDBOX"
-            android:value="false" />
 
         <meta-data
             android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
@@ -39,6 +66,7 @@
         <meta-data
             android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
             android:value="true"/>
+
 
         <activity
             android:name=".LoginActivity"
@@ -77,6 +105,11 @@
             android:theme="@style/Theme.MeuHolerite" />
 
         <activity
+            android:name=".InformesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:theme="@style/Theme.MeuHolerite" />
@@ -111,6 +144,75 @@
             android:exported="false"
             android:theme="@style/Theme.MeuHolerite" />
 
+        <activity
+            android:name=".ToolsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".FinanceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".DicasCltActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".EscalaActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".PrivacyPolicyActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".TermsAgreementActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".SalaryRankingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".PromocoesFeedActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <activity
+            android:name=".SorteiosActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
+        <receiver
+            android:name=".widget.FinanceWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.jack.meuholerite.UPDATE_WIDGET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/finance_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".service.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <receiver
             android:name=".receiver.ReminderReceiver"
             android:enabled="true"

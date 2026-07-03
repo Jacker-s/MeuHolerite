@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="13dp"
+    android:viewportWidth="19"
+    android:viewportHeight="10">
+    <!-- Background stripes -->
+    <path android:fillColor="#B22234" android:pathData="M0,0h19v1h-19zM0,2h19v1h-19zM0,4h19v1h-19zM0,6h19v1h-19zM0,8h19v1h-19z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M0,1h19v1h-19zM0,3h19v1h-19zM0,5h19v1h-19zM0,7h19v1h-19zM0,9h19v1h-19z"/>
+    <!-- Blue canton -->
+    <path android:fillColor="#3C3B6E" android:pathData="M0,0h7.6v5.38h-7.6z"/>
+    <!-- (Simplified) Stars placeholder -->
+</vector>

@@ -31,16 +31,20 @@ import com.jack.meuholerite.database.toModel
 import com.jack.meuholerite.model.ReciboPagamento
 import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
+import com.jack.meuholerite.utils.StorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 class FgtsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val storage = remember { StorageManager(this) }
             MeuHoleriteTheme {
-                FgtsScreen { finish() }
+                FgtsScreen(storage) { finish() }
             }
         }
     }
@@ -48,13 +52,14 @@ class FgtsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FgtsScreen(onBack: () -> Unit) {
+fun FgtsScreen(storage: StorageManager, onBack: () -> Unit) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
     val gson = remember { Gson() }
     
     var receipts by remember { mutableStateOf<List<ReciboPagamento>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val admissionDateStr = remember { storage.getAdmissionDate() ?: "" }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -63,7 +68,9 @@ fun FgtsScreen(onBack: () -> Unit) {
         }
     }
 
-    val fgtsData = remember(receipts) { calculateFgtsSummary(receipts) }
+    val fgtsData = remember(receipts, admissionDateStr) { 
+        calculateFgtsSummary(receipts, admissionDateStr) 
+    }
 
     Scaffold(
         topBar = {
@@ -90,7 +97,6 @@ fun FgtsScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Card Principal: Saldo Estimado
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
@@ -99,7 +105,7 @@ fun FgtsScreen(onBack: () -> Unit) {
                     Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.AccountBalance, null, tint = Color(0xFF34C759), modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text("Saldo Estimado (Base Recibos)", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Projeção de Saldo Acumulado", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                         Text(
                             text = "R$ " + String.format(Locale.getDefault(), "%.2f", fgtsData.totalAccumulated),
                             fontSize = 32.sp,
@@ -107,31 +113,31 @@ fun FgtsScreen(onBack: () -> Unit) {
                             color = Color(0xFF34C759)
                         )
                         Text(
-                            "Soma dos depósitos mensais importados",
+                            "Baseado no tempo de serviço e recibos",
                             fontSize = 11.sp,
                             color = Color.Gray
                         )
                     }
                 }
 
-                SectionHeader("Detalhes")
+                SectionHeader("Estatísticas")
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FgtsSmallCard(
-                        title = "Meses com Depósito",
+                        title = "Meses de Trabalho",
                         value = fgtsData.monthsCount.toString(),
                         icon = Icons.Outlined.CalendarMonth,
                         modifier = Modifier.weight(1f)
                     )
                     FgtsSmallCard(
-                        title = "Média Mensal",
+                        title = "Depósito Mensal",
                         value = "R$ " + String.format(Locale.getDefault(), "%.2f", fgtsData.averageMonthly),
                         icon = Icons.AutoMirrored.Outlined.TrendingUp,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                SectionHeader("Multa Rescisória (40%)")
+                SectionHeader("Em caso de Demissão (Multa 40%)")
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -149,14 +155,14 @@ fun FgtsScreen(onBack: () -> Unit) {
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text("Estimativa em caso de demissão sem justa causa", fontSize = 11.sp, color = Color.Gray)
+                            Text("Sobre o saldo projetado no período", fontSize = 11.sp, color = Color.Gray)
                         }
                     }
                 }
 
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "* Valores baseados exclusivamente nos campos 'FGTS do Mês' identificados nos seus holerites importados. O saldo real na Caixa Econômica pode incluir juros e correções monetárias.",
+                    "* Esta é uma projeção refinada que considera seu tempo de serviço desde a admissão ($admissionDateStr) e a média dos depósitos mensais identificados. O saldo real pode variar devido a correções da TR e juros anuais.",
                     fontSize = 11.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -191,23 +197,46 @@ data class FgtsSummary(
     val penaltyValue: Double
 )
 
-fun calculateFgtsSummary(receipts: List<ReciboPagamento>): FgtsSummary {
-    var total = 0.0
-    var count = 0
+fun calculateFgtsSummary(receipts: List<ReciboPagamento>, admissionDateStr: String): FgtsSummary {
+    var totalFromReceipts = 0.0
+    var countReceipts = 0
     
     receipts.forEach { receipt ->
         val fgtsStr = receipt.fgtsMes.replace(".", "").replace(",", ".")
         val fgtsValue = fgtsStr.toDoubleOrNull() ?: 0.0
         if (fgtsValue > 0) {
-            total += fgtsValue
-            count++
+            totalFromReceipts += fgtsValue
+            countReceipts++
         }
     }
 
+    val averageMonthly = if (countReceipts > 0) totalFromReceipts / countReceipts else 0.0
+    
+    // Tentar projetar o total com base no tempo de admissão
+    var monthsSinceAdmission = countReceipts
+    if (admissionDateStr.isNotEmpty()) {
+        try {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val admissionDate = sdf.parse(admissionDateStr)
+            if (admissionDate != null) {
+                val diffInMillis = Date().time - admissionDate.time
+                val daysWorked = TimeUnit.MILLISECONDS.toDays(diffInMillis)
+                monthsSinceAdmission = (daysWorked / 30.44).toInt().coerceAtLeast(countReceipts)
+            }
+        } catch (_: Exception) {}
+    }
+
+    // Se tivermos uma média mas faltarem recibos, projetamos os meses faltantes
+    val projectedTotal = if (averageMonthly > 0) {
+        averageMonthly * monthsSinceAdmission
+    } else {
+        totalFromReceipts
+    }
+
     return FgtsSummary(
-        totalAccumulated = total,
-        monthsCount = count,
-        averageMonthly = if (count > 0) total / count else 0.0,
-        penaltyValue = total * 0.4
+        totalAccumulated = projectedTotal,
+        monthsCount = monthsSinceAdmission,
+        averageMonthly = averageMonthly,
+        penaltyValue = projectedTotal * 0.4
     )
 }

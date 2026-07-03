@@ -2,97 +2,91 @@ package com.jack.meuholerite.utils
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
-import com.google.ai.client.generativeai.GenerativeModel
+import com.jack.meuholerite.BuildConfig
+import com.google.gson.Gson
 import com.jack.meuholerite.model.ReciboItem
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class AiAnalyst(private val context: Context) {
+class AiAnalyst(context: Context) {
     
-    // API Key configurada para o Gemini
-    private val apiKey = " SUA API KEY DO GEMINI AQUI" 
+    private val appContext = context.applicationContext
+    private val apiKey = BuildConfig.GROQ_API_KEY
+    private val gson = Gson()
     
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-2.5-flash",
-        apiKey = apiKey
+    // Cliente Ktor simples para chamadas HTTP
+    private val client = HttpClient(OkHttp)
+
+    // Classes para o Gson
+    private data class GroqRequest(
+        val model: String,
+        val messages: List<GroqMessage>,
+        val temperature: Double = 0.7
     )
+    private data class GroqMessage(val role: String, val content: String)
+    private data class GroqResponse(val choices: List<Choice>)
+    private data class Choice(val message: GroqMessage)
 
     suspend fun explainReciboItem(item: ReciboItem, isProvento: Boolean): String = withContext(Dispatchers.IO) {
-        // Detecta o idioma selecionado no App via AppCompatDelegate
+        if (apiKey.isBlank()) {
+            return@withContext "Chave da IA não configurada."
+        }
+
+        // Detecta o idioma
         val appLocales = AppCompatDelegate.getApplicationLocales()
-        val language = if (!appLocales.isEmpty) {
-            appLocales[0]?.language ?: "pt"
-        } else {
-            // Caso não tenha sido alterado manualmente, usa o do sistema
-            val locale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                context.resources.configuration.locales[0]
+        val language = if (!appLocales.isEmpty) appLocales[0]?.language ?: "pt" else {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                val locales = appContext.resources.configuration.locales
+                if (!locales.isEmpty) locales[0].language else "pt"
             } else {
                 @Suppress("DEPRECATION")
-                context.resources.configuration.locale
+                appContext.resources.configuration.locale.language
             }
-            locale.language
         }
         
         val tipo = if (isProvento) {
-            when (language) {
-                "es" -> "ingreso (ganancia)"
-                "pt" -> "provento (ganho)"
-                else -> "earnings"
-            }
+            if (language == "pt") "provento (ganho)" else "earnings"
         } else {
-            when (language) {
-                "es" -> "descuento"
-                "pt" -> "desconto"
-                else -> "deduction"
-            }
+            if (language == "pt") "desconto" else "deduction"
         }
 
-        val prompt = when (language) {
-            "pt" -> """
-                Você é um especialista em RH e contabilidade brasileira. 
-                Explique de forma simples e direta para um trabalhador o que é o seguinte item do seu holerite:
-                
-                Item: ${item.descricao}
-                Tipo: $tipo
-                Valor: R$ ${item.valor}
-                Referência: ${item.referencia}
-                
-                Dê uma explicação amigável, em no máximo 3 frases, sobre por que esse valor aparece no holerite e se ele é comum.
-                Responda obrigatoriamente em Português do Brasil.
-            """.trimIndent()
+        val prompt = """
+            Você é um especialista em RH e contabilidade brasileira. Explique este item do holerite para um trabalhador de forma amigável em no máximo 3 frases:
+            Item: ${item.descricao ?: "N/A"}
+            Tipo: $tipo
+            Valor: R$ ${item.valor ?: "0,00"}
+            Referência: ${item.referencia ?: "N/A"}
             
-            "es" -> """
-                Eres un experto en RRHH y contabilidad brasileña.
-                Explica de forma sencilla y directa a un trabajador qué es el siguiente elemento de su recibo de sueldo:
-                
-                Ítem: ${item.descricao}
-                Tipo: $tipo
-                Valor: R$ ${item.valor}
-                Referencia: ${item.referencia}
-                
-                Da una explicación amable, en un máximo de 3 frases, sobre por qué este valor aparece en el recibo y si es común.
-                Responda obligatoriamente en Español.
-            """.trimIndent()
-
-            else -> """
-                You are a Brazilian HR and accounting specialist. 
-                Explain simply and directly to a worker what the following item on their payslip is:
-                
-                Item: ${item.descricao}
-                Type: $tipo
-                Value: R$ ${item.valor}
-                Reference: ${item.referencia}
-                
-                Give a friendly explanation, in a maximum of 3 sentences, about why this value appears on the payslip and if it is common.
-                Respond in English.
-            """.trimIndent()
-        }
+            Dê uma explicação amigável sobre por que esse valor aparece e se ele é comum.
+            Responda obrigatoriamente em: ${if (language == "pt") "Português do Brasil" else "Inglês"}.
+        """.trimIndent()
 
         try {
-            val response = generativeModel.generateContent(prompt)
-            response.text ?: "AI Error: Empty response."
+            val requestBody = GroqRequest(
+                model = "llama-3.1-8b-instant",
+                messages = listOf(GroqMessage(role = "user", content = prompt))
+            )
+
+            val response: HttpResponse = client.post("https://api.groq.com/openai/v1/chat/completions") {
+                header(HttpHeaders.Authorization, "Bearer $apiKey")
+                contentType(ContentType.Application.Json)
+                setBody(gson.toJson(requestBody))
+            }
+
+            if (response.status.isSuccess()) {
+                val jsonResponse = response.bodyAsText()
+                val groqResponse = gson.fromJson(jsonResponse, GroqResponse::class.java)
+                groqResponse.choices.firstOrNull()?.message?.content ?: "Erro: Resposta vazia da IA."
+            } else {
+                "Erro na API (${response.status.value}): Tente novamente mais tarde."
+            }
         } catch (e: Exception) {
-            "Error: ${e.localizedMessage}"
+            "Erro ao analisar: ${e.localizedMessage}"
         }
     }
 }

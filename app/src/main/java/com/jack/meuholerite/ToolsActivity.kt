@@ -12,14 +12,15 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.jack.meuholerite.ui.IosWidgetFinanceWideCard
-import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 
 class ToolsActivity : ComponentActivity() {
@@ -39,7 +40,7 @@ fun ToolsScreenContent(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tools_label), fontWeight = FontWeight.Bold) },
+                title = { Text("Ferramentas", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, null)
@@ -59,6 +60,11 @@ fun ToolsScreenContent(onBack: () -> Unit) {
 @Composable
 fun ToolsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+
+    fun openFinanceManager() {
+        context.startActivity(Intent(context, FinanceActivity::class.java))
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -68,45 +74,77 @@ fun ToolsScreen(modifier: Modifier = Modifier) {
     ) {
         Spacer(Modifier.height(8.dp))
 
-        SectionHeader(stringResource(R.string.finance_management))
+        Text(
+            text = "CARREIRA E FINANÇAS",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+        )
+
         IosWidgetFinanceWideCard(
-            title = stringResource(R.string.finance_management),
+            title = "Gestão Financeira",
             value = "Gerenciar",
-            subtitle = stringResource(R.string.finance_description),
+            subtitle = "Controle gastos e metas",
             color = Color(0xFF34C759),
             icon = Icons.Outlined.AccountBalanceWallet,
-            onClick = { context.startActivity(Intent(context, FinanceActivity::class.java)) }
+            onClick = { openFinanceManager() }
+        )
+
+        IosWidgetFinanceWideCard(
+            title = "Escala de Trabalho",
+            value = "Ver Escala",
+            subtitle = "Planeje suas folgas",
+            color = Color(0xFF5856D6),
+            icon = Icons.Outlined.CalendarMonth,
+            onClick = { context.startActivity(Intent(context, EscalaActivity::class.java)) }
+        )
+
+        IosWidgetFinanceWideCard(
+            title = "Guia do Trabalhador",
+            value = "Dicas CLT",
+            subtitle = "Conheça seus direitos",
+            color = Color(0xFFFF9500),
+            icon = Icons.Outlined.Lightbulb,
+            onClick = { context.startActivity(Intent(context, DicasCltActivity::class.java)) }
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "SIMULADORES CLT",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
         )
         
-        SectionHeader(stringResource(R.string.vacation_management))
         IosWidgetFinanceWideCard(
-            title = stringResource(R.string.vacation_calc),
-            value = "Consultar",
+            title = "Gestão de Férias",
+            value = "Calcular",
             subtitle = "Projeção e dias acumulados",
             color = Color(0xFF007AFF),
             icon = Icons.Outlined.BeachAccess,
             onClick = { context.startActivity(Intent(context, VacationActivity::class.java)) }
         )
 
-        SectionHeader("Simuladores")
         IosWidgetFinanceWideCard(
-            title = stringResource(R.string.thirteenth_salary),
+            title = "13º Salário",
             value = "Projetar",
             subtitle = "Média das parcelas",
-            color = Color(0xFF5856D6),
+            color = Color(0xFF5AC8FA),
             icon = Icons.Outlined.Redeem,
             onClick = { context.startActivity(Intent(context, ThirteenthActivity::class.java)) }
         )
         IosWidgetFinanceWideCard(
-            title = stringResource(R.string.resignation_calc),
+            title = "Rescisão CLT",
             value = "Calcular",
             subtitle = "Pedido ou Demissão",
-            color = Color(0xFFFF9500),
+            color = Color(0xFFFF3B30),
             icon = Icons.Outlined.Gavel,
             onClick = { context.startActivity(Intent(context, ResignationActivity::class.java)) }
         )
         IosWidgetFinanceWideCard(
-            title = stringResource(R.string.fgts_calc),
+            title = "Saldo FGTS",
             value = "Consultar",
             subtitle = "Saldo e multa estimada",
             color = Color(0xFF34C759),

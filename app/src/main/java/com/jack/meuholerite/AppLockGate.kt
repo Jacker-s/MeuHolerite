@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.jack.meuholerite.utils.BiometricAuth
 import com.jack.meuholerite.utils.StorageManager
+import com.jack.meuholerite.ui.AnimatedAppIcon
 
 @Composable
 fun AppLockGate(
@@ -108,7 +109,7 @@ fun AppLockGate(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Outlined.Lock, null, Modifier.size(42.dp))
+            AnimatedAppIcon(size = 90)
             Spacer(Modifier.height(12.dp))
 
             Text(if (setupMode) "Criar PIN" else "Digite o PIN", fontSize = 22.sp)

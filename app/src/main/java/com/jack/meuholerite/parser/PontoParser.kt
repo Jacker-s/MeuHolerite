@@ -7,50 +7,30 @@ class PontoParser {
     fun parse(text: String): EspelhoPonto {
         val empresa = text.split("\n").firstOrNull { it.isNotBlank() }?.trim() ?: "Empresa não identificada"
 
-        val funcionario = "FUNCIONARIO\\s+\\d+\\s+-\\s+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE)
-            .find(text)?.groupValues?.get(1)?.trim() ?: "Não encontrado"
+        val funcionarioMatch = "FUNCIONARIO\\s+(\\d+)\\s+-\\s+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE).find(text)
+        val matricula = funcionarioMatch?.groupValues?.get(1) ?: ""
+        val funcionario = funcionarioMatch?.groupValues?.get(2)?.trim() ?: "Não encontrado"
+        
+        val cargo = "(?:CARGO|FUN[CÇ][ÃA]O)[:\\s]+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE)
+            .find(text)?.groupValues?.get(1)?.trim() ?: ""
             
         val periodo = "Período\\s+([^\\n]+)".toRegex(RegexOption.IGNORE_CASE)
             .find(text)?.groupValues?.get(1)?.trim() ?: "Não encontrado"
 
-        // Extração de Jornada (Horários) considerando quebras de linha
-        // O usuário informou que deve exibir apenas os 4 horários principais
+        // 1. Extração de Jornada - Focando na estrutura padrão de escalas
         val timeRegex = "\\d{2}:\\d{2}".toRegex()
         val jornadaRegex = "(?:Horário\\s+Padronizado|Jornada|Horas\\s+Trabalhadas)[:\\s]*((?:\\d{2,}:\\d{2}[\\s\\n]*)+)".toRegex(RegexOption.IGNORE_CASE)
-        val jornadaMatches = jornadaRegex.findAll(text)
         var jornada = ""
-        
-        // Procuramos por uma sequência que contenha múltiplos horários (típico de jornada: 08:00 12:00...)
-        for (match in jornadaMatches) {
-            val raw = match.groupValues[1]
-            val timesFound = timeRegex.findAll(raw).map { it.value }.toList()
-            if (timesFound.size > 1) {
-                // Pegamos apenas os 4 primeiros horários principais
-                jornada = timesFound.take(4).joinToString(" ")
-                break
-            }
-        }
-        
-        // Se não encontramos uma sequência longa, tentamos extrair do primeiro match encontrado
-        if (jornada.isEmpty()) {
-            val match = jornadaRegex.find(text)
-            if (match != null) {
-                val timesFound = timeRegex.findAll(match.groupValues[1]).map { it.value }.toList()
-                jornada = timesFound.take(4).joinToString(" ")
+        jornadaRegex.findAll(text).forEach { match ->
+            val times = timeRegex.findAll(match.groupValues[1]).map { it.value }.toList()
+            if (times.size >= 2 && jornada.isEmpty()) {
+                jornada = times.take(4).joinToString(" ")
             }
         }
 
-        // Extração de Jornada Realizada considerando quebras de linha
-        val jornadaRealizadaRegex = "Jornada\\s+Realizada:?\\s*([\\d:\\s\\n]+)".toRegex(RegexOption.IGNORE_CASE)
-        val jornadaRealizadaRaw = jornadaRealizadaRegex.find(text)?.groupValues?.get(1)?.trim() ?: ""
-        val jornadaRealizada = if (jornadaRealizadaRaw.contains(":")) {
-            jornadaRealizadaRaw.split("\\s+".toRegex()).firstOrNull { it.contains(":") } ?: ""
-        } else ""
-
+        // 2. Extração de Itens (Metricas) com proteção contra falsos positivos
         val itens = mutableListOf<EspelhoItem>()
         val labelsProcessadas = mutableSetOf<String>()
-        
-        // Mapeamento dos campos para chaves de recursos de string
         val camposDesejados = mapOf(
             "HORAS TRABALHADAS" to "label_worked_hours",
             "ADICIONAL NOTURNO" to "label_night_allowance",
@@ -59,109 +39,103 @@ class PontoParser {
             "HORAS EXTRAS 50%" to "label_extra_hours_50",
             "HORAS EXTRAS 100%" to "label_extra_hours_100",
             "ABONO" to "label_excused_absence",
+            "TROCA DE UNIFORME" to "label_bh_uniform",
+            "FOLGA COMP. TROCA DE UNIFORME" to "label_bh_uniform_off",
             "FALTAS" to "label_absences"
         )
-        
-        val metricRegex = "(\\d{2,}\\s*:\\s*\\d{2})\\s+([^\\n\\d]+(?:\\d+%)?)".toRegex()
-        
-        val matches = metricRegex.findAll(text).toList().reversed()
-        
-        for (match in matches) {
+
+        // Regex aprimorada: busca o VALOR seguido do NOME (comum em layouts de coluna)
+        val metricRegex = "(\\d{2,}\\s*:\\s*\\d{2})\\s+([^\\n\\d]{3,}(?:\\d+%)?)".toRegex()
+        metricRegex.findAll(text).toList().reversed().forEach { match ->
             val rawValue = match.groupValues[1]
-            val originalLabel = match.groupValues[2].trim()
-            val normalizedLabel = originalLabel.uppercase()
+            val originalLabel = match.groupValues[2].trim().uppercase()
 
-            if (normalizedLabel.contains("DSR")) continue
+            if (originalLabel.contains("DSR")) return@forEach
 
-            val entry = camposDesejados.entries.find { normalizedLabel.contains(it.key) } ?: continue
+            val entry = camposDesejados.entries.find { originalLabel.contains(it.key) } ?: return@forEach
             val resourceKey = entry.value
-            
-            if (labelsProcessadas.contains(resourceKey)) continue
 
-            val formattedValue = formatTime(rawValue)
-            val isNegative = normalizedLabel.contains("ATRASO") || 
-                            normalizedLabel.contains("SAIDA") || 
-                            normalizedLabel.contains("FALTA")
-            
-            itens.add(EspelhoItem(resourceKey, formattedValue, isNegative))
-            labelsProcessadas.add(resourceKey)
-        }
+            if (!labelsProcessadas.contains(resourceKey)) {
+                val formattedValue = formatTime(rawValue)
+                val isNegative = originalLabel.contains("ATRASO") ||
+                                originalLabel.contains("SAIDA") ||
+                                originalLabel.contains("FALTA") ||
+                                originalLabel.contains("FOLGA")
 
-        // Se jornadaRealizada não foi encontrada pelo padrão específico, podemos usar o valor de HORAS TRABALHADAS se disponível
-        val finalJornadaRealizada = if (jornadaRealizada.isEmpty()) {
-            itens.find { it.label == "label_worked_hours" }?.value ?: ""
-        } else {
-            jornadaRealizada
-        }
-
-        // Busca mais robusta pelo saldo final do banco de horas
-        val patternsSaldoFinal = listOf(
-            "=\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(),
-            "SALDO ATUAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
-            "SALDO FINAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
-            "TOTAL\\s+BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
-            "SALDO\\s+BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE),
-            "BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE)
-        )
-        
-        var saldoFinalRaw = "0:00"
-        for (pattern in patternsSaldoFinal) {
-            val match = pattern.findAll(text).lastOrNull()
-            if (match != null) {
-                saldoFinalRaw = match.groupValues[1]
-                break
+                itens.add(EspelhoItem(resourceKey, formattedValue, isNegative))
+                labelsProcessadas.add(resourceKey)
             }
         }
-        val saldoFinal = formatTime(saldoFinalRaw)
-        
-        val saldoPeriodoBH = "SALDO DO PERÍODO\\s+([-|+]?\\s*\\d+\\s*:\\s*\\d{2})".toRegex(RegexOption.IGNORE_CASE)
-            .find(text)?.groupValues?.get(1)?.let { formatTime(it) } ?: "0:00"
 
-        // Extracao de dias com falta - Ignorando explicitamente DSR
+        // 3. Saldo BH com Validação de Sanidade
+        val saldoFinal = findBestTimeMatch(text, listOf(
+            "TOTAL\\s+BANCO\\s+HORAS\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})",
+            "SALDO\\s+FINAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})",
+            "SALDO\\s+ATUAL\\s*[:|\\s]?\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})",
+            "=\\s*([-|+]?\\s*\\d+\\s*:\\s*\\d{2})"
+        ))
+
+        val saldoPeriodoBH = findBestTimeMatch(text, listOf(
+            "SALDO\\s+DO\\s+PER[IÍ]ODO\\s+([-|+]?\\s*\\d+\\s*:\\s*\\d{2})"
+        ))
+
+        // 4. Detecção de Faltas
         val diasFaltas = mutableListOf<String>()
-        val diaRegex = "(\\d{2}/\\d{2}/\\d{4})((?!DSR).)*?(FALTA)".toRegex(RegexOption.IGNORE_CASE)
+        val diaRegex = "(\\d{2}/\\d{2}/\\d{4}).*?\\bFALTA\\b(?!\\s+DE\\s+MARC)".toRegex(RegexOption.IGNORE_CASE)
         diaRegex.findAll(text).forEach {
-            val data = it.groupValues[1]
-            diasFaltas.add(data)
+            if (!it.value.contains("DSR", true)) {
+                diasFaltas.add(it.groupValues[1])
+            }
         }
 
-        val hasAbsences = diasFaltas.isNotEmpty()
-
-        var detalhesBH = "SALDO ANTERIOR[^\\n]+".toRegex(RegexOption.IGNORE_CASE)
-            .find(text)?.groupValues?.get(0) ?: ""
-            
-        detalhesBH = detalhesBH.replace("DSR", "", ignoreCase = true)
-            .replace("()", "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-        
         return EspelhoPonto(
             funcionario = funcionario,
+            matricula = matricula,
+            cargo = cargo,
             empresa = empresa,
             periodo = periodo,
             jornada = jornada,
-            jornadaRealizada = finalJornadaRealizada,
+            jornadaRealizada = itens.find { it.label == "label_worked_hours" }?.value ?: "",
             resumoItens = itens.reversed(),
             saldoFinalBH = saldoFinal,
             saldoPeriodoBH = saldoPeriodoBH,
-            detalhesSaldoBH = detalhesBH,
-            hasAbsences = hasAbsences,
+            detalhesSaldoBH = extractBhSummary(text),
+            hasAbsences = diasFaltas.isNotEmpty(),
             diasFaltas = diasFaltas.distinct()
         )
+    }
+
+    private fun findBestTimeMatch(text: String, patterns: List<String>): String {
+        for (p in patterns) {
+            val match = p.toRegex(RegexOption.IGNORE_CASE).findAll(text).lastOrNull()
+            if (match != null) return formatTime(match.groupValues[1])
+        }
+        return "0:00"
+    }
+
+    private fun extractBhSummary(text: String): String {
+        // Tenta capturar a linha completa do resumo do banco de horas
+        val patterns = listOf(
+            "SALDO\\s+ANTERIOR.*?(?:=)\\s*([-|+]?\\s*\\d+:\\d{2})",
+            "SALDO\\s+ANTERIOR.*"
+        )
+        for (p in patterns) {
+            val match = p.toRegex(RegexOption.IGNORE_CASE).find(text)
+            if (match != null) {
+                return match.value.replace(Regex("\\s+"), " ").trim()
+            }
+        }
+        return ""
     }
 
     private fun formatTime(time: String): String {
         val cleaned = time.replace("\\s".toRegex(), "")
         val isNegative = cleaned.contains("-")
         val absoluteTime = cleaned.replace("[-+]".toRegex(), "")
-
         val parts = absoluteTime.split(":")
         if (parts.size < 2) return "0:00"
-
-        val rawHours = parts[0].trimStart('0')
-        val hours = if (rawHours.isEmpty()) "0" else rawHours
+        val hours = parts[0].trimStart('0').ifEmpty { "0" }
         val minutes = parts[1].take(2).padStart(2, '0')
-
         return "${if (isNegative) "-" else ""}$hours:$minutes"
     }
 }

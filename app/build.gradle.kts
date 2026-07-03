@@ -1,39 +1,37 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-
-    // Necessário para ler google-services.json e gerar default_web_client_id
     alias(libs.plugins.google.services)
 }
 
 android {
     namespace = "com.jack.meuholerite"
     compileSdk = 35
-    
-    // Define a versão do NDK para garantir a extração correta dos símbolos de depuração
-    // Se não tiver uma versão específica instalada, o Gradle baixará a padrão para o seu SDK.
-    ndkVersion = "26.1.10909125" 
+    ndkVersion = "26.1.10909125"
 
-    // Carregar propriedades da chave
     val keystoreProperties = Properties()
     val keystorePropertiesFile = rootProject.file("local.properties")
     if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(FileInputStream(keystorePropertiesFile))
     }
+    val groqApiKey = (keystoreProperties.getProperty("groq.api.key") ?: "")
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
 
     signingConfigs {
-        val releaseKeyFile = rootProject.file("release-key.jks")
+        val releaseKeyFile = File("C:/Users/Jackson/Documents/release-key")
         if (releaseKeyFile.exists()) {
             create("release") {
                 storeFile = releaseKeyFile
-                storePassword = keystoreProperties["KEYSTORE_PASSWORD"] as String?
-                keyAlias = keystoreProperties["KEY_ALIAS"] as String?
-                keyPassword = keystoreProperties["KEY_PASSWORD"] as String?
+                storePassword = "Samsung000@"
+                keyAlias = "key0"
+                keyPassword = "Samsung000@"
             }
         }
     }
@@ -42,31 +40,25 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 23
-        versionName = "1.5"
+        versionCode = 69
+        versionName = "2.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
     }
 
     buildTypes {
         release {
-            // Habilita a ofuscação e redução de código (R8)
             isMinifyEnabled = true
-            
-            // Remove recursos (drawables, layouts) não utilizados
             isShrinkResources = true
-            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfigs.findByName("release")?.let { signingConfig = it }
-
-            // Inclui símbolos de depuração nativos no App Bundle (.aab)
             ndk {
                 debugSymbolLevel = "FULL"
             }
         }
-
         debug {
             isMinifyEnabled = false
         }
@@ -77,16 +69,45 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,DEPENDENCIES,INDEX.LIST}"
+        }
+    }
+
+    lint {
+        disable += "NullSafeMutableLiveData"
+        abortOnError = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("androidx.core:core:1.15.0")
+        force("androidx.core:core-ktx:1.15.0")
+        force("androidx.browser:browser:1.8.0")
+        force("io.grpc:grpc-api:1.62.2")
+        force("io.grpc:grpc-core:1.62.2")
+        force("io.grpc:grpc-okhttp:1.62.2")
+        force("io.grpc:grpc-stub:1.62.2")
+        force("io.grpc:grpc-android:1.62.2")
+        force("io.grpc:grpc-protobuf-lite:1.62.2")
     }
 }
 
 dependencies {
+    // Dependências do Android, Compose e Firebase
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -98,47 +119,60 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
-
-    // Biometric
     implementation(libs.androidx.biometric)
-
-    // Image Loading
     implementation(libs.coil.compose)
-
-    // Google AdMob
     implementation(libs.play.services.ads)
-
-    // PDF Library
     implementation(libs.pdfbox.android)
-
-    // JSON Serialization
     implementation(libs.gson)
-
-    // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    
+    // Ktor dependencies for Groq AI
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.encoding)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidbrowserhelper)
+    implementation(libs.androidx.ui.graphics)
+
     ksp(libs.androidx.room.compiler)
-
-    // DataStore
     implementation(libs.androidx.datastore.preferences)
-
-    // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
-
-    // Google Login / Credentials Manager
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
-
-    // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.messaging)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.webkit)
+    implementation(libs.app.update.ktx)
+    implementation(libs.google.android.material)
+    
+    // Google Play Services Core (Resolving crash/missing R$string)
+    implementation(libs.playservices.base)
+    implementation(libs.playservices.basement)
+    
+    // Google Drive Backup
+    implementation(libs.play.services.auth)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.drive)
+    implementation(libs.google.http.client.gson)
+    implementation(libs.play.review.ktx)
+    implementation(libs.billing.ktx)
 
-    // Gemini AI
-    implementation(libs.google.generativeai)
+    // Resolve gRPC conflict between Google Drive and Firestore
+    implementation("io.grpc:grpc-okhttp:1.62.2")
+    implementation("io.grpc:grpc-android:1.62.2")
+    implementation("io.grpc:grpc-stub:1.62.2")
+    implementation("io.grpc:grpc-api:1.62.2")
 
+    // Dependências de Teste
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

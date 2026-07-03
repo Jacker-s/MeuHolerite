@@ -94,8 +94,7 @@ fun ResignationScreen(storage: StorageManager, onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Configurações
-            SectionHeader("Configurações da Rescisão")
+            SectionHeader("Dados para Simulação")
             
             Surface(
                 onClick = { showDatePicker = true },
@@ -113,10 +112,10 @@ fun ResignationScreen(storage: StorageManager, onBack: () -> Unit) {
                 }
             }
 
-            Text("Motivo da Saída", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Motivo da Rescisão", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ResignationTypeChip(
-                    label = "Demissão (Sem Justa Causa)",
+                    label = "Demissão Imotivada",
                     selected = resignationType == ResignationType.WITHOUT_CAUSE,
                     onClick = { resignationType = ResignationType.WITHOUT_CAUSE },
                     modifier = Modifier.weight(1f)
@@ -130,13 +129,12 @@ fun ResignationScreen(storage: StorageManager, onBack: () -> Unit) {
             }
 
             if (result != null) {
-                // Total
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                 ) {
                     Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Total Estimado a Receber", fontSize = 14.sp)
+                        Text("Crédito Estimado na Rescisão", fontSize = 14.sp)
                         Text(
                             "R$ ${String.format("%.2f", result.total)}",
                             fontSize = 32.sp,
@@ -146,19 +144,35 @@ fun ResignationScreen(storage: StorageManager, onBack: () -> Unit) {
                     }
                 }
 
-                SectionHeader("Detalhamento")
-                ResignationItemRow("Saldo de Salário (Dias do mês)", result.salaryBalance)
-                ResignationItemRow("Férias Proporcionais + 1/3", result.vacationBalance)
-                ResignationItemRow("13º Salário Proporcional", result.thirteenthBalance)
+                SectionHeader("Detalhamento de Verbas")
+                ResignationItemRow("Saldo de Salário (${result.daysSalary} dias)", result.salaryBalance)
+                ResignationItemRow("Férias Prop. (${result.vacationMonths}/12) + 1/3", result.vacationBalance)
+                ResignationItemRow("13º Salário Prop. (${result.thirteenthMonths}/12)", result.thirteenthBalance)
                 
                 if (resignationType == ResignationType.WITHOUT_CAUSE) {
-                    ResignationItemRow("Aviso Prévio Indenizado", result.noticePeriod)
+                    ResignationItemRow("Aviso Prévio Indenizado (${result.noticeDays} dias)", result.noticePeriod)
                     ResignationItemRow("Multa FGTS (40%)", result.fgtsPenalty)
+                    
+                    Spacer(Modifier.height(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Direito ao saque do FGTS acumulado e Seguro Desemprego (se elegível).",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "* Valores aproximados e simplificados. Não inclui descontos de INSS/IRRF sobre as verbas salariais ou outros descontos específicos.",
+                    "* Simulação refinada. Considera aviso prévio proporcional ao tempo de serviço (Lei 12.506/2011). Não inclui descontos fiscais (INSS/IRRF).",
                     fontSize = 11.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -214,9 +228,13 @@ enum class ResignationType { WITHOUT_CAUSE, QUIT }
 
 data class ResignationResult(
     val salaryBalance: Double,
+    val daysSalary: Int,
     val vacationBalance: Double,
+    val vacationMonths: Int,
     val thirteenthBalance: Double,
+    val thirteenthMonths: Int,
     val noticePeriod: Double,
+    val noticeDays: Int,
     val fgtsPenalty: Double,
     val total: Double
 )
@@ -226,38 +244,60 @@ fun calculateResignation(admissionDateStr: String, salary: Double, type: Resigna
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return try {
         val admissionDate = sdf.parse(admissionDateStr) ?: return null
-        val today = Date()
-        val diffInMillis = today.time - admissionDate.time
-        val daysWorked = TimeUnit.MILLISECONDS.toDays(diffInMillis)
-        val monthsWorked = (daysWorked / 30.44).toInt()
+        val today = Calendar.getInstance()
+        val admission = Calendar.getInstance().apply { time = admissionDate }
+        
+        val diffInMillis = today.timeInMillis - admission.timeInMillis
+        val totalDaysWorked = TimeUnit.MILLISECONDS.toDays(diffInMillis)
+        val fullYearsWorked = (totalDaysWorked / 365).toInt()
 
-        // 1. Saldo de Salário (Simulando que hoje é dia 15)
-        val salaryBalance = (salary / 30.0) * 15.0
+        // 1. Saldo de Salário
+        val currentDay = today.get(Calendar.DAY_OF_MONTH)
+        val salaryBalance = (salary / 30.0) * currentDay
 
         // 2. Férias Proporcionais
-        val monthsVacation = (monthsWorked % 12)
-        val vacationVal = (salary / 12.0) * monthsVacation
+        // Cálculo de avos de férias (período aquisitivo atual)
+        val monthsWorkedTotal = (totalDaysWorked / 30.44).toInt()
+        val vacationAvos = monthsWorkedTotal % 12
+        val vacationVal = (salary / 12.0) * vacationAvos
         val vacationPlusThird = vacationVal + (vacationVal / 3.0)
 
-        // 3. 13º Proporcional (Simplificado: meses no ano atual)
-        val cal = Calendar.getInstance()
-        val currentMonth = cal.get(Calendar.MONTH) + 1
-        val thirteenth = (salary / 12.0) * currentMonth
+        // 3. 13º Proporcional (Meses trabalhados no ano atual)
+        var thirteenthAvos = today.get(Calendar.MONTH) + 1
+        if (admission.get(Calendar.YEAR) == today.get(Calendar.YEAR)) {
+            thirteenthAvos = thirteenthAvos - admission.get(Calendar.MONTH)
+            if (admission.get(Calendar.DAY_OF_MONTH) > 15) thirteenthAvos--
+        } else {
+            // Se hoje é antes do dia 15, o mês atual não conta pro 13º
+            if (currentDay < 15) thirteenthAvos--
+        }
+        thirteenthAvos = thirteenthAvos.coerceAtLeast(0)
+        val thirteenth = (salary / 12.0) * thirteenthAvos
 
-        // 4. Aviso Prévio e Multa FGTS (Simplificado)
+        // 4. Aviso Prévio Proporcional (Lei 12.506/2011)
         var notice = 0.0
+        var noticeDays = 0
         var penalty = 0.0
+        
         if (type == ResignationType.WITHOUT_CAUSE) {
-            notice = salary // 30 dias base
-            val fgtsAccumulated = (salary * 0.08) * monthsWorked.coerceAtLeast(1)
+            // 30 dias + 3 dias por ano completo, max 90 dias total
+            noticeDays = (30 + (fullYearsWorked * 3)).coerceAtMost(90)
+            notice = (salary / 30.0) * noticeDays
+            
+            // Multa FGTS (Simplificada)
+            val fgtsAccumulated = (salary * 0.08) * monthsWorkedTotal.coerceAtLeast(1)
             penalty = fgtsAccumulated * 0.4
         }
 
         ResignationResult(
             salaryBalance = salaryBalance,
+            daysSalary = currentDay,
             vacationBalance = vacationPlusThird,
+            vacationMonths = vacationAvos,
             thirteenthBalance = thirteenth,
+            thirteenthMonths = thirteenthAvos,
             noticePeriod = notice,
+            noticeDays = noticeDays,
             fgtsPenalty = penalty,
             total = salaryBalance + vacationPlusThird + thirteenth + notice + penalty
         )

@@ -60,23 +60,30 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
     val db = remember { AppDatabase.getDatabase(context) }
     val gson = remember { Gson() }
 
-    // Carregar remuneração total (Proventos) para a projeção de 1/3 e valor total
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val recibos = db.reciboDao().getAll().map { it.toModel(gson) }
             if (recibos.isNotEmpty()) {
-                // Pega o total de proventos do recibo mais recente
-                val latest = recibos.first()
+                val latest = recibos.sortedByDescending { it.periodo }.first()
+
+                // Obter salário bruto do último holerite
                 val value = latest.totalProventos
                     .replace(".", "")
                     .replace(",", ".")
                     .toDoubleOrNull()
                 lastGrossSalary = value
+
+                // Obter data de admissão do holerite se não estiver definida
+                if (admissionDateStr.isEmpty() && latest.dataAdmissao.isNotEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        admissionDateStr = latest.dataAdmissao
+                        storage.setAdmissionDate(latest.dataAdmissao)
+                    }
+                }
             }
         }
     }
 
-    // Cálculo de dados de férias
     val vacationData = remember(admissionDateStr, lastGrossSalary) { 
         calculateVacation(admissionDateStr, lastGrossSalary) 
     }
@@ -84,7 +91,7 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.vacation_management), fontWeight = FontWeight.Bold) },
+                title = { Text("Gestão de Férias", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, null)
@@ -101,7 +108,6 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Card de Entrada: Data de Admissão
             Surface(
                 onClick = { showDatePicker = true },
                 shape = RoundedCornerShape(22.dp),
@@ -115,9 +121,9 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                     Icon(Icons.Outlined.Event, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.admission_date_label), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Data de Admissão", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = admissionDateStr.ifEmpty { stringResource(R.string.tap_to_select) },
+                            text = admissionDateStr.ifEmpty { "Toque para selecionar" },
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -127,29 +133,26 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
             }
 
             if (vacationData != null) {
-                SectionHeader(stringResource(R.string.vacation_summary))
+                SectionHeader("Resumo do Período")
                 
-                // Card 1: Dias Acumulados
                 VacationInfoCard(
-                    title = stringResource(R.string.accrued_days),
+                    title = "Dias Acumulados",
                     value = "${vacationData.accruedDays} dias",
-                    subtitle = "Proporcional ao tempo trabalhado",
+                    subtitle = "Proporcional ao período aquisitivo atual",
                     icon = Icons.Outlined.BeachAccess,
                     color = Color(0xFF34C759)
                 )
 
-                // Card 2: Data Limite
                 VacationInfoCard(
-                    title = stringResource(R.string.deadline_title),
+                    title = "Data Limite",
                     value = vacationData.deadlineDate,
-                    subtitle = "Data máxima para evitar férias dobradas",
+                    subtitle = "Data limite para início do gozo (vencimento)",
                     icon = Icons.Outlined.Timer,
                     color = Color(0xFFFF9500)
                 )
 
-                SectionHeader(stringResource(R.string.financial_projection))
+                SectionHeader("Projeção Financeira")
 
-                // Card: Valor Total Aproximado (Salário + 1/3)
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
@@ -159,7 +162,7 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.Paid, null, tint = Color(0xFF34C759))
                             Spacer(Modifier.width(12.dp))
-                            Text("Valor Total Estimado das Férias", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("Valor Total Bruto Estimado", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                         Spacer(Modifier.height(12.dp))
                         Text(
@@ -169,14 +172,13 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                             color = Color(0xFF34C759)
                         )
                         Text(
-                            "(Total de Proventos + 1/3 Constitucional)",
+                            "(Salário Integral + 1/3 Constitucional)",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
 
-                // Card Secundário: Detalhe do 1/3
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Surface(
                         modifier = Modifier.weight(1f),
@@ -185,11 +187,11 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                         shadowElevation = 2.dp
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.one_third_vacation), fontSize = 12.sp, color = Color.Gray)
+                            Text("1/3 Constitucional", fontSize = 12.sp, color = Color.Gray)
                             Text("R$ ${vacationData.oneThirdValue}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF5856D6))
                         }
                     }
-                    
+
                     Surface(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(22.dp),
@@ -197,7 +199,7 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
                         shadowElevation = 2.dp
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("Base de Cálculo", fontSize = 12.sp, color = Color.Gray)
+                            Text("Base Mensal", fontSize = 12.sp, color = Color.Gray)
                             Text("R$ ${String.format("%.2f", lastGrossSalary ?: 0.0)}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -205,7 +207,7 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
 
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (lastGrossSalary != null) "* Calculado com base no total de proventos do seu último recibo." 
+                    if (lastGrossSalary != null) "* Cálculo refinado com base no total de proventos do seu último holerite."
                     else "* Importe recibos para calcular com base na sua remuneração real.",
                     fontSize = 11.sp,
                     color = Color.Gray,
@@ -215,7 +217,7 @@ fun VacationScreen(storage: StorageManager, onBack: () -> Unit) {
             } else {
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        stringResource(R.string.select_admission_instruction),
+                        "Selecione sua data de admissão para calcular os dias de férias acumulados.",
                         textAlign = TextAlign.Center,
                         color = Color.Gray
                     )
@@ -289,28 +291,46 @@ fun calculateVacation(admissionDateStr: String, grossSalaryInput: Double?): Vaca
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return try {
         val admissionDate = sdf.parse(admissionDateStr) ?: return null
-        val today = Date()
+        val today = Calendar.getInstance()
+        val admission = Calendar.getInstance().apply { time = admissionDate }
         
-        val diffInMillis = today.time - admissionDate.time
-        val daysWorked = TimeUnit.MILLISECONDS.toDays(diffInMillis)
+        // Cálculo de meses completos para o período aquisitivo
+        var monthsWorkedInPeriod = 0
+        val tempDate = admission.clone() as Calendar
+
+        while (tempDate.before(today)) {
+            tempDate.add(Calendar.MONTH, 1)
+            if (tempDate.before(today) || isSameMonthAndYear(tempDate, today)) {
+                monthsWorkedInPeriod++
+            } else {
+                // Verificar fração superior a 14 dias no último mês incompleto
+                tempDate.add(Calendar.MONTH, -1)
+                val diffInMillis = today.timeInMillis - tempDate.timeInMillis
+                val daysDiff = TimeUnit.MILLISECONDS.toDays(diffInMillis)
+                if (daysDiff >= 15) {
+                    monthsWorkedInPeriod++
+                }
+                break
+            }
+        }
         
-        // 1. Dias adquiridos
-        val monthsWorked = (daysWorked / 30.44).toInt()
-        val accruedDays = ((monthsWorked % 12) * 2.5).toInt().coerceIn(0, 30)
+        val totalMonths = monthsWorkedInPeriod
+        val currentPeriodMonths = totalMonths % 12
+        val accruedDays = (currentPeriodMonths * 2.5).toInt().coerceIn(0, 30)
         
-        // 2. Data limite
-        val calendar = Calendar.getInstance()
-        calendar.time = admissionDate
-        val yearsOfService = (daysWorked / 365).toInt()
-        calendar.add(Calendar.YEAR, yearsOfService + 2)
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-        val deadlineDate = sdf.format(calendar.time)
-        
-        // 3. Projeção Financeira
+        // Data limite (2 anos após o início do último período aquisitivo completo)
+        val limitDate = admission.clone() as Calendar
+        val completedPeriods = totalMonths / 12
+        limitDate.add(Calendar.YEAR, completedPeriods + 1)
+        limitDate.add(Calendar.MONTH, 11) // 1 ano e 11 meses após o início do período
+        limitDate.add(Calendar.DAY_OF_YEAR, 29) 
+
+        val deadlineDate = sdf.format(limitDate.time)
+
         val grossSalary = grossSalaryInput ?: 2000.0
         val oneThird = grossSalary / 3.0
         val total = grossSalary + oneThird
-        
+
         VacationResult(
             accruedDays = accruedDays,
             deadlineDate = deadlineDate,
@@ -318,4 +338,9 @@ fun calculateVacation(admissionDateStr: String, grossSalaryInput: Double?): Vaca
             totalValue = String.format("%.2f", total)
         )
     } catch (_: Exception) { null }
+}
+
+fun isSameMonthAndYear(cal1: Calendar, cal2: Calendar): Boolean {
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+           cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH)
 }

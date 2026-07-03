@@ -30,16 +30,21 @@ import com.jack.meuholerite.database.toModel
 import com.jack.meuholerite.model.ReciboPagamento
 import com.jack.meuholerite.ui.SectionHeader
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
+import com.jack.meuholerite.utils.StorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class ThirteenthActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val storage = remember { StorageManager(this) }
             MeuHoleriteTheme {
-                ThirteenthScreen { finish() }
+                ThirteenthScreen(storage) { finish() }
             }
         }
     }
@@ -47,13 +52,14 @@ class ThirteenthActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ThirteenthScreen(onBack: () -> Unit) {
+fun ThirteenthScreen(storage: StorageManager, onBack: () -> Unit) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
     val gson = remember { Gson() }
     
     var receipts by remember { mutableStateOf<List<ReciboPagamento>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val admissionDateStr = remember { storage.getAdmissionDate() ?: "" }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -62,7 +68,9 @@ fun ThirteenthScreen(onBack: () -> Unit) {
         }
     }
 
-    val calculation = remember(receipts) { calculateThirteenth(receipts) }
+    val calculation = remember(receipts, admissionDateStr) { 
+        calculateThirteenth(receipts, admissionDateStr) 
+    }
 
     Scaffold(
         topBar = {
@@ -89,7 +97,6 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Card Principal: Valor Total Estimado
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
@@ -98,7 +105,7 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                     Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.Redeem, null, tint = Color(0xFF5856D6), modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text("Valor Total Estimado (Bruto)", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Valor Total Bruto Estimado", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                         Text(
                             "R$ ${String.format("%.2f", calculation.totalBruto)}",
                             fontSize = 32.sp,
@@ -106,7 +113,7 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                             color = Color(0xFF5856D6)
                         )
                         Text(
-                            "Baseado na média de proventos do ano atual",
+                            "Projeção para o final do ano",
                             fontSize = 11.sp,
                             color = Color.Gray
                         )
@@ -115,7 +122,6 @@ fun ThirteenthScreen(onBack: () -> Unit) {
 
                 SectionHeader("Parcelas")
 
-                // 1ª Parcela
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -129,12 +135,11 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                         Column {
                             Text("Primeira Parcela (50%)", fontSize = 13.sp, color = Color.Gray)
                             Text("R$ ${String.format("%.2f", calculation.firstInstallment)}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text("Paga geralmente até 30 de Novembro", fontSize = 11.sp, color = Color.Gray)
+                            Text("Paga sem descontos de INSS/IRRF", fontSize = 11.sp, color = Color.Gray)
                         }
                     }
                 }
 
-                // 2ª Parcela
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -148,7 +153,7 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                         Column {
                             Text("Segunda Parcela (Estimada)", fontSize = 13.sp, color = Color.Gray)
                             Text("R$ ${String.format("%.2f", calculation.secondInstallmentEstimated)}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text("Com descontos de INSS/FGTS (Paga até 20/Dez)", fontSize = 11.sp, color = Color.Gray)
+                            Text("Com descontos legais aplicados", fontSize = 11.sp, color = Color.Gray)
                         }
                     }
                 }
@@ -161,12 +166,12 @@ fun ThirteenthScreen(onBack: () -> Unit) {
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Média de Proventos:", color = Color.Gray)
+                            Text("Média de Salário Base:", color = Color.Gray)
                             Text("R$ ${String.format("%.2f", calculation.averageSalary)}", fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(8.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Meses Trabalhados no Ano:", color = Color.Gray)
+                            Text("Avos Calculados (Ano Atual):", color = Color.Gray)
                             Text("${calculation.monthsWorked}/12", fontWeight = FontWeight.Bold)
                         }
                     }
@@ -174,7 +179,8 @@ fun ThirteenthScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "* Esta é uma simulação baseada nos recibos importados do ano vigente. O valor real pode variar conforme convenções coletivas e faltas injustificadas.",
+                    if (admissionDateStr.isNotEmpty()) "* Cálculo refinado considerando sua data de admissão: $admissionDateStr"
+                    else "* Defina sua data de admissão nas configurações para um cálculo proporcional exato.",
                     fontSize = 11.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -193,37 +199,54 @@ data class ThirteenthCalculation(
     val monthsWorked: Int
 )
 
-fun calculateThirteenth(receipts: List<ReciboPagamento>): ThirteenthCalculation {
+fun calculateThirteenth(receipts: List<ReciboPagamento>, admissionDateStr: String): ThirteenthCalculation {
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    
+    // 1. Determinar quantos meses (avos) o funcionário tem direito no ano atual
+    var monthsWorkedInYear = 12
+    if (admissionDateStr.isNotEmpty()) {
+        try {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val admissionDate = sdf.parse(admissionDateStr)
+            val admissionCal = Calendar.getInstance().apply { 
+                admissionDate?.let { time = it }
+            }
+            
+            if (admissionCal.get(Calendar.YEAR) == currentYear) {
+                // Admitido no ano atual
+                val startMonth = admissionCal.get(Calendar.MONTH) // 0-11
+                val startDay = admissionCal.get(Calendar.DAY_OF_MONTH)
+                
+                // Se trabalhou 15 dias ou mais no mês de admissão, conta o mês
+                monthsWorkedInYear = 12 - startMonth
+                if (startDay > 15) {
+                    monthsWorkedInYear--
+                }
+            } else if (admissionCal.get(Calendar.YEAR) > currentYear) {
+                monthsWorkedInYear = 0
+            }
+        } catch (_: Exception) { }
+    }
+
+    // 2. Calcular a média salarial baseada nos recibos do ano atual
     val yearReceipts = receipts.filter { 
         it.periodo.contains(currentYear.toString()) && !it.periodo.contains("13º") 
     }
 
+    val average: Double
     if (yearReceipts.isEmpty()) {
-        val lastSalary = receipts.firstOrNull()?.totalProventos?.replace(".", "")?.replace(",", ".")?.toDoubleOrNull() ?: 2000.0
-        return ThirteenthCalculation(
-            totalBruto = lastSalary,
-            firstInstallment = lastSalary / 2.0,
-            secondInstallmentEstimated = lastSalary / 2.0 * 0.9, // Simulating 10% tax for display
-            averageSalary = lastSalary,
-            monthsWorked = 12
-        )
-    }
-
-    val totalProventosSum = yearReceipts.sumOf { 
-        it.totalProventos.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 
+        // Se não houver recibos deste ano, pegar o último disponível
+        average = receipts.firstOrNull()?.totalProventos?.replace(".", "")?.replace(",", ".")?.toDoubleOrNull() ?: 2000.0
+    } else {
+        val totalProventosSum = yearReceipts.sumOf { 
+            it.totalProventos.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0 
+        }
+        average = totalProventosSum / yearReceipts.size.coerceAtLeast(1)
     }
     
-    val monthsCount = yearReceipts.size.coerceAtLeast(1)
-    val average = totalProventosSum / monthsCount
-    
-    // Proporcionalidade: em um app real, consideraríamos a data de admissão. 
-    // Aqui usaremos os meses com recibo como base ou 12 se houver recibos antigos.
-    val monthsWorkedInYear = monthsCount.coerceIn(1, 12)
     val totalBruto = (average / 12.0) * monthsWorkedInYear
-    
     val first = totalBruto / 2.0
-    // Estimativa simples de 15% de desconto na segunda parcela (INSS + IR médio)
+    // Estimativa de descontos (INSS + IRRF) na 2ª parcela (aprox 12-15%)
     val second = (totalBruto / 2.0) * 0.85 
 
     return ThirteenthCalculation(

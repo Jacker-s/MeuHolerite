@@ -7,51 +7,98 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object RewardedInterstitialAdManager {
     private var rewardedInterstitialAd: RewardedInterstitialAd? = null
+    private var isLoading = false
+    
     private const val AD_UNIT_ID = "ca-app-pub-7931782163570852/3279696925"
+    
     private const val TAG = "RewardedAdManager"
 
     fun loadAd(context: Context) {
-        if (rewardedInterstitialAd != null) return
-
-        val adRequest = AdRequest.Builder().build()
-        RewardedInterstitialAd.load(context, AD_UNIT_ID, adRequest, object : RewardedInterstitialAdLoadCallback() {
-            override fun onAdLoaded(ad: RewardedInterstitialAd) {
-                rewardedInterstitialAd = ad
-                Log.d(TAG, "Ad was loaded.")
+        CoroutineScope(Dispatchers.IO).launch {
+            if (AdsDataStore.isAdsRemoved(context)) {
+                Log.d(TAG, "Anúncios removidos pelo usuário. Pulando carregamento.")
+                return@launch
             }
+            
+            withContext(Dispatchers.Main) {
+                if (rewardedInterstitialAd != null || isLoading) return@withContext
+                
+                isLoading = true
+                val adRequest = AdRequest.Builder().build()
+                val currentAdUnitId = AD_UNIT_ID
+                
+                Log.d(TAG, "Solicitando anúncio... ID: $currentAdUnitId")
 
-            override fun onAdFailedToLoad(adError: LoadAdError) {
-                rewardedInterstitialAd = null
-                Log.d(TAG, adError.message)
+                RewardedInterstitialAd.load(context, currentAdUnitId, adRequest, object : RewardedInterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: RewardedInterstitialAd) {
+                        rewardedInterstitialAd = ad
+                        isLoading = false
+                        Log.d(TAG, "Anúncio carregado. ID: $currentAdUnitId")
+                    }
+
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        rewardedInterstitialAd = null
+                        isLoading = false
+                        Log.e(
+                            TAG,
+                            "Falha ao carregar anúncio. " +
+                                "Código=${adError.code}, Domínio=${adError.domain}, " +
+                                "Mensagem=${adError.message}, ResponseInfo=${adError.responseInfo}"
+                        )
+                        
+                        // Tenta carregar novamente em 45 segundos
+                        CoroutineScope(Dispatchers.Main).launch {
+                            delay(45000)
+                            loadAd(context)
+                        }
+                    }
+                })
             }
-        })
+        }
     }
 
     fun showAd(activity: Activity, onAdDismissed: () -> Unit) {
-        if (rewardedInterstitialAd != null) {
-            rewardedInterstitialAd?.show(activity) { rewardItem ->
-                // User earned reward
-                Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
+        CoroutineScope(Dispatchers.IO).launch {
+            if (AdsDataStore.isAdsRemoved(activity)) {
+                withContext(Dispatchers.Main) { onAdDismissed() }
+                return@launch
             }
-            rewardedInterstitialAd?.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    rewardedInterstitialAd = null
-                    loadAd(activity) // Load next ad
-                    onAdDismissed()
-                }
+            
+            withContext(Dispatchers.Main) {
+                val ad = rewardedInterstitialAd
+                if (ad != null) {
+                    ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            Log.d(TAG, "Anúncio fechado.")
+                            rewardedInterstitialAd = null
+                            loadAd(activity) 
+                            onAdDismissed()
+                        }
 
-                override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
-                    rewardedInterstitialAd = null
+                        override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
+                            Log.e(TAG, "Erro ao exibir: ${adError.message}")
+                            rewardedInterstitialAd = null
+                            onAdDismissed()
+                        }
+                    }
+                    
+                    ad.show(activity) { rewardItem ->
+                        Log.d(TAG, "Usuário ganhou recompensa: ${rewardItem.amount}")
+                    }
+                } else {
+                    Log.d(TAG, "Aviso: Anúncio não disponível. Tentando carregar...")
                     onAdDismissed()
+                    loadAd(activity)
                 }
             }
-        } else {
-            Log.d(TAG, "Ad wasn't ready.")
-            onAdDismissed()
-            loadAd(activity)
         }
     }
 }

@@ -8,26 +8,42 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.os.LocaleListCompat
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
@@ -38,10 +54,14 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
-import com.jack.meuholerite.utils.BackupManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import com.jack.meuholerite.ui.AnimatedAppIcon
 
 class LoginActivity : AppCompatActivity() {
 
@@ -52,7 +72,12 @@ class LoginActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         
         if (prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
-            startActivity(Intent(this, MainActivity::class.java))
+            val destination = if (prefs.getBoolean("terms_accepted", false)) {
+                MainActivity::class.java
+            } else {
+                TermsAgreementActivity::class.java
+            }
+            startActivity(Intent(this, destination))
             finish()
             return
         }
@@ -68,7 +93,14 @@ class LoginActivity : AppCompatActivity() {
                             putString("user_photo", photoUrl)
                             apply()
                         }
-                        startActivity(Intent(this, MainActivity::class.java))
+                        val destination = if (prefs.getBoolean("terms_accepted", false)) {
+                            MainActivity::class.java
+                        } else {
+                            TermsAgreementActivity::class.java
+                        }
+                        val intent = Intent(this, destination)
+                        intent.putExtra("JUST_LOGGED_IN", true)
+                        startActivity(intent)
                         finish()
                     }
                 )
@@ -77,146 +109,289 @@ class LoginActivity : AppCompatActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(onLoginSuccess: (String, String, String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
+    val prefs = remember { context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE) }
     var isLoading by remember { mutableStateOf(false) }
     var loadingText by remember { mutableStateOf("") }
-    val backupManager = remember { BackupManager(context) }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+    val db = remember { AppDatabase.getDatabase(context) }
+    var showInfoDialog by remember { mutableStateOf(false) }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
     ) {
+        // Barra de topo com botões premium
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 40.dp, start = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Política de Privacidade
+            Surface(
+                onClick = { 
+                    context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
+                },
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Outlined.Security,
+                        null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Privacidade",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Botão de Informações Colorido
+            Surface(
+                onClick = { showInfoDialog = true },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                tonalElevation = 4.dp
+            ) {
+                Box(
+                    modifier = Modifier.size(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = "Informações",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LanguageFlag(
-                    resId = R.drawable.ic_flag_br,
-                    contentDescription = "Português",
-                    onClick = { changeLanguage("pt-BR") }
-                )
-                Spacer(modifier = Modifier.width(24.dp))
-                LanguageFlag(
-                    resId = R.drawable.ic_flag_ve,
-                    contentDescription = "Español",
-                    onClick = { changeLanguage("es-VE") }
-                )
-            }
+            Spacer(modifier = Modifier.weight(1f))
 
-            Icon(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = null,
-                modifier = Modifier.size(120.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            // Logo e Título com animação premium
+            AnimatedAppIcon(size = 140)
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = stringResource(id = R.string.onboarding_welcome_title),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
+                text = "Meu Holerite",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface,
+                letterSpacing = (-1).sp
+            )
+            
+            Text(
+                text = "Bem-vindo ao Meu Holerite",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                lineHeight = 34.sp
+                modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 12.dp),
+                lineHeight = 22.sp
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
-            if (isLoading) {
-                CircularProgressIndicator()
-                if (loadingText.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
-                    Text(loadingText, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-                }
-            } else {
-                Button(
-                    onClick = {
-                        isLoading = true
-                        loadingText = "Autenticando..."
-                        scope.launch {
-                            try {
-                                val googleIdOption = GetGoogleIdOption.Builder()
-                                    .setFilterByAuthorizedAccounts(false)
-                                    .setServerClientId(context.getString(R.string.default_web_client_id))
-                                    .setAutoSelectEnabled(true)
-                                    .build()
+            // Área de Login
+            AnimatedContent(
+                targetState = isLoading,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                },
+                label = "login_area"
+            ) { loading ->
+                if (!loading) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Surface(
+                            onClick = {
+                                isLoading = true
+                                loadingText = "Autenticando..."
+                                scope.launch {
+                                    try {
+                                        val googleIdOption = GetGoogleIdOption.Builder()
+                                            .setFilterByAuthorizedAccounts(false)
+                                            .setServerClientId(context.getString(R.string.default_web_client_id))
+                                            .setAutoSelectEnabled(false)
+                                            .build()
 
-                                val request = GetCredentialRequest.Builder()
-                                    .addCredentialOption(googleIdOption)
-                                    .build()
+                                        val request = GetCredentialRequest.Builder()
+                                            .addCredentialOption(googleIdOption)
+                                            .build()
 
-                                val result = credentialManager.getCredential(context, request)
-                                val (email, name, photoUrl) = handleGoogleCredentialWithFirebase(result.credential)
-                                
-                                loadingText = "Restaurando seus dados da nuvem..."
-                                backupManager.restoreData().onSuccess {
-                                    Log.d("LoginActivity", "Restauração automática concluída")
-                                }.onFailure {
-                                    Log.e("LoginActivity", "Restauração falhou: ${it.message}")
+                                        val result = credentialManager.getCredential(context, request)
+                                        val (email, name, photoUrl) = handleGoogleCredentialWithFirebase(result.credential)
+
+                                        loadingText = "Sincronizando conta..."
+                                        com.jack.meuholerite.service.newFunction(context)
+
+                                        onLoginSuccess(email, name, photoUrl)
+
+                                    } catch (e: GetCredentialException) {
+                                        Log.e("LoginActivity", "Error getting credential", e)
+                                        Toast.makeText(context, "Login cancelado.", Toast.LENGTH_SHORT).show()
+                                    } catch (e: Exception) {
+                                        Log.e("LoginActivity", "Unexpected login error", e)
+                                        Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    } finally {
+                                        isLoading = false
+                                        loadingText = ""
+                                    }
                                 }
-
-                                onLoginSuccess(email, name, photoUrl)
-
-                            } catch (e: GetCredentialException) {
-                                Log.e("LoginActivity", "Error getting credential", e)
-                                Toast.makeText(context, "Login cancelado.", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Log.e("LoginActivity", "Unexpected login error", e)
-                                Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
-                            } finally {
-                                isLoading = false
-                                loadingText = ""
+                            },
+                            modifier = Modifier.size(68.dp),
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 8.dp,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_google),
+                                    contentDescription = "Continuar com Google",
+                                    modifier = Modifier.size(34.dp)
+                                )
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-                    border = BorderStroke(1.dp, Color.LightGray)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(id = R.drawable.ic_google), "Google", tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Text("Entrar com Google", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        CircularProgressIndicator(
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Text(
+                            loadingText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        if (showInfoDialog) {
+            AlertDialog(
+                onDismissRequest = { showInfoDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showInfoDialog = false }) {
+                        Text("Entendi")
+                    }
+                },
+                title = { Text("Sobre o Meu Holerite", fontWeight = FontWeight.Bold) },
+                text = {
+                    Text(
+                        "O Meu Holerite é seu assistente financeiro pessoal. " +
+                        "Importe seus recibos de pagamento para analisar Proventos, Descontos, FGTS e muito mais. " +
+                        "Seus dados são processados localmente e criptografados para sua segurança.",
+                        lineHeight = 20.sp
+                    )
+                },
+                shape = RoundedCornerShape(28.dp)
+            )
         }
     }
 }
 
 @Composable
-fun LanguageFlag(resId: Int, contentDescription: String, onClick: () -> Unit) {
+fun LanguageCard(
+    flagResId: Int,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 1.0f, label = "scale")
+    val alpha by animateFloatAsState(targetValue = if (isSelected) 1f else 0.6f, label = "alpha")
+    
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+        label = "color"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+        label = "contentColor"
+    )
+
     Surface(
-        modifier = Modifier.size(48.dp).clip(CircleShape).clickable { onClick() },
-        shape = CircleShape,
-        tonalElevation = 2.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .height(38.dp)
+            .width(68.dp)
+            .clip(RoundedCornerShape(19.dp))
+            .clickable { onClick() }
+            .shadow(elevation = if (isSelected) 6.dp else 0.dp, shape = RoundedCornerShape(19.dp), spotColor = MaterialTheme.colorScheme.primary),
+        color = containerColor,
+        border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)) else null
     ) {
-        Image(painterResource(id = resId), contentDescription, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = flagResId),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .alpha(alpha),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                color = contentColor,
+                modifier = Modifier.alpha(alpha)
+            )
+        }
     }
 }
 
-private fun changeLanguage(languageCode: String) {
-    val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(languageCode)
-    AppCompatDelegate.setApplicationLocales(appLocale)
-}
 
 private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): Triple<String, String, String> {
     val googleIdTokenCredential = when (credential) {
@@ -240,4 +415,12 @@ private suspend fun handleGoogleCredentialWithFirebase(credential: Credential): 
         user.displayName ?: "",
         user.photoUrl?.toString() ?: ""
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    MeuHoleriteTheme {
+        LoginScreen(onLoginSuccess = { _, _, _ -> })
+    }
 }

@@ -13,11 +13,86 @@
     <string name="saved_periods">Períodos salvos no dispositivo</string>
     <string name="no_periods_saved">Nenhum período salvo ainda.</string>
     <string name="open_epays">Abrir ePays</string>
+    <string name="epays_label">ePays</string>
     <string name="receipts">Recibos</string>
     <string name="no_receipts_saved">Nenhum recibo salvo ainda.</string>
     <string name="net_pay">Líquido a Receber</string>
     <string name="earnings">Proventos</string>
     <string name="deductions">Descontos</string>
+    <string name="alelo">Alelo</string>
+
+
+    <!-- Escala -->
+    <string name="work_scale">Agenda de Escalas</string>
+    <string name="select_scale_type">Selecione seu tipo de escala</string>
+    <string name="scale_6x1">6x1 (Folga fixa ou variável)</string>
+    <string name="scale_12x36">12x36 (Trabalha um, folga outro)</string>
+    <string name="scale_5x2">5x2 (Segunda a Sexta)</string>
+    <string name="next_days_off">Próximas Folgas</string>
+
+    <!-- Dicas CLT -->
+    <string name="clt_tips">Dicas e Direitos</string>
+    <string name="tip_night_allowance_title">Adicional Noturno</string>
+    <string name="tip_night_allowance_desc">Quem trabalha entre 22h e 5h tem direito a um acréscimo de no mínimo 20% sobre a hora diurna.</string>
+    <string name="tip_extra_hours_title">Horas Extras</string>
+    <string name="tip_extra_hours_desc">A primeira e segunda hora extra devem ser pagas com no mínimo 50% de acréscimo.</string>
+    <string name="tip_vacation_title">Férias</string>
+    <string name="tip_vacation_desc">Após 12 meses de trabalho, você tem direito a 30 dias de descanso remunerado com 1/3 a mais no salário.</string>
+
+    <!-- Configurações -->
+    <string name="settings_title">Ajustes</string>
+    <string name="dark_mode">Modo Escuro</string>
+    <string name="app_lock">Senha / Biometria</string>
+    <string name="backup_section">DADOS E BACKUP</string>
+    <string name="account_section">CONTA E LIMPEZA</string>
+    <string name="logout">Sair da Conta</string>
+    <string name="delete_all">Apagar Todos os Dados</string>
+    <string name="logout_confirm">Escolha como deseja sair da conta. Você pode manter seus dados no celular ou limpar tudo.</string>
+    <string name="delete_confirm">Isso removerá permanentemente todos os holerites, pontos e configurações locais, além do seu backup na nuvem.</string>
+    <string name="portuguese">Português</string>
+    <string name="spanish">Español</string>
+    <string name="english">Inglês</string>
+    <string name="profile_photo">Foto do Perfil</string>
+    <string name="app_language">Idioma do App</string>
+    <string name="preferences_security">PREFERÊNCIAS E SEGURANÇA</string>
+    <string name="profile_section">MEU PERFIL</string>
+    <string name="backup_now">Fazer Backup Agora</string>
+    <string name="backing_up">Fazendo backup...</string>
+    <string name="restore_cloud">Restaurar da Nuvem</string>
+    <string name="restoring">Restaurando...</string>
+    <string name="logout_confirm_title">Sair da Conta?</string>
+    <string name="delete_confirm_title">Apagar todos os dados?</string>
+    <string name="privacy_policy">Política de Privacidade</string>
+    <string name="backup_needed_toast">Faça login para ativar o backup.</string>
+    <string name="restore_needed_toast">Faça login para restaurar dados.</string>
+    <string name="backup_success_toast">Backup concluído!</string>
+    <string name="restore_success_toast">Restauração concluída!</string>
+    <string name="pin_toast">Configure seu PIN no acesso inicial</string>
+    <string name="about_section">SOBRE</string>
+    <string name="exit_and_clear">Sair e Limpar Dados</string>
+    <string name="exit_only">Apenas Sair</string>
+    <string name="delete_data">Apagar Tudo</string>
+
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bem-vindo ao Meu Holerite</string>
+    <string name="onboarding_welcome_desc">Sua ferramenta completa para gerenciar pontos e recibos de forma simples e privada.</string>
+    <string name="onboarding_import_title">Importação Integrada</string>
+    <string name="onboarding_import_desc">Acesse o portal ePays diretamente pelo app. Ao baixar um PDF de Holerite ou Ponto, nós o importamos automaticamente para você.</string>
+    <string name="onboarding_receipts_title">Seu Dinheiro no Detalhe</string>
+    <string name="onboarding_receipts_desc">Visualize seus proventos e descontos de forma clara. Saiba exatamente quanto vai receber com gráficos e resumos intuitivos.</string>
+    <string name="onboarding_ponto_title">Controle de Horas</string>
+    <string name="onboarding_ponto_desc">Acompanhe seu Banco de Horas, horas extras e receba avisos automáticos sobre faltas detectadas no período.</string>
+    <string name="onboarding_privacy_title">Privacidade Total</string>
+    <string name="onboarding_privacy_desc">Seus dados são seus. Tudo é processcedo e salvo localmente no seu celular. Nada é enviado para servidores externos.</string>
+    <string name="onboarding_finish_title">Pronto para Começar!</string>
+    <string name="onboarding_finish_desc">Aproveite todas as funcionalidades do Meu Holerite de forma gratuita e segura.</string>
+
+    <!-- Updates -->
+    <string name="check_updates">Verificar Atualizações</string>
+    <string name="new_version_available">Nova versão v%1$s</string>
+    <string name="whats_new">O que há de novo:</string>
+    <string name="update_now">Atualizar Agora</string>
 
     <!-- Rótulos do PDF -->
     <string name="label_worked_hours">Horas Trabalhadas</string>
@@ -31,6 +106,52 @@
     <string name="label_previous_balance">Saldo Anterior</string>
     <string name="label_period_balance">Saldo do Período</string>
     <string name="label_unknown">Desconhecido</string>
+    <string name="label_work_schedule">Jornada de Trabalho</string>
+    <string name="label_standard_schedule">Horário Padronizado</string>
+
+    <!-- Descrições de Ponto Detalhas -->
+    <string name="desc_ponto_total_trabalhadas">Soma de todas as horas registradas nas batidas do seu ponto durante o período.</string>
+    <string name="desc_ponto_total_debitos">Soma de todas as horas negativas registradas, incluindo atrasos, saídas antecipadas ou faltas.</string>
+    <string name="desc_ponto_credito_he">Total de horas extras trabalhadas que foram adicionadas ao seu Banco de Horas (B.H.) no período, com o respectivo adicional (50% ou 100%).</string>
+    <string name="desc_ponto_saldo_anterior">O total de horas extras ou negativas que você acumulou até o final do período anterior.</string>
+    <string name="desc_ponto_saldo_final">O saldo final consolidado do seu Banco de Horas no final do período.</string>
+    <string name="desc_ponto_horas_abonadas">Horas de ausência que foram compensadas ou justificadas por meio de atestado ou acordo.</string>
+    <string name="desc_ponto_horas_noturnas">Compensação paga por horas trabalhadas entre 22:00 e 05:00.</string>
+    <string name="desc_ponto_default">Esta é uma informação detalhada do seu espelho de ponto.</string>
+    <string name="desc_ponto_saida_antecipada">Tempo referente a encerramento da jornada antes do horário contratual previsto.</string>
+    <string name="desc_ponto_atraso_intervalo">Tempo de intervalo para descanso e refeição que não foi totalmente cumprido.</string>
+    <string name="desc_ponto_faltas">Horas não trabalhadas decorrentes de ausências injustificadas.</string>
+    <string name="desc_ponto_saldo_periodo">O saldo de horas gerado exclusivamente dentro deste mês de apuração.</string>
+    <string name="desc_ponto_jornada">Seu horário contratual planejado conforme registrado no sistema.</string>
+
+    <!-- Descrições de Itens de Holerite -->
+    <string name="desc_item_salario">Seu salário base mensal proporcional aos dias trabalhados no mês.</string>
+    <string name="desc_item_hora_extra">Pagamento pelas horas trabalhadas além da sua jornada normal. Geralmente com adicional de 50% ou 100%.</string>
+    <string name="desc_item_adicional_noturno">Compensação financeira para quem trabalha entre as 22h e 5h.</string>
+    <string name="desc_item_ferias">Pagamento referente ao seu período de descanso anual, incluindo 1/3 extra.</string>
+    <string name="desc_item_ferias_title">Férias</string>
+    <string name="desc_item_13o">Décimo Terceiro Salário, gratificação de final de ano.</string>
+    <string name="desc_item_periculosidade">Adicional de 30% pago por atividades de risco.</string>
+    <string name="desc_item_insalubridade">Adicional pago por exposição a agentes nocivos à saúde.</string>
+    <string name="desc_item_dsr">Descanso Semanal Remunerado. Pagamento pelo domingo ou feriado.</string>
+    <string name="desc_item_premio">Valor extra como reconhecimento por metas ou desempenho.</string>
+    <string name="desc_item_beneficio">Benefício ou ajuda de custo paga pela empresa.</string>
+    <string name="desc_item_provento_default">Este é um provento (ganho) que compõe seu salário bruto.</string>
+
+    <string name="desc_item_inss">Contribuição obrigatória para a Previdência Social.</string>
+    <string name="desc_item_irrf">Imposto de Renda Retido na Fonte pago ao Governo Federal.</string>
+    <string name="desc_item_vt">Sua coparticipação no benefício de transporte.</string>
+    <string name="desc_item_vr">Desconto referente à sua parte no custo de alimentação.</string>
+    <string name="desc_item_saude">Coparticipação ou mensalidade do plano de saúde/odonto.</string>
+    <string name="desc_item_sindicato">Contribuição voltada ao sindicato da sua categoria.</string>
+    <string name="desc_item_falta">Desconto referente a dias ou horas de ausência injustificada.</string>
+    <string name="desc_item_atraso">Desconto pelo tempo em que você chegou após o horário.</string>
+    <string name="desc_item_emprestimo">Pagamento de parcela de Empréstimo Consignado.</string>
+    <string name="desc_item_adiantamento">Valor de adiantamento (vale) pago antecipadamente.</string>
+    <string name="desc_item_desconto_default">Este é um desconto específico da sua folha de pagamento.</string>
+
+    <!-- Avisos -->
+    <string name="warning_absences">Atenção: Foram detectadas faltas. Verifique seu espelho detalhado.</string>
 
     <!-- Descrições -->
     <string name="desc_worked_hours">Total de horas produtivas registradas.</string>
@@ -38,21 +159,145 @@
     <string name="desc_interval_delay">Tempo de repouso não utilizado.</string>
     <string name="desc_early_departure">Saídas antes do horário contratual.</string>
     <string name="desc_extra_hours_50">Horas além da jornada normal (50%).</string>
-    <string name="desc_extra_hours_100">Horas extras realizadas em feriados ou folgas.</string>
-    <string name="desc_excused_absence">Horas de ausência justificadas por atestado ou folga.</string>
+    <string name="desc_extra_hours_100">Horas extras em feriados ou folgas.</string>
+    <string name="desc_excused_absence">Horas de ausência justificadas por atestado.</string>
     <string name="desc_absences">Horas não trabalhadas devido a faltas injustificadas.</string>
     <string name="desc_bank_balance">Seu saldo acumulado no banco de horas.</string>
 
-    <!-- Avisos -->
-    <string name="warning_absences">Atenção: Foram detectadas faltas neste período. Verifique seu espelho de ponto detalhado.</string>
+    <!-- MainActivity UI -->
+    <string name="greeting_morning">Bom dia,</string>
+    <string name="greeting_afternoon">Boa tarde,</string>
+    <string name="greeting_evening">Boa noite,</string>
+    <string name="welcome_user">Bem-vindo</string>
+    <string name="user_label">Usuário</string>
+    <string name="matricula_label">Matrícula</string>
+    <string name="edit_data">Editar Meus Dados</string>
+    <string name="about_app">Sobre a App</string>
+    <string name="absence_alerts">Avisos de Falta</string>
+    <string name="absence_alerts_desc">Notificações de faltas detectadas no espelho de ponto</string>
+    <string name="absences_detected">Faltas Detectadas</string>
+    <string name="absences_detected_msg">Foram detectadas %1$d faltas no período %2$s.</string>
+    <string name="notification_denied">Permissão negada. Você não receberá avisos de falta.</string>
+    <string name="pdf_not_available">Arquivo PDF não disponível</string>
+    <string name="file_not_found">Arquivo não encontrado</string>
+    <string name="open_pdf_with">Abrir PDF com...</string>
+    <string name="no_pdf_app">Nenhum app encontrado para abrir PDF</string>
+    <string name="version_up_to_date">Versão atualizada!</string>
+    <string name="update_error">Erro na atualização</string>
+    <string name="import_ponto_success">Espelho de ponto importado!</string>
+    <string name="import_recibo_success">Recibo importado!</string>
+    <string name="pdf_not_identified">PDF não identificado. Verifique se é espelho ou recibo.</string>
+    <string name="new_update_title">Nova Atualização Disponível</string>
+    <string name="new_update_msg">Nova versão (v%1$s) disponível. Deseja atualizar agora?</string>
+    <string name="update">Atualizar</string>
+    <string name="later">Depois</string>
+    <string name="highlights">DESTAQUES</string>
+    <string name="last_receipt">Último Holerite</string>
+    <string name="bank_hours_label">Banco de Horas</string>
+    <string name="other_deductions">Outros Descontos</string>
+    <string name="import_data">Importe seus dados</string>
+    <string name="use_epays_tab">Use a aba ePays para Começar</string>
+    <string name="net_pay_label">Líquido a receber</string>
+    <string name="import_receipt">Importe um recibo</string>
+    <string name="current_balance">Saldo Atual</string>
+    <string name="import_timesheet">Importe um espelho</string>
+    <string name="loan">EMPRÉSTIMO</string>
+    <string name="social_security">INSS</string>
+    <string name="additional_deduction">Dedução Adicional</string>
+    <string name="no_deductions">Sem Descontos</string>
+    <string name="no_deductions_desc">Este recibo não possui descontos detalhados.</string>
+    <string name="import_receipt_desc">Importe um recibo para ver os detalhes</string>
+    <string name="worked">TRABALHADAS</string>
+    <string name="full_name">Nome Completo</string>
+    <string name="no_connection">Sem Conexão</string>
+    <string name="connection_error_desc">Não foi possível carregar o portal. Verifique sua internet.</string>
+    <string name="try_again">Tentar Novamente</string>
+    <string name="understood">Entendido</string>
+    <string name="salary_evolution">Evolução Salarial</string>
+    <string name="no_chart_data">Nenhum dado disponível para o gráfico.</string>
+    <string name="chart_basis">Baseado nos últimos %1$d meses.</string>
+    <string name="main_deductions">Principais Descontos</string>
+    <string name="greeting_generic">Olá,</string>
+    <string name="save">Salvar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="close">Fechar</string>
+    <string name="what_is_earning">O que é este ganho?</string>
+    <string name="what_is_deduction">O que é este desconto?</string>
+    <string name="value_label">Valor: %1$s</string>
+    <string name="reference_label">Referência: %1$s</string>
+    <string name="absences_in_period">FALTAS NO PERÍODO</string>
+    <string name="matricula_placeholder">Matrícula: %1$s</string>
+    <string name="current_balance_label">SALDO ATUAL</string>
+    <string name="worked_label">TRABALHADAS</string>
+    <string name="credit_he_label">CRÉDITO H.E.</string>
+    <string name="what_item_means">O que este item significa?</string>
+    <string name="pdf_file_not_found">Arquivo PDF não encontrado</string>
+    <string name="physical_file_missing">O arquivo não existe no armazenamento</string>
+    <string name="export_receipt_chooser">Exportar Holerite</string>
+    <string name="export_timesheet_chooser">Exportar Ponto</string>
+    <string name="export_pdf_error">Erro ao exportar PDF: %1$s</string>
+    <string name="net_value_label">Líquido: %1$s</string>
+    <string name="timesheet_history">Histórico de Pontos</string>
+    <string name="balance_label">Saldo: %1$s</string>
+    <string name="back">Voltar</string>
+    <string name="export_pdf">Exportar PDF</string>
+    <string name="edit_profile">Editar Meus Dados</string>
+    <string name="ponto_history_title">Histórico de Pontos</string>
+    <string name="what_item_means_desc">O que este item significa?</string>
+
+    <!-- Férias -->
+    <string name="vacation_management">Simulador de Férias</string>
+    <string name="admission_date_label">Data de Admissão</string>
+    <string name="tap_to_select">Toque para selecionar</string>
+    <string name="vacation_summary">Resumo de Férias</string>
+    <string name="accrued_days">Dias Acumulados</string>
+    <string name="deadline_title">Data Limite</string>
+    <string name="financial_projection">Projeção Financeira</string>
+    <string name="one_third_vacation">1/3 de Férias</string>
+    <string name="select_admission_instruction">Selecione sua data de admissão.</string>
+    <string name="privacy_policy_url">https://jacker-s.github.io/MeuHolerite/privacy.html</string>
 
     <!-- Sobre -->
     <string name="about_title">Sobre o Aplicativo</string>
-    <string name="developer_label">Desenvolvedor</string>
-    <string name="developer_name">Jackson silva</string>
-    <string name="developer_phone">14991717549</string>
-    <string name="developer_email">ssj53415170@gmail.com</string>
     <string name="version_label">Versão</string>
-    <string name="version_value">beta 0.01</string>
-    <string name="close">Fechar</string>
+    <string name="source_code_label">Código Fonte no GitHub</string>
+    <string name="github_url">https://github.com/Jacker-s/MeuHolerite</string>
+
+    <!-- Ferramentas -->
+    <string name="tools_label">Ferramentas</string>
+    <string name="tools_description">Simuladores e gestão</string>
+    <string name="thirteenth_salary">13º Salário</string>
+    <string name="resignation_calc">Rescisão</string>
+    <string name="fgts_calc">FGTS</string>
+    <string name="vacation_calc">Minhas Férias</string>
+
+    <!-- Gestão Financeira -->
+    <string name="finance_management">Gestão Financeira</string>
+    <string name="finance_description">Controle seus gastos mensais</string>
+    <string name="remaining_balance">Saldo Restante</string>
+    <string name="add_expense">Adicionar Gasto</string>
+    <string name="expense_description">Descrição (ex: Aluguel)</string>
+    <string name="expense_value">Valor (R$)</string>
+    <string name="net_salary_source">Baseado no holerite de %1$s</string>
+    <string name="no_expenses">Nenhum gasto adicionado.</string>
+    <string name="fixed_expense">Gasto Fixo</string>
+    <string name="category_label">Categoria</string>
+    <string name="cat_housing">Moradia</string>
+    <string name="cat_food">Alimentação</string>
+    <string name="cat_transport">Transporte</string>
+    <string name="cat_leisure">Lazer</string>
+    <string name="cat_health">Saúde</string>
+    <string name="cat_education">Educação</string>
+    <string name="cat_others">Outros</string>
+    <string name="committed_salary">Comprometido</string>
+    <string name="work_schedule">Jornada</string>
+    <string name="premium_section">Premium</string>
+    <string name="remover_anuncios">Remover Anúncios</string>
+    <string name="privacy_mode">Modo Privacidade</string>
+    <string name="backups_saved">PDFs salvos</string>
+    <string name="local_cloud_restored">Local e restaurados da nuvem</string>
+    <string name="local_badge">LOCAL</string>
+    <string name="cloud_badge">NUVEM</string>
+    <string name="raffles_title">Sorteios</string>
+    <string name="raffles_button">Sorteios</string>
 </resources>
