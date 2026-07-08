@@ -194,6 +194,11 @@
             android:exported="false"
             android:theme="@style/Theme.MeuHolerite" />
 
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeuHolerite" />
+
         <receiver
             android:name=".widget.FinanceWidgetProvider"
             android:exported="true">

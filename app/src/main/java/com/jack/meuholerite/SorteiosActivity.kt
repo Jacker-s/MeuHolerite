@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
@@ -260,7 +261,9 @@ private object SorteiosRepository {
         val savedName = sharedPrefs.getString("user_name", "")?.trim().orEmpty()
         val userName = savedName.ifBlank { user.displayName ?: "Usuário" }
         val cleanedTasks = completedTasks.map { it.trim() }.filter { it.isNotBlank() }
+        require(raffle.tasks.isNotEmpty()) { "Esta campanha ainda não possui tarefas disponíveis." }
         val allCompleted = raffle.tasks.all { task -> cleanedTasks.contains(task.title) }
+        require(allCompleted) { "Marque todas as tarefas como concluídas para salvar sua participação." }
         val now = System.currentTimeMillis()
         val docId = "${raffle.id}_${user.uid}"
 
@@ -518,7 +521,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
             userEntry = null
         }
 
-        if (!raffleId.isNullOrBlank() && isAdmin) {
+        if (!raffleId.isNullOrBlank()) {
             statsListener = SorteiosRepository.observeStats(raffleId) { total, eligible ->
                 totalParticipants = total
                 eligibleParticipants = eligible
@@ -591,6 +594,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
         if (showParticipantsDialog) {
             ParticipantsDialog(
                 participants = raffleParticipants,
+                showPrivateDetails = isAdmin,
                 onDismiss = { showParticipantsDialog = false }
             )
         }
@@ -647,9 +651,16 @@ private fun SorteiosScreen(onBack: () -> Unit) {
             if (activeRaffle != null) {
                 item {
                     CampaignShowcaseCard(
-                        raffle = activeRaffle!!,
-                        participantLabel = if (isAdmin) "$eligibleParticipants elegíveis" else "${activeRaffle!!.tasks.size} tarefas para concluir",
-                        onParticipantClick = if (isAdmin) ({ showParticipantsDialog = true }) else null
+                        raffle = activeRaffle!!
+                    )
+                }
+
+                item {
+                    ParticipantsSummaryCard(
+                        totalParticipants = totalParticipants,
+                        eligibleParticipants = eligibleParticipants,
+                        isAdmin = isAdmin,
+                        onClick = { showParticipantsDialog = true }
                     )
                 }
 
@@ -674,6 +685,8 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                 item {
                     ParticipantCard(
                         entry = userEntry,
+                        totalTasks = activeRaffle!!.tasks.size,
+                        completedTasks = selectedTasks.count { it.value },
                         contactInfo = userContactInfo,
                         onContactInfoChange = { userContactInfo = it },
                         isLoggedIn = currentUser != null,
@@ -880,9 +893,7 @@ private fun SectionTitle(title: String, eyebrow: String? = null) {
 
 @Composable
 private fun CampaignShowcaseCard(
-    raffle: RaffleCampaign,
-    participantLabel: String,
-    onParticipantClick: (() -> Unit)? = null
+    raffle: RaffleCampaign
 ) {
     val prizeLine = buildString {
         append(raffle.prizeTitle)
@@ -891,74 +902,164 @@ private fun CampaignShowcaseCard(
             append("%.2f".format(raffle.prizeValue).replace(".", ","))
         }
     }
-    Surface(shape = RoundedCornerShape(28.dp), color = Color.Transparent) {
+    Surface(shape = RoundedCornerShape(32.dp), color = Color.Transparent) {
         Column(
             modifier = Modifier
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            Color(0xFF13212E),
-                            Color(0xFF1F3C58),
-                            Color(0xFF2F6E54)
+                            Color(0xFF0F1C28),
+                            Color(0xFF183551),
+                            Color(0xFF24566E),
+                            Color(0xFF2E724E)
                         )
                     )
                 )
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
                 Surface(shape = RoundedCornerShape(999.dp), color = Color.White.copy(alpha = 0.14f)) {
-                    Text(
-                        text = if (raffle.winnerName.isBlank()) "CAMPANHA ATIVA" else "ATIVA COM GANHADOR",
+                    Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Casino,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = if (raffle.winnerName.isBlank()) "CAMPANHA ATIVA" else "ATIVA COM GANHADOR",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.EmojiEvents,
+                        contentDescription = null,
+                        tint = SorteiosGold,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            Text(
-                text = raffle.title,
-                color = Color.White,
-                fontSize = 27.sp,
-                lineHeight = 31.sp,
-                fontWeight = FontWeight.Black
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = raffle.title,
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    lineHeight = 29.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "Conclua as tarefas e participe do prêmio da rodada.",
+                    color = Color.White.copy(alpha = 0.78f),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = Color.White.copy(alpha = 0.10f)
+                shape = RoundedCornerShape(26.dp),
+                color = Color.White.copy(alpha = 0.11f)
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Outlined.AttachMoney, contentDescription = null, tint = SorteiosGold)
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(18.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Outlined.AttachMoney, contentDescription = null, tint = SorteiosGold)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Prêmio da rodada",
+                                color = Color.White.copy(alpha = 0.72f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = prizeLine,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                lineHeight = 23.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Prêmio da rodada",
-                            color = Color.White.copy(alpha = 0.72f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = prizeLine,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            lineHeight = 24.sp,
-                            fontWeight = FontWeight.Black
-                        )
+
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White.copy(alpha = 0.08f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.CardGiftcard,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.9f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = if (raffle.winnerName.isBlank()) {
+                                        "Rodada aberta para participação"
+                                    } else {
+                                        "Rodada com vencedor definido"
+                                    },
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Text(
+                                text = if (raffle.isActive) "Ao vivo" else "Finalizada",
+                                color = SorteiosGold,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
             }
@@ -966,7 +1067,68 @@ private fun CampaignShowcaseCard(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 HeroMetricChip("Tarefas", raffle.tasks.size.toString(), Modifier.weight(1f))
                 HeroMetricChip("Status", if (raffle.isActive) "Ativa" else "Encerrada", Modifier.weight(1f))
-                HeroMetricChip("Rodada", participantLabel, Modifier.weight(1f), onClick = onParticipantClick)
+                HeroMetricChip("Prêmio", if (raffle.prizeValue > 0.0) "R$ %.0f".format(raffle.prizeValue) else "Especial", Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantsSummaryCard(
+    totalParticipants: Int,
+    eligibleParticipants: Int,
+    isAdmin: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(SorteiosBlue.copy(alpha = 0.12f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.PeopleAlt, contentDescription = null, tint = SorteiosBlue)
+            }
+
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Participantes", fontWeight = FontWeight.Black, fontSize = 17.sp, color = SorteiosInk)
+                Text(
+                    if (isAdmin) {
+                        "$eligibleParticipants elegíveis de $totalParticipants participantes"
+                    } else {
+                        "$totalParticipants participantes nesta campanha"
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = SorteiosBlue.copy(alpha = 0.10f)
+            ) {
+                Text(
+                    "Ver lista",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    color = SorteiosBlue,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
             }
         }
     }
@@ -981,30 +1143,32 @@ private fun HeroMetricChip(
 ) {
     val content: @Composable () -> Unit = {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Text(
                 text = label.uppercase(),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White.copy(alpha = 0.7f),
-                letterSpacing = 0.8.sp
+                color = Color.White.copy(alpha = 0.66f),
+                letterSpacing = 0.9.sp
             )
             Text(
                 text = value,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                lineHeight = 18.sp
+                lineHeight = 17.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 
     if (onClick != null) {
         Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = Color.White.copy(alpha = 0.12f),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White.copy(alpha = 0.14f),
             onClick = onClick,
             modifier = modifier
         ) {
@@ -1012,7 +1176,7 @@ private fun HeroMetricChip(
         }
     } else {
         Surface(
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(20.dp),
             color = Color.White.copy(alpha = 0.12f),
             modifier = modifier
         ) {
@@ -1024,6 +1188,7 @@ private fun HeroMetricChip(
 @Composable
 private fun ParticipantsDialog(
     participants: List<RaffleEntry>,
+    showPrivateDetails: Boolean,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -1083,17 +1248,19 @@ private fun ParticipantsDialog(
                                         color = if (participant.allTasksCompleted) SorteiosGreen else SorteiosRose
                                     )
                                 }
-                                if (participant.userEmail.isNotBlank()) {
+                                if (showPrivateDetails && participant.userEmail.isNotBlank()) {
                                     Text(participant.userEmail, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (participant.contactInfo.isNotBlank()) {
+                                if (showPrivateDetails && participant.contactInfo.isNotBlank()) {
                                     Text(participant.contactInfo, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Text(
-                                    "${participant.completedTasks.size} tarefa(s) marcadas",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (showPrivateDetails) {
+                                    Text(
+                                        "${participant.completedTasks.size} tarefa(s) marcadas",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -1331,12 +1498,15 @@ private fun TaskCheckboxCard(
 @Composable
 private fun ParticipantCard(
     entry: RaffleEntry?,
+    totalTasks: Int,
+    completedTasks: Int,
     contactInfo: String,
     onContactInfoChange: (String) -> Unit,
     isLoggedIn: Boolean,
     isSubmitting: Boolean,
     onSubmit: () -> Unit
 ) {
+    val allTasksChecked = totalTasks > 0 && completedTasks >= totalTasks
     Surface(shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1360,10 +1530,17 @@ private fun ParticipantCard(
                     !isLoggedIn -> "Faça login para marcar as tarefas e entrar no sorteio."
                     entry?.allTasksCompleted == true -> "Você já cumpriu todas as tarefas e está elegível para o sorteio."
                     entry != null -> "Sua participação foi salva, mas ainda faltam tarefas para ficar elegível."
-                    else -> "Marque as tarefas concluídas e confirme sua participação."
+                    else -> "Marque todas as tarefas concluídas para confirmar sua participação."
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
+            )
+
+            Text(
+                "$completedTasks de $totalTasks tarefas concluídas",
+                color = if (allTasksChecked) SorteiosGreen else SorteiosRose,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
             )
 
             OutlinedTextField(
@@ -1383,7 +1560,7 @@ private fun ParticipantCard(
                     text = if (entry?.allTasksCompleted == true) {
                         "Seu cadastro já está pronto para entrar no sorteio desta rodada."
                     } else {
-                        "Assim que você salvar todas as tarefas concluídas, sua participação fica disponível para o sorteio."
+                        "A participação só é salva quando todas as tarefas da campanha estiverem marcadas como concluídas."
                     },
                     modifier = Modifier.padding(14.dp),
                     color = SorteiosInk,
@@ -1394,7 +1571,7 @@ private fun ParticipantCard(
 
             Button(
                 onClick = onSubmit,
-                enabled = isLoggedIn && !isSubmitting,
+                enabled = isLoggedIn && !isSubmitting && allTasksChecked,
                 shape = RoundedCornerShape(18.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {

@@ -70,8 +70,10 @@ class LoginActivity : AppCompatActivity() {
 
         val auth = FirebaseAuth.getInstance()
         val prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        
-        if (prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
+        val appPrefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val shouldShowIntroSplash = !appPrefs.getBoolean("first_open_splash_seen", false)
+
+        if (!shouldShowIntroSplash && prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
             val destination = if (prefs.getBoolean("terms_accepted", false)) {
                 MainActivity::class.java
             } else {
@@ -84,27 +86,151 @@ class LoginActivity : AppCompatActivity() {
 
         setContent {
             MeuHoleriteTheme {
-                LoginScreen(
-                    onLoginSuccess = { email, name, photoUrl ->
-                        prefs.edit().apply {
-                            putBoolean("is_logged_in", true)
-                            putString("user_email", email)
-                            putString("user_name", name)
-                            putString("user_photo", photoUrl)
-                            apply()
-                        }
+                var showIntroSplash by remember { mutableStateOf(shouldShowIntroSplash) }
+
+                fun continueFlow() {
+                    if (prefs.getBoolean("is_logged_in", false) && auth.currentUser != null) {
                         val destination = if (prefs.getBoolean("terms_accepted", false)) {
                             MainActivity::class.java
                         } else {
                             TermsAgreementActivity::class.java
                         }
-                        val intent = Intent(this, destination)
-                        intent.putExtra("JUST_LOGGED_IN", true)
-                        startActivity(intent)
+                        startActivity(Intent(this, destination))
                         finish()
+                        return
                     }
+
+                    showIntroSplash = false
+                }
+
+                if (showIntroSplash) {
+                    FirstOpenSplashScreen(
+                        onFinished = {
+                            appPrefs.edit().putBoolean("first_open_splash_seen", true).apply()
+                            continueFlow()
+                        }
+                    )
+                } else {
+                    LoginScreen(
+                        onLoginSuccess = { email, name, photoUrl ->
+                            prefs.edit().apply {
+                                putBoolean("is_logged_in", true)
+                                putString("user_email", email)
+                                putString("user_name", name)
+                                putString("user_photo", photoUrl)
+                                apply()
+                            }
+                            val destination = if (prefs.getBoolean("terms_accepted", false)) {
+                                MainActivity::class.java
+                            } else {
+                                TermsAgreementActivity::class.java
+                            }
+                            val intent = Intent(this, destination)
+                            intent.putExtra("JUST_LOGGED_IN", true)
+                            startActivity(intent)
+                            finish()
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FirstOpenSplashScreen(onFinished: () -> Unit) {
+    val pulse = rememberInfiniteTransition(label = "first_open_splash")
+    val orbScale by pulse.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "orb_scale"
+    )
+    val iconFloat by pulse.animateFloat(
+        initialValue = -8f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2200, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "icon_float"
+    )
+    val glowAlpha by pulse.animateFloat(
+        initialValue = 0.18f,
+        targetValue = 0.42f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_alpha"
+    )
+
+    LaunchedEffect(Unit) {
+        delay(2400)
+        onFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Box(
+                modifier = Modifier.size(220.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(190.dp)
+                        .scale(orbScale)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.04f),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
+                )
+                AnimatedAppIcon(
+                    size = 132,
+                    modifier = Modifier.offset(y = iconFloat.dp)
                 )
             }
+
+            Text(
+                text = "Meu Holerite",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface,
+                letterSpacing = (-1).sp
+            )
+            Text(
+                text = "Seu espaço para holerite, ponto e controle financeiro.",
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 34.dp)
+            )
         }
     }
 }

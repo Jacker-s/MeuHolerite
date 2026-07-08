@@ -78,8 +78,9 @@ class PontoActivity : ComponentActivity() {
             val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
             val useDarkTheme =
                 if (storageManager.hasDarkModeSet()) storageManager.isDarkMode() else systemInDarkTheme
+            val themeAccent = storageManager.getThemeAccent()
 
-            MeuHoleriteTheme(darkTheme = useDarkTheme) {
+            MeuHoleriteTheme(darkTheme = useDarkTheme, themeAccent = themeAccent) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     PontoScreenContent()
                 }
@@ -253,7 +254,7 @@ fun TimesheetScreen(
     val adInsertPositions = remember(proventos, descontos) {
         buildPontoAdInsertPositions(
             totalItems = proventos.size + descontos.size,
-            maxAds = 2
+            maxAds = 1
         )
     }
 
@@ -390,6 +391,14 @@ private fun buildPontoAdInsertPositions(totalItems: Int, maxAds: Int): Set<Int> 
         .toSet()
 }
 
+private fun formatPeriodoMiniCard(periodo: String): String {
+    val matches = """\d{2}/\d{2}/\d{4}""".toRegex().findAll(periodo).toList()
+    if (matches.size >= 2) {
+        return "${matches[0].value.take(5)} a ${matches[1].value.take(5)}"
+    }
+    return periodo
+}
+
 @Composable
 private fun TimesheetHeaderCard(
     periodText: String,
@@ -399,10 +408,8 @@ private fun TimesheetHeaderCard(
     onEditProfile: () -> Unit,
     onOpenHistory: () -> Unit
 ) {
-    val shape = RoundedCornerShape(24.dp)
-
     Surface(
-        shape = shape,
+        shape = RoundedCornerShape(22.dp),
         tonalElevation = 2.dp,
         color = Color.Transparent,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
@@ -420,105 +427,66 @@ private fun TimesheetHeaderCard(
                     )
                 )
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // ícone de calendário elegante
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFFFF9500).copy(alpha = 0.10f),
+                    border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = 0.18f))
                 ) {
-                    Icon(
-                        Icons.Default.History, 
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Spacer(Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = periodText,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    
-                    if (userName.isNotBlank() || userMatricula.isNotBlank() || userCargo.isNotBlank()) {
-                        Text(
-                            text = listOf(
-                                userName.takeIf { it.isNotBlank() },
-                                userCargo.takeIf { it.isNotBlank() },
-                                userMatricula.takeIf { it.isNotBlank() }
-                            ).filterNotNull().joinToString(" • "),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Schedule,
+                            contentDescription = null,
+                            tint = Color(0xFFFF9500),
+                            modifier = Modifier.size(18.dp)
                         )
+                        Column {
+                            Text(
+                                text = "PERÍODO",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFF9500)
+                            )
+                            Text(
+                                text = formatPeriodoMiniCard(periodText),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
-
-                IconButton(
+                Surface(
                     onClick = onOpenHistory,
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface, CircleShape)
-                        .size(36.dp)
+                    modifier = Modifier.size(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFF5856D6).copy(alpha = 0.10f),
+                    border = BorderStroke(1.dp, Color(0xFF5856D6).copy(alpha = 0.18f))
                 ) {
-                    Icon(
-                        Icons.Default.History, 
-                        contentDescription = "Histórico", 
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = onEditProfile,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text(
-                        "Meus Dados", 
-                        fontSize = 13.sp, 
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                
-                Button(
-                    onClick = onOpenHistory,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        "Histórico", 
-                        fontSize = 13.sp, 
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.History,
+                            contentDescription = "Histórico",
+                            tint = Color(0xFF5856D6),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }
@@ -526,14 +494,62 @@ private fun TimesheetHeaderCard(
 }
 
 @Composable
+private fun TimesheetInfoChip(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    Surface(
+        onClick = { onClick?.invoke() },
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = accent.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.18f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(18.dp)
+            )
+            Column(modifier = Modifier.weight(1f, fill = false)) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = value,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SummaryHeroCard(espelho: EspelhoPonto) {
-    val shape = RoundedCornerShape(28.dp)
     val workedHours = espelho.resumoItens.find { it.label == "label_worked_hours" }?.value ?: "0:00"
     val extraHours = espelho.resumoItens.find { it.label.contains("extra", true) }?.value ?: "0:00"
     val nightAllowance = espelho.resumoItens.find { it.label.contains("night", true) }?.value ?: "0:00"
 
     Surface(
-        shape = shape,
+        shape = RoundedCornerShape(28.dp),
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -541,7 +557,6 @@ private fun SummaryHeroCard(espelho: EspelhoPonto) {
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f))
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Decoração de fundo sutil
             Box(
                 modifier = Modifier
                     .size(150.dp)
@@ -550,53 +565,57 @@ private fun SummaryHeroCard(espelho: EspelhoPonto) {
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f), CircleShape)
             )
 
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column {
-                    Text(
-                        text = "HORAS TRABALHADAS",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column {
                         Text(
-                            text = workedHours,
-                            fontSize = 52.sp,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            letterSpacing = (-1.5).sp
+                            text = "HORAS TRABALHADAS",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 1.5.sp
                         )
-                        Text(
-                            text = " total",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = workedHours,
+                                fontSize = 52.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                letterSpacing = (-1.5).sp
+                            )
+                            Text(
+                                text = " total",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MetricChip(
+                            title = "H. EXTRAS",
+                            value = extraHours,
+                            valueColor = Color(0xFF34C759),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricChip(
+                            title = "ADIC. NOTURNO",
+                            value = nightAllowance,
+                            valueColor = Color(0xFF007AFF),
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricChip(
-                        title = "H. EXTRAS",
-                        value = extraHours,
-                        valueColor = Color(0xFF34C759),
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricChip(
-                        title = "ADIC. NOTURNO",
-                        value = nightAllowance,
-                        valueColor = Color(0xFF007AFF),
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
         }
@@ -614,8 +633,8 @@ private fun MetricChip(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         tonalElevation = 1.dp,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp, 
+        border = BorderStroke(
+            1.dp,
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         ),
         modifier = modifier
@@ -825,105 +844,165 @@ fun TimesheetHistoryDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { 
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.padding(bottom = 8.dp, end = 8.dp)
-            ) { 
-                Text(stringResource(R.string.close), fontWeight = FontWeight.Bold) 
-            } 
-        },
-        title = { 
-            Text(
-                "Histórico de Pontos", 
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 22.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            ) 
-        },
+        confirmButton = {},
+        title = null,
         text = {
-            if (historico.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    contentAlignment = Alignment.Center
+            Surface(
+                shape = RoundedCornerShape(30.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f),
+                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text("Nenhum histórico disponível.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 450.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    items(historico) { item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.History,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Histórico de Pontos",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "${historico.size} registro(s) disponível(is)",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.close), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    if (historico.isEmpty()) {
                         Surface(
-                            onClick = { onSelect(item) },
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 2.dp,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp, 
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                            ),
+                            shape = RoundedCornerShape(22.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 28.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-                                    contentAlignment = Alignment.Center
+                                Text(
+                                    "Nenhum histórico disponível.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 460.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(historico) { item ->
+                                Surface(
+                                    onClick = { onSelect(item) },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    tonalElevation = 1.dp,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(
-                                        Icons.Outlined.Schedule,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-
-                                Spacer(Modifier.width(14.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.periodo,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    
-                                    Spacer(Modifier.height(4.dp))
-                                    
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                        modifier = Modifier.wrapContentSize()
+                                    Row(
+                                        modifier = Modifier.padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = "Total: ${item.jornadaRealizada}",
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
+                                        Box(
+                                            modifier = Modifier
+                                                .size(42.dp)
+                                                .background(
+                                                    Brush.linearGradient(
+                                                        listOf(
+                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f)
+                                                        )
+                                                    ),
+                                                    CircleShape
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.Schedule,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(21.dp)
+                                            )
+                                        }
 
-                                IconButton(
-                                    onClick = { onDelete(item) },
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Delete,
-                                        contentDescription = "Excluir",
-                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                        Spacer(Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = item.periodo,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(Modifier.height(5.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(999.dp),
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                                            ) {
+                                                Text(
+                                                    text = "Total: ${item.jornadaRealizada}",
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+
+                                        IconButton(
+                                            onClick = { onDelete(item) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.Delete,
+                                                contentDescription = "Excluir",
+                                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.78f),
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -931,7 +1010,9 @@ fun TimesheetHistoryDialog(
                 }
             }
         },
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(30.dp),
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp
     )
 }
 

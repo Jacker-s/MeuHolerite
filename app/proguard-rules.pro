@@ -31,7 +31,24 @@
   @com.google.firebase.firestore.PropertyName <fields>;
 }
 -keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.ktx.**
+-dontwarn com.google.firebase.appcheck.**
 
 # Google Play Services / Ads
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
+
+# Required for core components
+-keep class android.webkit.WebView
+-dontwarn java.util.concurrent.Executors
+-dontwarn java.util.concurrent.atomic.AtomicBoolean
+-dontwarn java.nio.file.Files
+-dontwarn java.nio.file.Path
+-dontwarn java.nio.file.attribute.FileAttribute
+-dontwarn org.apache.http.**
+-dontwarn android.net.http.**
+-dontwarn android.webkit.**
+
+# Google API Client (Drive)
+-keep class com.google.api.client.** { *; }
+-keep class com.google.api.services.drive.** { *; }

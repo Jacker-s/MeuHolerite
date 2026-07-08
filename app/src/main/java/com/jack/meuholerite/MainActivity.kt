@@ -20,6 +20,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -138,8 +140,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+import java.util.Calendar
 import java.util.Locale
 
 @Composable
@@ -180,6 +184,28 @@ private data class MonthlySummary(
     val debts: Double,
     val remaining: Double
 )
+
+private enum class HomeSection(val key: String, val title: String, val icon: ImageVector) {
+    PROFILE("profile", "Seu perfil", Icons.Outlined.Badge),
+    STATUS("status", "Status do mês", Icons.Outlined.DateRange),
+    NEXT_PAYMENT("next_payment", "Próximo pagamento", Icons.Outlined.CalendarMonth),
+    SMART_ALERTS("smart_alerts", "Alertas inteligentes", Icons.Outlined.NotificationsActive),
+    PROMOS("promos", "Promoções", Icons.Outlined.LocalOffer),
+    SORTEIOS("sorteios", "Sorteios", Icons.Outlined.EmojiEvents),
+    NET_PAY("net_pay", "Líquido a receber", Icons.Outlined.AccountBalanceWallet),
+    POINT_OVERVIEW("point_overview", "Resumo do ponto", Icons.Outlined.Schedule),
+    SALARY_RANKING("salary_ranking", "Ranking de salários", Icons.Outlined.QueryStats),
+    FINANCE("finance", "Gestão financeira", Icons.Outlined.AccountBalance),
+    QUICK_LINKS("quick_links", "Atalhos rápidos", Icons.Outlined.DashboardCustomize),
+    AI_SHORTCUT("ai_shortcut", "Atalho da IA", Icons.Filled.AutoAwesome)
+}
+
+private fun resolveHomeSections(orderKeys: List<String>): List<HomeSection> {
+    val allSectionsByKey = HomeSection.entries.associateBy { it.key }
+    return (orderKeys + HomeSection.entries.map { it.key })
+        .mapNotNull { allSectionsByKey[it] }
+        .distinct()
+}
 
 class MainActivity : FragmentActivity() {
 
@@ -267,6 +293,7 @@ class MainActivity : FragmentActivity() {
                         val hasSet = storageManager.hasDarkModeSet()
                         mutableStateOf(if (hasSet) storageManager.isDarkMode() else systemInDarkTheme)
                     }
+                    var themeAccent by remember { mutableStateOf(storageManager.getThemeAccent()) }
                     var isPrivacyActive by remember { mutableStateOf(storageManager.isHideValuesEnabled()) }
 
                     val lifecycleOwner = LocalLifecycleOwner.current
@@ -277,6 +304,7 @@ class MainActivity : FragmentActivity() {
                             if (event == Lifecycle.Event.ON_RESUME) {
                                 val hasSet = storageManager.hasDarkModeSet()
                                 useDarkTheme = if (hasSet) storageManager.isDarkMode() else systemInDarkTheme
+                                themeAccent = storageManager.getThemeAccent()
                                 isPrivacyActive = storageManager.isHideValuesEnabled()
                             }
                         }
@@ -308,7 +336,7 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    MeuHoleriteTheme(darkTheme = useDarkTheme) {
+                    MeuHoleriteTheme(darkTheme = useDarkTheme, themeAccent = themeAccent) {
                         AppLockGate(storage = storageManager) {
                             CompositionLocalProvider(LocalPrivacyActive provides isPrivacyActive) {
                                 // Admin Suggestion Listener
@@ -541,11 +569,23 @@ fun MainScreen(
     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
     var userMatricula by remember { mutableStateOf(prefs.getString("user_matricula", "") ?: "") }
     var userCargo by remember { mutableStateOf(prefs.getString("user_cargo", "") ?: "") }
+    var userPhoto by remember {
+        mutableStateOf(
+            prefs.getString("user_custom_photo", "")?.takeIf { it.isNotBlank() }
+                ?: (prefs.getString("user_photo", "") ?: "")
+        )
+    }
     var showOnboarding by remember { mutableStateOf(!appPrefs.getBoolean("onboarding_completed", false)) }
     var showLaborAiChat by remember { mutableStateOf(false) }
     var importSuccessData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var showSignReminder by remember { mutableStateOf(false) }
     var globalMessageToShow by remember { mutableStateOf<GlobalMessage?>(null) }
+    var showHomeCustomizeTip by remember {
+        mutableStateOf(
+            appPrefs.getBoolean("onboarding_completed", false) &&
+                appPrefs.getInt("home_customize_tip_version", 0) < BuildConfig.VERSION_CODE
+        )
+    }
     var hasLoadedEpays by remember { mutableStateOf(false) }
     var promoList by remember { mutableStateOf<List<com.jack.meuholerite.model.Promocao>>(emptyList()) }
     var promoNotifEnabled by remember { mutableStateOf(prefs.getBoolean("promo_notif_enabled", true)) }
@@ -615,6 +655,8 @@ fun MainScreen(
                 userName = newName
                 userMatricula = newMatricula
                 userCargo = prefs.getString("user_cargo", "") ?: ""
+                userPhoto = prefs.getString("user_custom_photo", "")?.takeIf { it.isNotBlank() }
+                    ?: (prefs.getString("user_photo", "") ?: "")
             }
 
             val pontos = db.espelhoDao().getAll().map { it.toModel(gson) }
@@ -952,6 +994,23 @@ fun MainScreen(
         )
     }
 
+    if (showHomeCustomizeTip && !showOnboarding && !showRestorePrompt && !isRestoring && globalMessageToShow == null) {
+        HomeCustomizeTipDialog(
+            onDismiss = {
+                appPrefs.edit().putInt("home_customize_tip_version", BuildConfig.VERSION_CODE).apply()
+                showHomeCustomizeTip = false
+            },
+            onOpenCustomize = {
+                appPrefs.edit()
+                    .putInt("home_customize_tip_version", BuildConfig.VERSION_CODE)
+                    .putBoolean("pending_open_home_customize", true)
+                    .apply()
+                showHomeCustomizeTip = false
+                navigateTo(Screen.Home)
+            }
+        )
+    }
+
     LaunchedEffect(activityIntent) {
         if (activityIntent?.action == Intent.ACTION_VIEW && activityIntent.type == "application/pdf") {
             activityIntent.data?.let { uri ->
@@ -1067,14 +1126,16 @@ fun MainScreen(
             val currentRoute = navBackStackEntry?.destination?.route
             androidx.compose.animation.AnimatedVisibility(visible = currentRoute != Screen.Epays.route) {
                 IosTopBar(
-                    userName = userName,
-                    jornada = selectedEspelho?.jornada,
+                    userPhoto = userPhoto,
                     isPrivacyActive = isPrivacyActive,
                     onPrivacyToggle = {
                         onPrivacyChange(!isPrivacyActive)
                     },
                     onRankingClick = {
                         context.startActivity(Intent(context, SalaryRankingActivity::class.java))
+                    },
+                    onProfileClick = {
+                        context.startActivity(Intent(context, ProfileActivity::class.java))
                     }
                 ) {
                     context.startActivity(Intent(context, SettingsActivity::class.java))
@@ -1415,6 +1476,76 @@ private fun FirstLaunchIntroDialog(
 }
 
 @Composable
+private fun HomeCustomizeTipDialog(
+    onDismiss: () -> Unit,
+    onOpenCustomize: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth(0.90f)
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(11.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Personalize sua home", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        Text("Aviso rápido", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
+                Text(
+                    "Agora a home pode ficar do seu jeito. Toque em `Personalizar` para reorganizar os cards, ocultar funções e montar a tela que faz mais sentido para você.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("Depois", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = onOpenCustomize,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("Abrir agora", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun FirstLaunchIntroScreen(
     onFinish: () -> Unit,
     onImportPdf: () -> Unit,
@@ -1440,7 +1571,7 @@ private fun FirstLaunchIntroScreen(
 
             IntroHeroCard(
                 title = "Seu holerite e seu ponto,\ncom clareza e controle.",
-                subtitle = "Importe PDFs e tenha um painel pronto com líquido, descontos, banco de horas e histórico."
+                subtitle = "Importe PDFs e tenha um painel pronto com líquido, descontos, banco de horas, sorteios, radar salarial e atalhos inteligentes."
             )
 
             IntroCompanySupportCard()
@@ -1611,9 +1742,41 @@ private fun IntroFeatureGrid() {
             )
         }
 
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            IntroFeatureCard(
+                icon = Icons.Outlined.DashboardCustomize,
+                title = "Home do seu jeito",
+                desc = "Reorganize cards, esconda blocos\ne monte sua própria home.",
+                modifier = Modifier.weight(1f)
+            )
+            IntroFeatureCard(
+                icon = Icons.Filled.AutoAwesome,
+                title = "Assistente IA",
+                desc = "Receba leitura rápida, insights\ne previsão de pagamento.",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            IntroFeatureCard(
+                icon = Icons.Outlined.EmojiEvents,
+                title = "Sorteios",
+                desc = "Acompanhe campanhas, tarefas,\nregras e ganhadores.",
+                modifier = Modifier.weight(1f)
+            )
+            IntroFeatureCard(
+                icon = Icons.Outlined.QueryStats,
+                title = "Radar salarial",
+                desc = "Compare cargos, veja faixas\nreais e descubra tendências.",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
         IntroRankingTeaserCard(
             onClick = { context.startActivity(Intent(context, SalaryRankingActivity::class.java)) }
         )
+
+        IntroCustomizationTeaserCard()
     }
 }
 
@@ -2017,6 +2180,8 @@ fun HomeScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var showSalaryGraph by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val userPrefs = remember { context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE) }
+    val appPrefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     val adsRemovedState by com.jack.meuholerite.ads.AdsDataStore.isAdsRemovedFlow(context).collectAsState(initial = false)
     val aiParser = remember { AiParser() }
     var aiInsight by remember { mutableStateOf<String?>(null) }
@@ -2025,6 +2190,19 @@ fun HomeScreen(
     var isGeneratingPrediction by remember { mutableStateOf(false) }
     var showAiAssistantModal by remember { mutableStateOf(false) }
     var shouldShowAdAfterAiModal by remember { mutableStateOf(false) }
+    var showHomeCustomization by remember {
+        mutableStateOf(appPrefs.getBoolean("pending_open_home_customize", false))
+    }
+    val homeLayout by HomeLayoutStore.layoutFlow(context).collectAsState(initial = HomeLayoutStore.defaultLayout())
+    val orderedHomeSections = remember(homeLayout.sectionOrder) {
+        resolveHomeSections(homeLayout.sectionOrder)
+    }
+
+    LaunchedEffect(showHomeCustomization) {
+        if (showHomeCustomization && appPrefs.getBoolean("pending_open_home_customize", false)) {
+            appPrefs.edit().putBoolean("pending_open_home_customize", false).apply()
+        }
+    }
 
     val expenses by db.financeExpenseDao().getAllFlow().collectAsState(initial = emptyList())
     val debts by db.financeDebtDao().getAllFlow().collectAsState(initial = emptyList())
@@ -2032,6 +2210,9 @@ fun HomeScreen(
     val totalExpenses = remember(expenses) { expenses.sumOf { it.value } }
     val totalDebtInstallments = remember(debts) { debts.sumOf { it.monthlyValue } }
     val totalDeductionsFinance = totalExpenses + totalDebtInstallments
+    val profileName = remember(selectedRecibo) { userPrefs.getString("user_name", "").orEmpty().ifBlank { selectedRecibo?.funcionario.orEmpty() } }
+    val profileCargo = remember(selectedRecibo) { userPrefs.getString("user_cargo", "").orEmpty().ifBlank { selectedRecibo?.cargo.orEmpty() } }
+    val profileMatricula = remember(selectedRecibo) { userPrefs.getString("user_matricula", "").orEmpty().ifBlank { selectedRecibo?.matricula.orEmpty() } }
 
     val netSalary = remember(selectedRecibo) { selectedRecibo?.valorLiquido?.toMoneyDoubleOrZero() ?: 0.0 }
     val proventosVal = remember(selectedRecibo) { selectedRecibo?.totalProventos?.toMoneyDoubleOrZero() ?: 0.0 }
@@ -2054,8 +2235,44 @@ fun HomeScreen(
     var topRankingCard by remember { mutableStateOf<SalaryRanking?>(null) }
     var marketLoading by remember { mutableStateOf(false) }
 
-    // Cálculo determinístico do próximo pagamento (5º dia útil do mês seguinte)
-    val proximoPagamento = remember { com.jack.meuholerite.utils.calcularProximoPagamento() }
+    val jaRecebeuMesAtual = remember(selectedRecibo?.periodo) {
+        val recibo = selectedRecibo ?: return@remember false
+        val pagamentoCandidato = com.jack.meuholerite.utils.calcularProximoPagamento()
+        val pagamentoDate = runCatching {
+            SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).parse(pagamentoCandidato.dataFormatada)
+        }.getOrNull()
+        val dataPagamentoRecibo = recibo.dataPagamento.takeIf { it.isNotBlank() }?.let {
+            runCatching { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).parse(it) }.getOrNull()
+        }
+        if (pagamentoDate != null && dataPagamentoRecibo != null) {
+            val pagamentoCalendar = Calendar.getInstance().apply { time = pagamentoDate }
+            val reciboPagamentoCalendar = Calendar.getInstance().apply { time = dataPagamentoRecibo }
+            if (
+                pagamentoCalendar.get(Calendar.MONTH) == reciboPagamentoCalendar.get(Calendar.MONTH) &&
+                pagamentoCalendar.get(Calendar.YEAR) == reciboPagamentoCalendar.get(Calendar.YEAR)
+            ) {
+                return@remember true
+            }
+        }
+
+        val reciboDate = recibo.periodo.extractStartDateForRecibo()
+        val referenciaDate = runCatching {
+            SimpleDateFormat("MMMM/yyyy", Locale("pt", "BR")).parse(pagamentoCandidato.mesReferencia)
+        }.getOrNull() ?: return@remember false
+
+        val reciboCalendar = Calendar.getInstance().apply { time = reciboDate }
+        val referenciaCalendar = Calendar.getInstance().apply { time = referenciaDate }
+
+        reciboCalendar.get(Calendar.MONTH) == referenciaCalendar.get(Calendar.MONTH) &&
+            reciboCalendar.get(Calendar.YEAR) == referenciaCalendar.get(Calendar.YEAR)
+    }
+
+    // Cálculo determinístico do próximo pagamento, avançando o ciclo se o holerite do mês atual já existir.
+    val proximoPagamento = remember(selectedRecibo?.periodo, jaRecebeuMesAtual) {
+        com.jack.meuholerite.utils.calcularProximoPagamento(
+            jaRecebeuMesAtual = jaRecebeuMesAtual
+        )
+    }
 
     val worked = remember(selectedEspelho) {
         selectedEspelho?.resumoItens?.find { it.label == "label_worked_hours" }?.value ?: "0:00"
@@ -2283,6 +2500,25 @@ fun HomeScreen(
     }
 
     if (showSalaryGraph) SalaryGraphDialog(db, gson) { showSalaryGraph = false }
+    if (showHomeCustomization) {
+        HomeCustomizationDialog(
+            layoutPrefs = homeLayout,
+            orderedSections = orderedHomeSections,
+            onDismiss = { showHomeCustomization = false },
+            onOrderChange = { updatedSections ->
+                scope.launch { HomeLayoutStore.setSectionOrder(context, updatedSections.map { it.key }) }
+            },
+            onVisibilityChange = { section, visible ->
+                scope.launch { HomeLayoutStore.setSectionVisible(context, section.key, visible) }
+            },
+            onShowAiFabChange = { visible ->
+                scope.launch { HomeLayoutStore.setShowAiFab(context, visible) }
+            },
+            onReset = {
+                scope.launch { HomeLayoutStore.reset(context) }
+            }
+        )
+    }
     if (showAiAssistantModal) {
         AiAssistantDialog(
             text = displayAiText,
@@ -2316,318 +2552,247 @@ fun HomeScreen(
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
                 }
 
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .entranceMotion(chipsMotion, offsetY = 28f, scaleStart = 0.98f)
-                    ) {
-                        Text(
-                            text = (selectedRecibo?.periodo ?: stringResource(R.string.welcome_user)).uppercase(Locale.getDefault()),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 1.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                val visibleHomeSections = orderedHomeSections.filter { section ->
+                    if (section.key in homeLayout.hiddenSections) return@filter false
 
-                        Spacer(Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (hasAbsences) {
-                                StatusChip(
-                                    icon = Icons.Filled.Warning,
-                                    label = "FALTAS",
-                                    value = absCount.toString(),
-                                    color = Color(0xFFFF3B30),
-                                    onClick = { onGoToPonto() }
-                                )
-                            }
-                            val diasLabel = when {
-                                proximoPagamento.diasRestantes < 0 -> "Pago"
-                                proximoPagamento.diasRestantes == 0 -> "Hoje!"
-                                else -> "Em ${proximoPagamento.diasRestantes}d"
-                            }
-                            val pgtoColor = when {
-                                proximoPagamento.diasRestantes <= 0 -> Color(0xFF34C759)
-                                proximoPagamento.diasRestantes <= 7 -> Color(0xFFFF9500)
-                                else -> Color(0xFF007AFF)
-                            }
-                            StatusChip(
-                                icon = Icons.Outlined.DateRange,
-                                label = "PGTO ${proximoPagamento.dataFormatada.take(5)}",
-                                value = diasLabel,
-                                color = pgtoColor,
-                                onClick = { }
-                            )
-                            StatusChip(
-                                icon = Icons.Outlined.AccountBalanceWallet,
-                                label = "GASTOS",
-                                value = "R$ ${totalDeductionsFinance.formatBrMoney()}",
-                                color = Color(0xFF5856D6),
-                                onClick = {
-                                    safeShowAd {
-                                        context.startActivity(Intent(context, FinanceActivity::class.java))
-                                    }
-                                }
-                            )
-                        }
+                    when (section) {
+                        HomeSection.SMART_ALERTS -> smartAlerts.isNotEmpty()
+                        HomeSection.PROMOS -> promoList.isNotEmpty()
+                        HomeSection.SALARY_RANKING -> selectedRecibo != null || topRankingCard != null || marketLoading
+                        else -> true
                     }
                 }
 
-                if (promoList.isNotEmpty()) {
-                    item {
-                        PromocoesMiniCard(
-                            promocoes = promoList,
-                            notifEnabled = promoNotifEnabled,
-                            onNotifToggle = onPromoNotifToggle,
-                            onOpenAllPromos = onOpenPromocoesFeed,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .entranceMotion(promoMotion)
-                        )
-                    }
-                }
+                visibleHomeSections.forEachIndexed { index, section ->
 
-                item {
-                    Surface(
-                        onClick = onOpenSorteios,
-                        shape = RoundedCornerShape(22.dp),
-                        color = Color.Transparent,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .fillMaxWidth()
-                            .entranceMotion(promoMotion)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            Color(0xFF1D2A3A),
-                                            Color(0xFF2F5D7C),
-                                            Color(0xFF3F7F59)
-                                        )
-                                    )
-                                )
-                                .padding(horizontal = 18.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White.copy(alpha = 0.14f)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.EmojiEvents,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD166),
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.raffles_button).uppercase(Locale.getDefault()),
-                                    color = Color.White.copy(alpha = 0.82f),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.2.sp
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Acompanhe prêmios, tarefas, regulamento e ganhadores anteriores.",
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    lineHeight = 19.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Icon(
-                                Icons.Filled.ChevronRight,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .entranceMotion(salaryMotion)
-                    ) {
-                        val heroTransition = rememberInfiniteTransition(label = "salary_hero")
-                        val heroGlow by heroTransition.animateFloat(
-                            initialValue = 0.10f,
-                            targetValue = 0.22f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(durationMillis = 2600, easing = EaseInOutSine),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "salary_hero_glow"
-                        )
-                        val heroFloat by heroTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = -6f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(durationMillis = 3200, easing = EaseInOutSine),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "salary_hero_float"
-                        )
-                        Surface(
-                            onClick = { showSalaryGraph = true },
-                            shape = RoundedCornerShape(22.dp),
-                            color = Color.Transparent,
-                            tonalElevation = 2.dp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .offset { IntOffset(0, heroFloat.roundToInt()) }
-                        ) {
-                            Column(
+                    when (section) {
+                        HomeSection.PROFILE -> item {
+                            HomeProfileCard(
+                                userName = profileName,
+                                userCargo = profileCargo,
+                                userMatricula = profileMatricula,
+                                selectedRecibo = selectedRecibo,
                                 modifier = Modifier
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = heroGlow),
-                                                MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f)
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(chipsMotion)
+                            )
+                        }
+
+                        HomeSection.STATUS -> item {
+                            HomeStatusSummaryCard(
+                                proximoPagamento = proximoPagamento,
+                                hasAbsences = hasAbsences,
+                                absCount = absCount,
+                                totalDeductionsFinance = totalDeductionsFinance,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(chipsMotion)
+                            )
+                        }
+
+                        HomeSection.NEXT_PAYMENT -> item {
+                            HomeNextPaymentCard(
+                                proximoPagamento = proximoPagamento,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(chipsMotion)
+                            )
+                        }
+
+                        HomeSection.SMART_ALERTS -> if (smartAlerts.isNotEmpty()) item {
+                            HomeSmartAlertsCard(
+                                alerts = smartAlerts,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(chipsMotion)
+                            )
+                        }
+
+                        HomeSection.PROMOS -> if (promoList.isNotEmpty()) item {
+                            PromocoesMiniCard(
+                                promocoes = promoList,
+                                notifEnabled = promoNotifEnabled,
+                                onNotifToggle = onPromoNotifToggle,
+                                onOpenAllPromos = onOpenPromocoesFeed,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(promoMotion)
+                            )
+                        }
+
+                        HomeSection.SORTEIOS -> item {
+                            Surface(
+                                onClick = onOpenSorteios,
+                                shape = RoundedCornerShape(22.dp),
+                                color = Color.Transparent,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth()
+                                    .entranceMotion(promoMotion)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    Color(0xFF1D2A3A),
+                                                    Color(0xFF2F5D7C),
+                                                    Color(0xFF3F7F59)
+                                                )
                                             )
                                         )
-                                    )
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.net_pay_label).uppercase(Locale.getDefault()),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    letterSpacing = 1.1.sp
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    PrivacyValueText(
-                                        value = if (selectedRecibo != null) "R$ ${selectedRecibo.valorLiquido}" else "R$ 0,00",
-                                        fontSize = 36.sp,
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (selectedRecibo?.pdfFilePath != null) {
-                                        IconButton(onClick = { onOpenPdf(selectedRecibo.pdfFilePath) }) {
-                                            Icon(Icons.Outlined.PictureAsPdf, "Ver PDF Holerite", tint = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                }
-
-                                Spacer(Modifier.height(14.dp))
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    MetricMini(
-                                        title = stringResource(R.string.earnings).uppercase(Locale.getDefault()),
-                                        value = "R$ ${selectedRecibo?.totalProventos ?: "0,00"}",
-                                        valueColor = Color(0xFF34C759),
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    MetricMini(
-                                        title = stringResource(R.string.deductions).uppercase(Locale.getDefault()),
-                                        value = "R$ ${selectedRecibo?.totalDescontos ?: "0,00"}",
-                                        valueColor = Color(0xFFFF3B30),
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-
-                                Spacer(Modifier.height(14.dp))
-
-                                LinearProgressIndicator(
-                                    progress = { retentionRatio },
-                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                                    color = Color(0xFFFF3B30),
-                                    trackColor = Color(0xFF34C759),
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
-                                    Text("Retenção: ${(retentionRatio * 100).toInt()}%", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("Líquido: ${((1 - retentionRatio) * 100).toInt()}%", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Surface(
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color.White.copy(alpha = 0.14f)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.EmojiEvents,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFFD166),
+                                            modifier = Modifier.padding(12.dp)
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.raffles_button).uppercase(Locale.getDefault()),
+                                            color = Color.White.copy(alpha = 0.82f),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Black,
+                                            letterSpacing = 1.2.sp
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = "Acompanhe prêmios, tarefas, regulamento e ganhadores anteriores.",
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            lineHeight = 19.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    Icon(
+                                        Icons.Filled.ChevronRight,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
+                            }
+                        }
 
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = "Toque para ver evolução salarial",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.align(Alignment.End)
+                        HomeSection.NET_PAY -> item {
+                            HomeNetPayCard(
+                                selectedRecibo = selectedRecibo,
+                                retentionRatio = retentionRatio,
+                                onOpenPdf = onOpenPdf,
+                                onOpenSalaryGraph = { showSalaryGraph = true },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(salaryMotion)
+                            )
+                        }
+
+                        HomeSection.POINT_OVERVIEW -> item {
+                            HomePointOverviewCard(
+                                worked = worked,
+                                extra = extra,
+                                night = night,
+                                hasAbsences = hasAbsences,
+                                absCount = absCount,
+                                onClick = onGoToPonto,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(jornadaMotion)
+                            )
+                        }
+
+                        HomeSection.SALARY_RANKING -> if (selectedRecibo != null || topRankingCard != null || marketLoading) item {
+                            Column(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(marketMotion)
+                            ) {
+                                SectionHeader("Ranking de salários")
+                                SalaryRankingHomeCard(
+                                    ranking = topRankingCard,
+                                    isLoading = marketLoading,
+                                    onClick = {
+                                        context.startActivity(Intent(context, SalaryRankingActivity::class.java))
+                                    }
                                 )
                             }
                         }
-                    }
-                }
 
-                if (selectedRecibo != null || topRankingCard != null || marketLoading) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .entranceMotion(marketMotion)
-                        ) {
-                            SectionHeader("Ranking de salários")
-                            SalaryRankingHomeCard(
-                                ranking = topRankingCard,
-                                isLoading = marketLoading,
-                                onClick = {
-                                    context.startActivity(Intent(context, SalaryRankingActivity::class.java))
+                        HomeSection.FINANCE -> {
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .entranceMotion(financeMotion),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    IosWidgetFinanceHighlightCard(
+                                        remaining = remaining,
+                                        totalExpenses = totalExpenses,
+                                        totalDebts = totalDebtInstallments,
+                                        onClick = {
+                                            context.startActivity(Intent(context, FinanceActivity::class.java))
+                                        }
+                                    )
+                                    SectionHeader("Resumo mensal automático")
+                                    MonthlySummaryCard(summary = monthlySummary)
                                 }
+                            }
+                        }
+
+                        HomeSection.QUICK_LINKS -> item {
+                            Column(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(financeMotion),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                QuickActionsRow(
+                                    onRecibos = onGoToRecibo,
+                                    onPonto = onGoToPonto,
+                                    onTools = onGoToTools,
+                                    onFinance = {
+                                        context.startActivity(Intent(context, FinanceActivity::class.java))
+                                    },
+                                    showHeader = true
+                                )
+                            }
+                        }
+
+                        HomeSection.AI_SHORTCUT -> item {
+                            HomeAiShortcutCard(
+                                onClick = { showAiAssistantModal = true },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(financeMotion)
                             )
                         }
                     }
-                }
 
-                item {
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .entranceMotion(financeMotion),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        IosWidgetFinanceHighlightCard(
-                            remaining = remaining,
-                            totalExpenses = totalExpenses,
-                            totalDebts = totalDebtInstallments,
-                            onClick = {
-                                context.startActivity(Intent(context, FinanceActivity::class.java))
+                    if (!adsRemovedState && index == 2) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(financeMotion)
+                            ) {
+                                com.jack.meuholerite.ui.NativeInlineAd(
+                                    adUnitId = "ca-app-pub-7931782163570852/1526069738",
+                                    size = com.jack.meuholerite.ui.NativeAdSize.Regular
+                                )
                             }
-                        )
-
-                        if (!adsRemovedState) {
-                            com.jack.meuholerite.ui.NativeInlineAd(
-                                adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                                size = com.jack.meuholerite.ui.NativeAdSize.Regular
-                            )
                         }
-
-                        QuickActionsRow(
-                            onRecibos = onGoToRecibo,
-                            onPonto = onGoToPonto,
-                            onTools = onGoToTools,
-                            onFinance = {
-                                context.startActivity(Intent(context, FinanceActivity::class.java))
-                            }
-                        )
-
-                        SectionHeader("Resumo mensal automático")
-                        MonthlySummaryCard(summary = monthlySummary)
                     }
                 }
 
@@ -2637,16 +2802,1015 @@ fun HomeScreen(
             }
         }
 
-        FloatingActionButton(
-            onClick = { showAiAssistantModal = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+        Surface(
+            onClick = { showHomeCustomization = true },
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 1.dp,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .windowInsetsPadding(WindowInsets.navigationBars)
+                .align(Alignment.TopEnd)
+                .padding(top = 0.dp, end = 16.dp)
+                .entranceMotion(chipsMotion, offsetY = 20f, scaleStart = 0.98f)
         ) {
-            Icon(Icons.Filled.AutoAwesome, contentDescription = "Abrir assistente IA")
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.Tune,
+                    contentDescription = "Personalizar home",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    "Personalizar",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        if (homeLayout.showAiFab) {
+            FloatingActionButton(
+                onClick = { showAiAssistantModal = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = "Abrir assistente IA")
+            }
+        }
+    }
+}
+
+@Composable
+private fun IntroCustomizationTeaserCard() {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.06f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "PERSONALIZE SUA EXPERIÊNCIA",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+            }
+
+            Text(
+                text = "Sua home, seus atalhos, seu ritmo.",
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = "Depois de entrar, toque em Personalizar para reorganizar os cards, deixar só o que importa e acessar IA, finanças, sorteios e ponto do seu jeito.",
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IntroPill(icon = Icons.Outlined.ViewQuilt, label = "Cards")
+                IntroPill(icon = Icons.Outlined.SwapVert, label = "Ordem")
+                IntroPill(icon = Icons.Filled.AutoAwesome, label = "IA")
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeCustomizationEntryCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            ) {
+                Icon(
+                    Icons.Outlined.Tune,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(10.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Personalizar home", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "Escolha a ordem dos blocos e o que deve aparecer para você.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
+            }
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun HomeStatusSummaryCard(
+    proximoPagamento: ProximoPagamento,
+    hasAbsences: Boolean,
+    absCount: Int,
+    totalDeductionsFinance: Double,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("Status do mês", fontWeight = FontWeight.Black, fontSize = 15.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (hasAbsences) {
+                    StatusChip(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Warning,
+                        label = "FALTAS",
+                        value = absCount.toString(),
+                        color = Color(0xFFFF3B30)
+                    )
+                }
+                val diasLabel = when {
+                    proximoPagamento.diasRestantes < 0 -> "Pago"
+                    proximoPagamento.diasRestantes == 0 -> "Hoje!"
+                    else -> "Em ${proximoPagamento.diasRestantes}d"
+                }
+                val pgtoColor = when {
+                    proximoPagamento.diasRestantes <= 0 -> Color(0xFF34C759)
+                    proximoPagamento.diasRestantes <= 7 -> Color(0xFFFF9500)
+                    else -> Color(0xFF007AFF)
+                }
+                StatusChip(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Outlined.DateRange,
+                    label = "PGTO ${proximoPagamento.dataFormatada.take(5)}",
+                    value = diasLabel,
+                    color = pgtoColor
+                )
+                StatusChip(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Outlined.AccountBalanceWallet,
+                    label = "GASTOS",
+                    value = "R$ ${totalDeductionsFinance.formatBrMoney()}",
+                    color = Color(0xFF5856D6)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeProfileCard(
+    userName: String,
+    userCargo: String,
+    userMatricula: String,
+    selectedRecibo: ReciboPagamento?,
+    modifier: Modifier = Modifier
+) {
+    val displayName = userName.ifBlank { selectedRecibo?.funcionario }.orEmpty().ifBlank { "Seu perfil" }
+    val displayCargo = userCargo.ifBlank { selectedRecibo?.cargo }.orEmpty().ifBlank { "Cargo não informado" }
+    val displayMatricula = userMatricula.ifBlank { selectedRecibo?.matricula }.orEmpty()
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Icon(
+                        Icons.Outlined.Badge,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(displayName, fontWeight = FontWeight.Black, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(3.dp))
+                    Text(displayCargo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeInfoPill(
+                    label = "Matrícula",
+                    value = displayMatricula.ifBlank { "--" },
+                    modifier = Modifier.weight(1f)
+                )
+                HomeInfoPill(
+                    label = "Empresa",
+                    value = selectedRecibo?.empresa?.ifBlank { "--" } ?: "--",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomePointOverviewCard(
+    worked: String,
+    extra: String,
+    night: String,
+    hasAbsences: Boolean,
+    absCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.Transparent
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.78f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                Text("Resumo do ponto", fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeInfoPill("Trabalhadas", worked, Modifier.weight(1f))
+                HomeInfoPill("Extras", extra, Modifier.weight(1f))
+                HomeInfoPill("Noturno", night, Modifier.weight(1f))
+            }
+
+            Text(
+                if (hasAbsences) "$absCount falta(s) encontrada(s) neste espelho." else "Sem faltas registradas no espelho atual.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                lineHeight = 17.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeFinanceHealthCard(
+    remaining: Double,
+    totalExpenses: Double,
+    totalDebts: Double,
+    goalsCount: Int,
+    totalGoalCurrent: Double,
+    totalGoalTarget: Double,
+    commitmentRatio: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (totalGoalTarget <= 0.0) 0f else (totalGoalCurrent / totalGoalTarget).coerceIn(0.0, 1.0).toFloat()
+    val balanceColor = if (remaining >= 0.0) Color(0xFF1FA463) else Color(0xFFD64545)
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.PieChartOutline, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("Saúde financeira", fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeInfoPill("Sobra", "R$ ${remaining.formatBrMoney()}", Modifier.weight(1f), valueColor = balanceColor)
+                HomeInfoPill("Gastos", "R$ ${totalExpenses.formatBrMoney()}", Modifier.weight(1f))
+                HomeInfoPill("Dívidas", "R$ ${totalDebts.formatBrMoney()}", Modifier.weight(1f))
+            }
+
+            LinearProgressIndicator(
+                progress = { commitmentRatio.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(CircleShape),
+                color = if (commitmentRatio >= 0.6f) Color(0xFFD64545) else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+            )
+            Text(
+                "${(commitmentRatio * 100).toInt()}% do líquido comprometido • $goalsCount meta(s) financeira(s) • ${(progress * 100).toInt()}% das metas abastecidas",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                lineHeight = 17.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeDocumentsCard(
+    recibosCount: Int,
+    espelhosCount: Int,
+    informesCount: Int,
+    onRecibos: () -> Unit,
+    onPonto: () -> Unit,
+    onInformes: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("Central de arquivos", fontWeight = FontWeight.Black, fontSize = 16.sp)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeInfoPill("Recibos", recibosCount.toString(), Modifier.weight(1f))
+                HomeInfoPill("Pontos", espelhosCount.toString(), Modifier.weight(1f))
+                HomeInfoPill("Informes", informesCount.toString(), Modifier.weight(1f))
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeMiniAction("Abrir recibos", onRecibos, Modifier.weight(1f))
+                HomeMiniAction("Abrir ponto", onPonto, Modifier.weight(1f))
+                HomeMiniAction("Informes", onInformes, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeInfoPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(label.uppercase(Locale.getDefault()), fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = valueColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun HomeMiniAction(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 11.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text,
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeNetPayCard(
+    selectedRecibo: ReciboPagamento?,
+    retentionRatio: Float,
+    onOpenPdf: (String?) -> Unit,
+    onOpenSalaryGraph: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val heroTransition = rememberInfiniteTransition(label = "salary_hero")
+    val heroGlow by heroTransition.animateFloat(
+        initialValue = 0.10f,
+        targetValue = 0.22f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2600, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "salary_hero_glow"
+    )
+    val heroFloat by heroTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3200, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "salary_hero_float"
+    )
+
+    Surface(
+        onClick = onOpenSalaryGraph,
+        shape = RoundedCornerShape(22.dp),
+        color = Color.Transparent,
+        tonalElevation = 2.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .offset { IntOffset(0, heroFloat.roundToInt()) }
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = heroGlow),
+                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f)
+                        )
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.net_pay_label).uppercase(Locale.getDefault()),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.1.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PrivacyValueText(
+                    value = if (selectedRecibo != null) "R$ ${selectedRecibo.valorLiquido}" else "R$ 0,00",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.weight(1f)
+                )
+                if (selectedRecibo?.pdfFilePath != null) {
+                    IconButton(onClick = { onOpenPdf(selectedRecibo.pdfFilePath) }) {
+                        com.jack.meuholerite.ui.AppPdfActionIcon(
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MetricMini(
+                    title = stringResource(R.string.earnings).uppercase(Locale.getDefault()),
+                    value = "R$ ${selectedRecibo?.totalProventos ?: "0,00"}",
+                    valueColor = Color(0xFF34C759),
+                    modifier = Modifier.weight(1f)
+                )
+                MetricMini(
+                    title = stringResource(R.string.deductions).uppercase(Locale.getDefault()),
+                    value = "R$ ${selectedRecibo?.totalDescontos ?: "0,00"}",
+                    valueColor = Color(0xFFFF3B30),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            LinearProgressIndicator(
+                progress = { retentionRatio },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                color = Color(0xFFFF3B30),
+                trackColor = Color(0xFF34C759),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Retenção: ${(retentionRatio * 100).toInt()}%", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Líquido: ${((1 - retentionRatio) * 100).toInt()}%", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Toque para ver evolução salarial",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeNextPaymentCard(
+    proximoPagamento: ProximoPagamento,
+    modifier: Modifier = Modifier
+) {
+    val accent = when {
+        proximoPagamento.diasRestantes <= 0 -> Color(0xFF34C759)
+        proximoPagamento.diasRestantes <= 7 -> Color(0xFFFF9500)
+        else -> Color(0xFF007AFF)
+    }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.Transparent
+    ) {
+        Row(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            accent.copy(alpha = 0.18f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(shape = CircleShape, color = accent.copy(alpha = 0.14f)) {
+                Icon(
+                    Icons.Outlined.CalendarMonth,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.padding(11.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Próximo pagamento", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    "${proximoPagamento.dataFormatada} • ${proximoPagamento.mesReferencia}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = accent.copy(alpha = 0.12f)
+            ) {
+                Text(
+                    text = if (proximoPagamento.diasRestantes <= 0) "Hoje" else "${proximoPagamento.diasRestantes}d",
+                    color = accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeSmartAlertsCard(
+    alerts: List<SmartAlert>,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("Alertas inteligentes", fontWeight = FontWeight.Black, fontSize = 15.sp)
+            alerts.forEach { alert ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            alert.color.copy(alpha = 0.08f),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(alert.icon, contentDescription = null, tint = alert.color, modifier = Modifier.size(18.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(alert.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            alert.message,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+            }
+        }
+
+    }
+}
+
+@Composable
+private fun HomeAiShortcutCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.Transparent
+    ) {
+        Row(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)) {
+                Icon(
+                    Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(11.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Assistente IA", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    "Adicione um atalho direto para gerar análise e previsão do pagamento.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
+            }
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun HomeCustomizationDialog(
+    layoutPrefs: HomeLayoutPrefs,
+    orderedSections: List<HomeSection>,
+    onDismiss: () -> Unit,
+    onOrderChange: (List<HomeSection>) -> Unit,
+    onVisibilityChange: (HomeSection, Boolean) -> Unit,
+    onShowAiFabChange: (Boolean) -> Unit,
+    onReset: () -> Unit
+) {
+    val localSections = remember { mutableStateListOf<HomeSection>() }
+    var draggingKey by remember { mutableStateOf<String?>(null) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    var itemHeightPx by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(orderedSections, draggingKey) {
+        if (draggingKey == null) {
+            localSections.clear()
+            localSections.addAll(orderedSections)
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(0.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        ) {
+                            Icon(
+                                Icons.Outlined.DashboardCustomize,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Personalizar home", fontWeight = FontWeight.Black, fontSize = 19.sp)
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "Monte sua tela com a ordem e os atalhos que fazem mais sentido para você.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp
+                            )
+                        }
+                        TextButton(onClick = onReset) {
+                            Text("Restaurar")
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HomeCustomizeHintPill("Arraste", "Reorganize livremente", Modifier.weight(1f))
+                    HomeCustomizeHintPill("Mostre", "Ative só o que usa", Modifier.weight(1f))
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Botão flutuante de IA", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Mostra ou oculta o atalho de IA na home.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = layoutPrefs.showAiFab,
+                            onCheckedChange = onShowAiFabChange
+                        )
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    userScrollEnabled = draggingKey == null
+                ) {
+                    items(localSections, key = { it.key }) { section ->
+                        val isVisible = section.key !in layoutPrefs.hiddenSections
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (draggingKey == section.key) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerLow
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { coordinates ->
+                                    if (itemHeightPx <= 0f) itemHeightPx = coordinates.size.height.toFloat()
+                                }
+                                .offset {
+                                    IntOffset(
+                                        0,
+                                        if (draggingKey == section.key) dragOffsetY.toInt() else 0
+                                    )
+                                }
+                                .zIndex(if (draggingKey == section.key) 1f else 0f)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 13.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
+                                    Icon(
+                                        section.icon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(10.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(section.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Spacer(Modifier.height(4.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(999.dp),
+                                        color = if (isVisible) {
+                                            Color(0xFF1FA463).copy(alpha = 0.12f)
+                                        } else {
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+                                        }
+                                    ) {
+                                        Text(
+                                            if (isVisible) "Visível na home" else "Oculto na home",
+                                            color = if (isVisible) Color(0xFF1FA463) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    modifier = Modifier.pointerInput(section.key, itemHeightPx) {
+                                        detectDragGestures(
+                                            onDragStart = {
+                                                draggingKey = section.key
+                                                dragOffsetY = 0f
+                                            },
+                                            onDragEnd = {
+                                                onOrderChange(localSections.toList())
+                                                draggingKey = null
+                                                dragOffsetY = 0f
+                                            },
+                                            onDragCancel = {
+                                                draggingKey = null
+                                                dragOffsetY = 0f
+                                            }
+                                        ) { change, dragAmount ->
+                                            change.consume()
+                                            if (draggingKey != section.key) return@detectDragGestures
+
+                                            dragOffsetY += dragAmount.y
+                                            val swapThreshold = itemHeightPx / 2f
+
+                                            while (itemHeightPx > 0f && dragOffsetY > swapThreshold) {
+                                                val movingIndex = localSections.indexOf(section)
+                                                if (movingIndex == -1 || movingIndex >= localSections.lastIndex) break
+                                                localSections.removeAt(movingIndex)
+                                                localSections.add(movingIndex + 1, section)
+                                                dragOffsetY -= itemHeightPx
+                                            }
+
+                                            while (itemHeightPx > 0f && dragOffsetY < -swapThreshold) {
+                                                val movingIndex = localSections.indexOf(section)
+                                                if (movingIndex <= 0) break
+                                                localSections.removeAt(movingIndex)
+                                                localSections.add(movingIndex - 1, section)
+                                                dragOffsetY += itemHeightPx
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.DragHandle,
+                                        contentDescription = "Arrastar para reorganizar",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp)
+                                    )
+                                }
+                                Switch(
+                                    checked = isVisible,
+                                    onCheckedChange = { onVisibilityChange(section, it) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Fechar", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeCustomizeHintPill(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(title, fontWeight = FontWeight.Black, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+            Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 15.sp)
         }
     }
 }
@@ -4407,11 +5571,12 @@ private fun MonthlySummaryCard(summary: MonthlySummary) {
 
 @Composable
 private fun StatusChip(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
     value: String,
     color: Color,
-    onClick: () -> Unit
+    onClick: (() -> Unit)? = null
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "status_chip")
     val glowAlpha by infiniteTransition.animateFloat(
@@ -4423,25 +5588,49 @@ private fun StatusChip(
         ),
         label = "status_chip_glow"
     )
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = color.copy(alpha = 0.10f),
-        border = BorderStroke(1.dp, color.copy(alpha = glowAlpha))
-    ) {
+    val content: @Composable () -> Unit = {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically) {
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(8.dp))
-            Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+            Text(
+                label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(Modifier.width(6.dp))
             PrivacyValueText(
                 value = value,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            modifier = modifier,
+            shape = RoundedCornerShape(14.dp),
+            color = color.copy(alpha = 0.10f),
+            border = BorderStroke(1.dp, color.copy(alpha = glowAlpha))
+        ) {
+            content()
+        }
+    } else {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(14.dp),
+            color = color.copy(alpha = 0.10f),
+            border = BorderStroke(1.dp, color.copy(alpha = glowAlpha))
+        ) {
+            content()
         }
     }
 }
@@ -4484,9 +5673,12 @@ private fun QuickActionsRow(
     onRecibos: () -> Unit,
     onPonto: () -> Unit,
     onTools: () -> Unit,
-    onFinance: () -> Unit
+    onFinance: () -> Unit,
+    showHeader: Boolean = true
 ) {
-    SectionHeader("Ações rápidas")
+    if (showHeader) {
+        SectionHeader("Ações rápidas")
+    }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         QuickActionButton("Recibos", Icons.Outlined.Description, onRecibos, Modifier.weight(1f))
         QuickActionButton("Ponto", Icons.Outlined.Schedule, onPonto, Modifier.weight(1f))

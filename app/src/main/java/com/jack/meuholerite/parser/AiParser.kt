@@ -129,6 +129,11 @@ class AiParser {
     }
 
     suspend fun getAiAnalysis(contextText: String): String = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) {
+            Log.e("AiParser", "GROQ_API_KEY não configurada")
+            return@withContext "A chave da IA não está configurada no app no momento."
+        }
+
         val prompt = """
             Você é um assistente inteligente. Analise os dados ou responda à pergunta do usuário abaixo. 
             Seja útil, preciso e mantenha um tom profissional e amigável.
@@ -170,6 +175,11 @@ class AiParser {
     }
 
     suspend fun getPredictions(recibosContext: String): String = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) {
+            Log.e("AiParser", "GROQ_API_KEY não configurada")
+            return@withContext "A chave da IA não está configurada no app no momento."
+        }
+
         val prompt = """
             Com base nos seguintes dados de holerites (período, proventos, descontos, data de admissão), 
             gere uma previsão estimada de FÉRIAS (valor bruto e líquido aproximado para 30 dias) 

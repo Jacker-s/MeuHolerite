@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -34,6 +37,54 @@ enum class NativeAdSize {
     Compact
 }
 
+private object NativeAdPool {
+    private val availableAds = mutableMapOf<String, MutableList<NativeAd>>()
+    private val activeAds = mutableSetOf<NativeAd>()
+    private val seenAds = mutableSetOf<NativeAd>()
+
+    private fun poolKey(adUnitId: String, size: NativeAdSize): String = "$adUnitId:$size"
+
+    fun markSeen(ad: NativeAd) {
+        synchronized(this) {
+            seenAds.add(ad)
+        }
+    }
+
+    fun acquire(adUnitId: String, size: NativeAdSize): NativeAd? {
+        synchronized(this) {
+            val key = poolKey(adUnitId, size)
+            val list = availableAds[key] ?: return null
+            while (list.isNotEmpty()) {
+                val ad = list.removeAt(0)
+                if (ad !in activeAds) {
+                    activeAds.add(ad)
+                    return ad
+                }
+            }
+            return null
+        }
+    }
+
+    fun release(adUnitId: String, size: NativeAdSize, ad: NativeAd) {
+        synchronized(this) {
+            activeAds.remove(ad)
+            val wasSeen = seenAds.remove(ad)
+            if (wasSeen) {
+                ad.destroy()
+                return
+            }
+
+            val key = poolKey(adUnitId, size)
+            val list = availableAds.getOrPut(key) { mutableListOf() }
+            if (list.size < 4) {
+                list.add(ad)
+            } else {
+                ad.destroy()
+            }
+        }
+    }
+}
+
 private class NativeInlineAdHostView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -43,34 +94,62 @@ private class NativeInlineAdHostView @JvmOverloads constructor(
     private var currentSize: NativeAdSize? = null
     private var currentNativeAd: NativeAd? = null
     private var nativeAdView: NativeAdView? = null
+    private var onVisibilityChanged: ((Boolean) -> Unit)? = null
 
-    fun bind(adUnitId: String, size: NativeAdSize) {
+    fun bind(adUnitId: String, size: NativeAdSize, onVisibilityChanged: (Boolean) -> Unit) {
+        this.onVisibilityChanged = onVisibilityChanged
+
         if (currentAdUnitId == adUnitId && currentSize == size && nativeAdView != null) return
 
         currentAdUnitId = adUnitId
         currentSize = size
-        loadAd(adUnitId, size)
+        onVisibilityChanged(false)
+
+        val cachedAd = NativeAdPool.acquire(adUnitId, size)
+        if (cachedAd != null) {
+            displayAd(cachedAd, size)
+        } else {
+            loadAd(adUnitId, size)
+        }
     }
 
     fun release() {
-        currentNativeAd?.destroy()
+        val ad = currentNativeAd
+        val adUnitId = currentAdUnitId
+        val size = currentSize
+        if (ad != null && adUnitId != null && size != null) {
+            NativeAdPool.release(adUnitId, size, ad)
+        }
         currentNativeAd = null
         nativeAdView = null
         removeAllViews()
+        onVisibilityChanged?.invoke(false)
+    }
+
+    private fun displayAd(nativeAd: NativeAd, size: NativeAdSize) {
+        currentNativeAd = nativeAd
+        val adView = createNativeAdView(context, size)
+        bindNativeAd(adView, nativeAd, size)
+        removeAllViews()
+        addView(adView)
+        nativeAdView = adView
+        onVisibilityChanged?.invoke(true)
     }
 
     private fun loadAd(adUnitId: String, size: NativeAdSize) {
-        release()
+        removeAllViews()
+        nativeAdView = null
+
+        var loadedAd: NativeAd? = null
 
         AdLoader.Builder(context, adUnitId)
             .forNativeAd { nativeAd ->
-                currentNativeAd?.destroy()
-                currentNativeAd = nativeAd
-                val adView = createNativeAdView(context, size)
-                bindNativeAd(adView, nativeAd, size)
-                removeAllViews()
-                addView(adView)
-                nativeAdView = adView
+                loadedAd = nativeAd
+                if (currentAdUnitId == adUnitId && currentSize == size) {
+                    displayAd(nativeAd, size)
+                } else {
+                    NativeAdPool.release(adUnitId, size, nativeAd)
+                }
             }
             .withNativeAdOptions(
                 NativeAdOptions.Builder().build()
@@ -83,12 +162,18 @@ private class NativeInlineAdHostView @JvmOverloads constructor(
 
                     override fun onAdImpression() {
                         Log.d("NativeInlineAd", "onAdImpression: $adUnitId")
+                        loadedAd?.let {
+                            NativeAdPool.markSeen(it)
+                        }
                     }
 
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         Log.e("NativeInlineAd", "onAdFailedToLoad: $adUnitId - ${error.message}")
-                        removeAllViews()
-                        nativeAdView = null
+                        if (currentAdUnitId == adUnitId && currentSize == size) {
+                            removeAllViews()
+                            nativeAdView = null
+                            onVisibilityChanged?.invoke(false)
+                        }
                     }
                 }
             )
@@ -116,6 +201,7 @@ fun NativeInlineAd(
 ) {
     val context = LocalContext.current
     val hostView = remember(adUnitId, size) { NativeInlineAdHostView(context) }
+    var isAdVisible by remember(adUnitId, size) { mutableStateOf(false) }
 
     DisposableEffect(hostView) {
         onDispose { hostView.release() }
@@ -124,13 +210,26 @@ fun NativeInlineAd(
     AndroidView(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 10.dp)
-            .heightIn(min = if (size == NativeAdSize.Compact) 72.dp else 124.dp),
+            .then(
+                if (isAdVisible) {
+                    Modifier
+                        .padding(bottom = 10.dp)
+                        .heightIn(min = if (size == NativeAdSize.Compact) 72.dp else 124.dp)
+                } else {
+                    Modifier
+                }
+            ),
         factory = {
-            hostView.apply { bind(adUnitId, size) }
+            hostView.apply {
+                bind(adUnitId, size) { visible ->
+                    isAdVisible = visible
+                }
+            }
         },
         update = {
-            it.bind(adUnitId, size)
+            it.bind(adUnitId, size) { visible ->
+                isAdVisible = visible
+            }
         }
     )
 }

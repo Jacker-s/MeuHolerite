@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.jack.meuholerite.ads.AdsDataStore
@@ -91,8 +92,9 @@ import kotlin.math.roundToInt
             val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
             val useDarkTheme =
                 if (storageManager.hasDarkModeSet()) storageManager.isDarkMode() else systemInDarkTheme
+            val themeAccent = storageManager.getThemeAccent()
 
-            MeuHoleriteTheme(darkTheme = useDarkTheme) {
+            MeuHoleriteTheme(darkTheme = useDarkTheme, themeAccent = themeAccent) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     RecibosScreenContent()
                 }
@@ -237,11 +239,12 @@ fun ReceiptsScreen(
     val adInsertPositions = remember(proventos, descontos) {
         buildAdInsertPositions(
             totalItems = proventos.size + descontos.size,
-            maxAds = 2
+            maxAds = 1
         )
     }
 
     var showHistory by remember { mutableStateOf(false) }
+    var showSalaryEvolution by remember { mutableStateOf(false) }
 
     if (showHistory) {
         ReceiptHistoryDialog(
@@ -258,6 +261,12 @@ fun ReceiptsScreen(
         )
     }
 
+    if (showSalaryEvolution && recibos.size > 1) {
+        SalaryEvolutionChart(history = recibos.reversed()) {
+            showSalaryEvolution = false
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -267,13 +276,6 @@ fun ReceiptsScreen(
     ) {
         item {
             Spacer(Modifier.height(10.dp))
-            ReceiptsHeaderCard(
-                periodText = recibo?.periodo ?: stringResource(R.string.select_pdf),
-                userName = userName,
-                userMatricula = userMatricula,
-                reciboCargo = recibo?.cargo,
-                onOpenHistory = { showHistory = true }
-            )
         }
 
         if (recibo == null) {
@@ -281,17 +283,26 @@ fun ReceiptsScreen(
             return@LazyColumn
         }
 
-        item { ReceiptHeroCard(recibo = recibo) }
+        item {
+            ReceiptsQuickActionsRow(
+                profession = recibo.cargo,
+                onOpenInformes = {
+                    val intent = Intent(context, InformesActivity::class.java)
+                    context.startActivity(intent)
+                },
+                onOpenHistory = { showHistory = true }
+            )
+        }
+
+        item {
+            ReceiptHeroCard(
+                recibo = recibo,
+                canOpenSalaryEvolution = recibos.size > 1,
+                onOpenSalaryEvolution = { showSalaryEvolution = true }
+            )
+        }
 
         item { SalaryComparisonCard(current = recibo, all = recibos) }
-
-        if (recibos.size > 1) {
-            item {
-                SectionHeaderRecibo("Evolução Salarial")
-                SalaryEvolutionChart(history = recibos.reversed())
-                Spacer(Modifier.height(16.dp))
-            }
-        }
 
         item {
             SectionHeaderColored(
@@ -350,124 +361,122 @@ private fun buildAdInsertPositions(totalItems: Int, maxAds: Int): Set<Int> {
 }
 
 @Composable
-private fun ReceiptsHeaderCard(
-    periodText: String,
-    userName: String,
-    userMatricula: String,
-    reciboCargo: String? = null,
+private fun ReceiptsQuickActionsRow(
+    profession: String?,
+    onOpenInformes: () -> Unit,
     onOpenHistory: () -> Unit
 ) {
-    val context = LocalContext.current
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        tonalElevation = 2.dp,
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.16f),
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
-                        )
-                    )
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        profession?.takeIf { it.isNotBlank() }?.let {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f))
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
-                        text = periodText,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        "PROFISSÃO",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    val subtitle = listOf(
-                        userName.takeIf { it.isNotBlank() },
-                        userMatricula.takeIf { it.isNotBlank() }
-                    ).filterNotNull().joinToString(" • ")
-
-                    if (subtitle.isNotBlank()) {
-                        Text(
-                            text = subtitle,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    if (!reciboCargo.isNullOrBlank()) {
-                        Text(
-                            text = reciboCargo.uppercase(),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
-
-                IconButton(onClick = onOpenHistory) {
-                    Icon(Icons.Default.History, contentDescription = "Histórico", tint = MaterialTheme.colorScheme.primary)
+                    Text(
+                        it.uppercase(),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
+        }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.08f), thickness = 1.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ReceiptActionChip(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Outlined.Assignment,
+                label = "INFORMES",
+                value = "Abrir",
+                color = Color(0xFF007AFF),
+                onClick = onOpenInformes
+            )
+            ReceiptActionChip(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.History,
+                label = "HISTÓRICO",
+                value = "Ver",
+                color = Color(0xFF5856D6),
+                onClick = onOpenHistory
+            )
+        }
+    }
+}
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = {
-                        val intent = Intent(context, InformesActivity::class.java)
-                        context.startActivity(intent)
-                    },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Assignment,
-                        contentDescription = "Informe de Rendimentos",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text("Informe de Rendimentos", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-
-                TextButton(
-                    onClick = onOpenHistory,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Histórico",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text("Histórico", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
+@Composable
+private fun ReceiptActionChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = color.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.20f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(20.dp)
+            )
+            Column {
+                Text(
+                    label,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = color
+                )
+                Text(
+                    value,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ReceiptHeroCard(recibo: ReciboPagamento) {
+private fun ReceiptHeroCard(
+    recibo: ReciboPagamento,
+    canOpenSalaryEvolution: Boolean,
+    onOpenSalaryEvolution: () -> Unit
+) {
     val proventosVal = recibo.totalProventos.toMoneyDoubleOrZero().coerceAtLeast(1.0)
     val descontosVal = recibo.totalDescontos.toMoneyDoubleOrZero().coerceAtLeast(0.0)
     val ratio = (descontosVal / proventosVal).coerceIn(0.0, 1.0).toFloat()
 
     Surface(
+        onClick = {
+            if (canOpenSalaryEvolution) {
+                onOpenSalaryEvolution()
+            }
+        },
         shape = RoundedCornerShape(22.dp),
         tonalElevation = 2.dp,
         color = Color.Transparent,
@@ -503,6 +512,15 @@ private fun ReceiptHeroCard(recibo: ReciboPagamento) {
                 color = MaterialTheme.colorScheme.onSurface,
                 letterSpacing = (-1).sp
             )
+
+            if (canOpenSalaryEvolution) {
+                Text(
+                    text = "Toque no card para ver a evolução salarial",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -584,7 +602,12 @@ private fun MetricChipMoney(
 fun SalaryComparisonCard(current: ReciboPagamento?, all: List<ReciboPagamento>) {
     if (current == null || all.size < 2) return
 
-    val currentIndex = all.indexOf(current)
+    val currentIndex = all.indexOfFirst {
+        it.periodo == current.periodo &&
+            it.valorLiquido == current.valorLiquido &&
+            it.totalProventos == current.totalProventos &&
+            it.totalDescontos == current.totalDescontos
+    }.takeIf { it >= 0 } ?: 0
     if (currentIndex == -1 || currentIndex >= all.size - 1) return
 
     val previous = all[currentIndex + 1]
@@ -648,12 +671,40 @@ fun SalaryComparisonCard(current: ReciboPagamento?, all: List<ReciboPagamento>) 
 }
 
 @Composable
-fun SalaryEvolutionChart(history: List<ReciboPagamento>) {
-    PremiumEvolutionChart(
-        history = history,
-        showGross = false,
-        modifier = Modifier.padding(vertical = 4.dp)
-    )
+fun SalaryEvolutionChart(
+    history: List<ReciboPagamento>,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 4.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Text(
+                    "Evolução salarial",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(12.dp))
+                PremiumEvolutionChart(
+                    history = history,
+                    showGross = false,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Fechar")
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -16,7 +16,7 @@
     <string name="epays_label">ePays</string>
     <string name="receipts">Recibos</string>
     <string name="no_receipts_saved">Nenhum recibo salvo ainda.</string>
-    <string name="net_pay">Líquido a Receber</string>
+    <string name="net_pay">TOTAL LÍQUIDO A RECEBER</string>
     <string name="earnings">Proventos</string>
     <string name="deductions">Descontos</string>
     <string name="alelo">Alelo</string>
@@ -175,7 +175,7 @@
     <string name="other_deductions">Outros Descontos</string>
     <string name="import_data">Importe seus dados</string>
     <string name="use_epays_tab">Use a aba ePays para Começar</string>
-    <string name="net_pay_label">Líquido a Receber</string>
+    <string name="net_pay_label">TOTAL LÍQUIDO A RECEBER</string>
     <string name="import_receipt">Importe um recibo</string>
     <string name="current_balance">Saldo Atual</string>
     <string name="import_timesheet">Importe um espelho de ponto</string>

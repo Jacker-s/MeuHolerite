@@ -71,6 +71,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import com.jack.meuholerite.database.AppDatabase
 import com.jack.meuholerite.ui.SectionHeader
+import com.jack.meuholerite.ui.theme.AppThemePalettes
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
 import com.jack.meuholerite.parser.PontoParser
 import com.jack.meuholerite.parser.ReciboParser
@@ -119,8 +120,9 @@ class SettingsActivity : AppCompatActivity() {
                 val hasSet = storageManager.hasDarkModeSet()
                 mutableStateOf(if (hasSet) storageManager.isDarkMode() else systemInDarkTheme)
             }
+            var themeAccent by remember { mutableStateOf(storageManager.getThemeAccent()) }
 
-            MeuHoleriteTheme(darkTheme = useDarkTheme) {
+            MeuHoleriteTheme(darkTheme = useDarkTheme, themeAccent = themeAccent) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -177,6 +179,7 @@ class SettingsActivity : AppCompatActivity() {
                         isAdsRemoved = isAdsRemoved,
                         onRemoveAdsClick = { showRemoveAdsDialog = true },
                         isDarkTheme = useDarkTheme,
+                        selectedThemeAccent = themeAccent,
                         onToggleDarkMode = { enabled ->
                             storageManager.setDarkMode(enabled)
                             useDarkTheme = enabled
@@ -185,6 +188,17 @@ class SettingsActivity : AppCompatActivity() {
                                 if (account != null) {
                                     driveManager.backupNow(account) { /* quiet backup */ }
                                     firestoreManager.backupData { /* quiet backup */ }
+                                }
+                            }
+                        },
+                        onThemeAccentSelected = { accent ->
+                            storageManager.setThemeAccent(accent)
+                            themeAccent = accent
+                            scope.launch {
+                                val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this@SettingsActivity)
+                                if (account != null) {
+                                    driveManager.backupNow(account) { }
+                                    firestoreManager.backupData { }
                                 }
                             }
                         },
@@ -425,7 +439,9 @@ fun SettingsScreen(
     isAdsRemoved: Boolean,
     onRemoveAdsClick: () -> Unit,
     isDarkTheme: Boolean,
+    selectedThemeAccent: String,
     onToggleDarkMode: (Boolean) -> Unit,
+    onThemeAccentSelected: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -874,12 +890,9 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        SettingsToggleRow(
-                            icon = Icons.Outlined.NightsStay,
-                            label = "Modo Escuro",
-                            color = Color(0xFF5856D6),
-                            checked = isDarkTheme,
-                            onCheckedChange = onToggleDarkMode
+                        ThemeAccentRow(
+                            selectedThemeAccent = selectedThemeAccent,
+                            onThemeAccentSelected = onThemeAccentSelected
                         )
                         HorizontalDivider(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                         SettingsToggleRow(
@@ -896,24 +909,6 @@ fun SettingsScreen(
                                 val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(context)
                                 if (account != null) {
                                     scope.launch { 
-                                        driveManager.backupNow(account)
-                                        firestoreManager.backupData()
-                                    }
-                                }
-                            }
-                        )
-                        HorizontalDivider(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                        SettingsToggleRow(
-                            icon = if (privacyModeEnabled) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                            label = "Modo Privacidade",
-                            color = Color(0xFFFF9500),
-                            checked = privacyModeEnabled,
-                            onCheckedChange = { enabled ->
-                                privacyModeEnabled = enabled
-                                storage.setHideValues(enabled)
-                                scope.launch { 
-                                    val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(context)
-                                    if (account != null) {
                                         driveManager.backupNow(account)
                                         firestoreManager.backupData()
                                     }
@@ -1723,6 +1718,86 @@ fun SettingsToggleRow(icon: ImageVector, label: String, color: Color, checked: B
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(checkedTrackColor = color)
         )
+    }
+}
+
+@Composable
+fun ThemeAccentRow(
+    selectedThemeAccent: String,
+    onThemeAccentSelected: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("Tema de cores", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    "Escolha a cor principal do app.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppThemePalettes.all.forEach { palette ->
+                val selected = palette.key == selectedThemeAccent
+                Surface(
+                    onClick = { onThemeAccentSelected(palette.key) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.primary.copy(alpha = 0.10f),
+                    border = BorderStroke(
+                        if (selected) 2.dp else 1.dp,
+                        if (selected) palette.primary else palette.primary.copy(alpha = 0.22f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(palette.primary, CircleShape)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(palette.tertiary, CircleShape)
+                            )
+                        }
+                        Text(
+                            palette.label,
+                            fontSize = 11.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

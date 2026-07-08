@@ -82,8 +82,13 @@ data class ProximoPagamento(
  * - Se hoje é dia 16+, o espelho de hoje só será pago no 5º dia útil do próximo mês
  *
  * @param hoje [Calendar] representando a data atual (padrão = hoje)
+ * @param jaRecebeuMesAtual quando true, força o próximo ciclo mesmo que a data ainda
+ * não tenha ultrapassado o 5º dia útil, pois o holerite do mês atual já existe.
  */
-fun calcularProximoPagamento(hoje: Calendar = Calendar.getInstance()): ProximoPagamento {
+fun calcularProximoPagamento(
+    hoje: Calendar = Calendar.getInstance(),
+    jaRecebeuMesAtual: Boolean = false
+): ProximoPagamento {
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
     val sdfMes = SimpleDateFormat("MMMM/yyyy", Locale("pt", "BR"))
 
@@ -103,7 +108,7 @@ fun calcularProximoPagamento(hoje: Calendar = Calendar.getInstance()): ProximoPa
     val mesPagamento: Int
     val anoPagamento: Int
 
-    if (quintoDiaUtilMesAtual != null && !hoje.after(quintoDiaUtilMesAtual) && diaHoje < 16) {
+    if (!jaRecebeuMesAtual && quintoDiaUtilMesAtual != null && !hoje.after(quintoDiaUtilMesAtual) && diaHoje < 16) {
         // Ainda não chegou o 5º dia útil do mês atual E ainda não chegou o dia 16:
         // o pagamento deste mês (referente ao mês passado) ainda está por vir.
         mesPagamento = mesHoje

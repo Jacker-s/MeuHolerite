@@ -84,8 +84,9 @@ class InformesActivity : ComponentActivity() {
             val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
             val useDarkTheme =
                 if (storageManager.hasDarkModeSet()) storageManager.isDarkMode() else systemInDarkTheme
+            val themeAccent = storageManager.getThemeAccent()
 
-            MeuHoleriteTheme(darkTheme = useDarkTheme) {
+            MeuHoleriteTheme(darkTheme = useDarkTheme, themeAccent = themeAccent) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     InformesScreenContent()
                 }

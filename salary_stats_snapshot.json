@@ -1,0 +1,4203 @@
+[
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/023946ef0393303d8f0be6e81ddedbd8",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "023946ef0393303d8f0be6e81ddedbd8"
+      },
+      "cargo": {
+        "stringValue": "1281 - AJ DE LIMP PREDIAL R"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1470
+      },
+      "salary": {
+        "doubleValue": 1628
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1777488521169"
+      },
+      "empresa": {
+        "stringValue": "CONVACÓ CONSTRUTORA VALE DO ACO LTDA"
+      }
+    },
+    "createTime": "2026-04-29T18:48:41.110501Z",
+    "updateTime": "2026-04-29T18:48:41.110501Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/029396896852281b20a216c7005303a7",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 2004.36
+      },
+      "salary": {
+        "doubleValue": 1988.88
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "uHash": {
+        "stringValue": "029396896852281b20a216c7005303a7"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE PRODUCAO"
+      },
+      "inss": {
+        "doubleValue": 208.9
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "EMPLOYER TRABALHO TEMPORARIO S A 05 445 752 0001 80 CHESIQUIMICA LTDA 1 2125191000143"
+      },
+      "timestamp": {
+        "integerValue": "1780745189121"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-06T11:26:29.320011Z",
+    "updateTime": "2026-06-06T11:26:29.320011Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/098e977871ea503e4b3322040c1300ca",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1586.12
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "098e977871ea503e4b3322040c1300ca"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVICOS GERAIS"
+      },
+      "inss": {
+        "doubleValue": 141.04
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANCA ELECTRONICA E SERVICO"
+      },
+      "timestamp": {
+        "integerValue": "1777990350833"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-05T14:12:32.537637Z",
+    "updateTime": "2026-05-05T14:12:32.537637Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/0b66bc1fdb1d4fc9a2d04563f4a765fc",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "0b66bc1fdb1d4fc9a2d04563f4a765fc"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVICOS GERAIS ()"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 880
+      },
+      "salary": {
+        "doubleValue": 749.99
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "KIARGOS SERVICOS E FACILITY LTDA 28.871.366/0001-55 1"
+      },
+      "timestamp": {
+        "integerValue": "1780486037094"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-03T11:27:17.872596Z",
+    "updateTime": "2026-06-03T11:27:17.872596Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/134bc8122617ce6cf797e420d32b03c7",
+    "fields": {
+      "salary": {
+        "doubleValue": 572.4
+      },
+      "liquido": {
+        "doubleValue": 495.43
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 42.93
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL"
+      },
+      "uHash": {
+        "stringValue": "134bc8122617ce6cf797e420d32b03c7"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1781184699261"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-11T13:31:39.914484Z",
+    "updateTime": "2026-06-11T13:31:39.914484Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/173d2d2591a945f1108a98480898f2b6",
+    "fields": {
+      "liquido": {
+        "doubleValue": 1859
+      },
+      "salary": {
+        "doubleValue": 1698
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 133.37
+      },
+      "uHash": {
+        "stringValue": "173d2d2591a945f1108a98480898f2b6"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE COZINHA"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "NUTRICAO REFEICOES INDUSTRIAIS LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780499661240"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-03T15:14:22.515511Z",
+    "updateTime": "2026-06-03T15:14:22.515511Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/1MABjfqzG1w0U7Pwreg5",
+    "fields": {
+      "salary": {
+        "doubleValue": 2103.57
+      },
+      "cargo": {
+        "stringValue": "COLETOR DE DADOS"
+      },
+      "timestamp": {
+        "integerValue": "1776008871032"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      }
+    },
+    "createTime": "2026-04-12T15:47:51.718424Z",
+    "updateTime": "2026-04-28T04:29:09.441457Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/1c0a7e8ae5eff34b1520d2e1ebddbcc8",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "timestamp": {
+        "integerValue": "1780047708117"
+      },
+      "empresa": {
+        "stringValue": "ASSOCIACAO MINEIRA DE DEFESA DO AMBIENTE"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 2045.83
+      },
+      "salary": {
+        "doubleValue": 2009.45
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "uHash": {
+        "stringValue": "1c0a7e8ae5eff34b1520d2e1ebddbcc8"
+      },
+      "cargo": {
+        "stringValue": "GUARDA FLORESTAL LIDER"
+      },
+      "inss": {
+        "doubleValue": 135.25
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-05-29T09:41:49.037409Z",
+    "updateTime": "2026-05-29T09:41:49.037409Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/1e85f597a5ef4cd2f8a76378e3dd9d5a",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 3000
+      },
+      "liquido": {
+        "doubleValue": 1551.42
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "CHEFE DE COZINHA"
+      },
+      "uHash": {
+        "stringValue": "1e85f597a5ef4cd2f8a76378e3dd9d5a"
+      },
+      "inss": {
+        "doubleValue": 248.58
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "0528 E A DA SILVA CAFE BOUTIQUE COMERCIO DE"
+      },
+      "timestamp": {
+        "integerValue": "1781230500349"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-12T02:14:59.948732Z",
+    "updateTime": "2026-06-12T02:14:59.948732Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/20b5ae781d8c932ac525e207e34a0446",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 140.67
+      },
+      "cargo": {
+        "stringValue": "AFASTADO"
+      },
+      "uHash": {
+        "stringValue": "20b5ae781d8c932ac525e207e34a0446"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 2200
+      },
+      "liquido": {
+        "doubleValue": 869
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "S.A MOAGEIRA E AGRÍCOLA - FILIAL RAÇÃO"
+      },
+      "timestamp": {
+        "integerValue": "1779136546626"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-18T20:35:46.686668Z",
+    "updateTime": "2026-05-18T20:35:46.686668Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/26a0bd1356c7bc4c7487ea7e0b2c22bd",
+    "fields": {
+      "cargo": {
+        "stringValue": "MOTORISTA CARRETEIRO"
+      },
+      "uHash": {
+        "stringValue": "26a0bd1356c7bc4c7487ea7e0b2c22bd"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 893
+      },
+      "salary": {
+        "doubleValue": 3190
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "1182 - TRANSPORTADORA FERREIRA JUNIOR LIMITADA81.717.811/0001-00 4"
+      },
+      "timestamp": {
+        "integerValue": "1778960704722"
+      }
+    },
+    "createTime": "2026-05-16T19:45:05.748742Z",
+    "updateTime": "2026-05-16T19:45:05.748742Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/27e1dd326a6f1d96221ccc5993173214",
+    "fields": {
+      "inss": {
+        "doubleValue": 106.27
+      },
+      "uHash": {
+        "stringValue": "27e1dd326a6f1d96221ccc5993173214"
+      },
+      "cargo": {
+        "stringValue": "PROMOTOR DE VENDAS SENIOR"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1151.2
+      },
+      "salary": {
+        "doubleValue": 1700
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "ANA CAROLINA DE OLIVEIRA PROMOCAO DE VENDAS"
+      },
+      "timestamp": {
+        "integerValue": "1780698648741"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-05T22:30:50.486903Z",
+    "updateTime": "2026-06-05T22:30:50.486903Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/28d8f046be220ad2a1c0955b50a393b2",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 2707.59
+      },
+      "liquido": {
+        "doubleValue": 1041.15
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "CONFECCIONADOR DE PNEUS"
+      },
+      "uHash": {
+        "stringValue": "28d8f046be220ad2a1c0955b50a393b2"
+      },
+      "empresa": {
+        "stringValue": "TECHNIC DO BRASIL LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1781481610913"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 41.89
+      }
+    },
+    "createTime": "2026-06-15T00:00:10.997243Z",
+    "updateTime": "2026-06-15T00:00:10.997243Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/2CvGPPg1tX6GF0YSzIB6",
+    "fields": {
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL II"
+      },
+      "salary": {
+        "doubleValue": 2003.4
+      },
+      "timestamp": {
+        "integerValue": "1775950274569"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      }
+    },
+    "createTime": "2026-04-11T23:31:15.236213Z",
+    "updateTime": "2026-04-28T04:29:53.519772Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/2c085554546cd40f6a9c3ef6e42db516",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "K R LOPES DE CASTRO E CIA LTDA FILIAL 08 14.739.053/0009-90 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780511035042"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1839.88
+      },
+      "salary": {
+        "doubleValue": 1720
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "2c085554546cd40f6a9c3ef6e42db516"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR"
+      },
+      "inss": {
+        "doubleValue": 145.96
+      }
+    },
+    "createTime": "2026-06-03T18:23:55.316148Z",
+    "updateTime": "2026-06-03T18:23:55.316148Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/2f3a8c6bebb13a9b8844aa1ddf3c0c87",
+    "fields": {
+      "uHash": {
+        "stringValue": "2f3a8c6bebb13a9b8844aa1ddf3c0c87"
+      },
+      "cargo": {
+        "stringValue": "MECANICO SUBCONJUNTOS"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1165
+      },
+      "salary": {
+        "doubleValue": 3500
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1780953104174"
+      },
+      "empresa": {
+        "stringValue": "CONVACO CONSTRUTORA VALE DO ACO LTDA"
+      }
+    },
+    "createTime": "2026-06-08T21:11:44.521043Z",
+    "updateTime": "2026-06-08T21:11:44.521043Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/31f77f63d3ebf21ffbd77cd6afd32685",
+    "fields": {
+      "cargo": {
+        "stringValue": "CONFECCIONADOR DE PNEUS"
+      },
+      "uHash": {
+        "stringValue": "31f77f63d3ebf21ffbd77cd6afd32685"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2707.59
+      },
+      "liquido": {
+        "doubleValue": 1041.15
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 41.89
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "TECHNIC DO BRASIL LTDA 02 859 316 0001 69 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1781481611044"
+      }
+    },
+    "createTime": "2026-06-15T00:00:11.183892Z",
+    "updateTime": "2026-06-15T00:00:11.183892Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/362de2e808efea2835c7689e521041c8",
+    "fields": {
+      "empresa": {
+        "stringValue": "SUPER G R SERVICOS LTDA 47 773 659 0001 44 3"
+      },
+      "timestamp": {
+        "integerValue": "1780683438343"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 2435.52
+      },
+      "liquido": {
+        "doubleValue": 246.69
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "FISCAL DE CAIXA"
+      },
+      "uHash": {
+        "stringValue": "362de2e808efea2835c7689e521041c8"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-05T18:17:18.524366Z",
+    "updateTime": "2026-06-05T18:17:18.524366Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/3969c249ac51ddc3589626fa70d6d4c5",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1452.69
+      },
+      "salary": {
+        "doubleValue": 2107.91
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "3969c249ac51ddc3589626fa70d6d4c5"
+      },
+      "cargo": {
+        "stringValue": "TRABALHADOR RURAL I"
+      },
+      "inss": {
+        "doubleValue": 201.81
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "D&PL BRASIL LIMITADA 02.662.305/0022-19 D&PL BRASIL LIMITADA (1) - 2662305002219"
+      },
+      "timestamp": {
+        "integerValue": "1778445022193"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-10T20:30:23.243067Z",
+    "updateTime": "2026-05-10T20:30:23.243067Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/3bf315f1d05eeb70ee19ac8a709ef81a",
+    "fields": {
+      "salary": {
+        "doubleValue": 1870
+      },
+      "liquido": {
+        "doubleValue": 2191.86
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 207.55
+      },
+      "cargo": {
+        "stringValue": "FRENTISTA"
+      },
+      "uHash": {
+        "stringValue": "3bf315f1d05eeb70ee19ac8a709ef81a"
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "CONQUALI SERVICOS ADM LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780658058245"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-05T11:14:18.056898Z",
+    "updateTime": "2026-06-05T11:14:18.056898Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/402813b6090978e976b4d8a5ec839ff3",
+    "fields": {
+      "inss": {
+        "doubleValue": 219.71
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA"
+      },
+      "uHash": {
+        "stringValue": "402813b6090978e976b4d8a5ec839ff3"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2800.79
+      },
+      "liquido": {
+        "doubleValue": 1986
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "AGILIX SERVIÇOS LOGÍSTICOS LTDA."
+      },
+      "timestamp": {
+        "integerValue": "1778029039289"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-05-06T00:57:19.56849Z",
+    "updateTime": "2026-05-06T00:57:19.56849Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/40b49588e5edb2576a01dce1e4bdf412",
+    "fields": {
+      "liquido": {
+        "doubleValue": 1244.32
+      },
+      "salary": {
+        "doubleValue": 1937.41
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 150.04
+      },
+      "cargo": {
+        "stringValue": "AGENTE DE SERVICOS"
+      },
+      "uHash": {
+        "stringValue": "40b49588e5edb2576a01dce1e4bdf412"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "SERV ELECTRIN SERVICOS ELETRICOS E INSTRUMENT4A0C A61O4 L7T6D0A 0 0 E0P1 P03 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1781287477922"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-12T18:04:38.122746Z",
+    "updateTime": "2026-06-12T18:04:38.122746Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/49f454090043fbb809b2f15334eff9df",
+    "fields": {
+      "inss": {
+        "doubleValue": 216.41
+      },
+      "uHash": {
+        "stringValue": "49f454090043fbb809b2f15334eff9df"
+      },
+      "cargo": {
+        "stringValue": "DESOSSADOR II"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 2235.57
+      },
+      "salary": {
+        "doubleValue": 2731.06
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0068-57 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780529773631"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-03T23:36:02.932377Z",
+    "updateTime": "2026-06-03T23:36:02.932377Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/4acbc3a678d0f7a6d1559f01200cff78",
+    "fields": {
+      "uHash": {
+        "stringValue": "4acbc3a678d0f7a6d1559f01200cff78"
+      },
+      "cargo": {
+        "stringValue": "OPERADORA DE CAIXA"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1280.67
+      },
+      "salary": {
+        "doubleValue": 2025.53
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "GUERRO E PAGNUSSAT LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780305963948"
+      }
+    },
+    "createTime": "2026-06-01T09:26:04.337937Z",
+    "updateTime": "2026-06-01T09:26:04.337937Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/4b19eb77e6fbd893da279d5f531f11c8",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 1551.42
+      },
+      "salary": {
+        "doubleValue": 3000
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 248.58
+      },
+      "uHash": {
+        "stringValue": "4b19eb77e6fbd893da279d5f531f11c8"
+      },
+      "cargo": {
+        "stringValue": "CHEF DE COZINHA PATISSERIE JUNIOR"
+      },
+      "empresa": {
+        "stringValue": "0528 E A DA SILVA CAFE BOUTIQUE COMERCIO DE 36 957 945 0001 43"
+      },
+      "timestamp": {
+        "integerValue": "1781230819189"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-12T02:20:18.713639Z",
+    "updateTime": "2026-06-12T02:20:18.713639Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/4ea64174551f097066c49e2febf971e9",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "1040 - PROTEGE ADMINISTRACAO E TERCEIRIZACAO L19T.140.450/0001-08 1"
+      },
+      "timestamp": {
+        "integerValue": "1780157747579"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "salary": {
+        "doubleValue": 2141
+      },
+      "liquido": {
+        "doubleValue": 2097.58
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "VIGIA"
+      },
+      "uHash": {
+        "stringValue": "4ea64174551f097066c49e2febf971e9"
+      },
+      "inss": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-30T16:15:48.440236Z",
+    "updateTime": "2026-05-30T16:15:48.440236Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/534901c7e0da77296662cc2ba2333fc1",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1779003794593"
+      },
+      "uHash": {
+        "stringValue": "534901c7e0da77296662cc2ba2333fc1"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL"
+      },
+      "inss": {
+        "doubleValue": 109.61
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1347.33
+      },
+      "salary": {
+        "doubleValue": 1399.2
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-05-17T07:43:16.209748Z",
+    "updateTime": "2026-05-17T07:43:16.209748Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/554b17310029aa9f1c7fb970b1ef5d66",
+    "fields": {
+      "uHash": {
+        "stringValue": "554b17310029aa9f1c7fb970b1ef5d66"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR MULTIFUNCIONAL I"
+      },
+      "inss": {
+        "doubleValue": 228.33
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 1552.57
+      },
+      "salary": {
+        "doubleValue": 2681.15
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1781103288649"
+      },
+      "empresa": {
+        "stringValue": "WITZENMANN DO BRASIL LTDA"
+      }
+    },
+    "createTime": "2026-06-10T14:54:48.745146Z",
+    "updateTime": "2026-06-10T14:54:48.745146Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/57b3f917248a1141065d6b4001f7f28e",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "57b3f917248a1141065d6b4001f7f28e"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL"
+      },
+      "inss": {
+        "doubleValue": 147.66
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 890.7
+      },
+      "salary": {
+        "doubleValue": 1826.14
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "PAMPEANO ALIMENTOS SA 35.768.720/0001-86 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1777985711764"
+      }
+    },
+    "createTime": "2026-05-05T12:55:13.410209Z",
+    "updateTime": "2026-05-05T12:55:13.410209Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/5c447fa702cdc87a91627988b9fbb7a3",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "JM RIBEIRO NETO PAISAGISMO 11 569 283 0001 03 1"
+      },
+      "timestamp": {
+        "integerValue": "1781093725697"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "AUX SERVICOS GERAIS"
+      },
+      "uHash": {
+        "stringValue": "5c447fa702cdc87a91627988b9fbb7a3"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "liquido": {
+        "doubleValue": 1951
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-10T12:15:31.331024Z",
+    "updateTime": "2026-06-10T12:15:31.331024Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/5e6e9cf91a2326f84272e126f079aa84",
+    "fields": {
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "5e6e9cf91a2326f84272e126f079aa84"
+      },
+      "cargo": {
+        "stringValue": "AJUD. PADARIA"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 920
+      },
+      "salary": {
+        "doubleValue": 2300
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "374 - NET EXPRESS ALIMENTOS LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1778195384296"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-07T23:09:45.518136Z",
+    "updateTime": "2026-05-07T23:09:45.518136Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/5e9c6fefa172805e4db9a141bf15829b",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "ACUCAREIRA ENERGY LTDA FRUTAL 12 662 352 0005 15 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780930373693"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 683.37
+      },
+      "salary": {
+        "doubleValue": 2082
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "5e9c6fefa172805e4db9a141bf15829b"
+      },
+      "cargo": {
+        "stringValue": "AUX PRODUCAO"
+      },
+      "inss": {
+        "doubleValue": 55.4
+      }
+    },
+    "createTime": "2026-06-08T14:52:54.031703Z",
+    "updateTime": "2026-06-08T14:52:54.031703Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/5fb37bcf63b43cb6357e4419ff4de6be",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1778951388033"
+      },
+      "empresa": {
+        "stringValue": "TRANSPANORAMA TRANSPORTES S/A"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 1337
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "5fb37bcf63b43cb6357e4419ff4de6be"
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA CARRETEIRO"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-16T17:09:48.23775Z",
+    "updateTime": "2026-05-16T17:09:48.23775Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/60276758c3927b6b61ba56ce0bf167ee",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "EMPLOYER TRABALHO TEMPORARIO S A"
+      },
+      "timestamp": {
+        "integerValue": "1780810890678"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 1996
+      },
+      "liquido": {
+        "doubleValue": 82.39
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "REPOSITOR DE FRIOS E LACTICINIOS"
+      },
+      "uHash": {
+        "stringValue": "60276758c3927b6b61ba56ce0bf167ee"
+      },
+      "inss": {
+        "doubleValue": 9.57
+      }
+    },
+    "createTime": "2026-06-07T05:41:32.132219Z",
+    "updateTime": "2026-06-07T05:41:32.132219Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/62bbdc8da1a75ce8fe85619b924ffaed",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "INDUSTRIA DE TRANSFORMADORES AMAZONAS LTDA15.815.491/0001-04 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780345333004"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 800
+      },
+      "salary": {
+        "doubleValue": 2332
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "cargo": {
+        "stringValue": "- AUXILIAR PORTARIA"
+      },
+      "uHash": {
+        "stringValue": "62bbdc8da1a75ce8fe85619b924ffaed"
+      },
+      "inss": {
+        "doubleValue": 212.05
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-01T20:22:13.287053Z",
+    "updateTime": "2026-06-01T20:22:13.287053Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6428317dc6cf2ca0791d704da2e0fe4c",
+    "fields": {
+      "salary": {
+        "doubleValue": 2105
+      },
+      "liquido": {
+        "doubleValue": 957.24
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "ATENDENTE DE LOJA"
+      },
+      "uHash": {
+        "stringValue": "6428317dc6cf2ca0791d704da2e0fe4c"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "COMERCIAL F CETTI LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780346542545"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-01T20:42:23.499564Z",
+    "updateTime": "2026-06-01T20:42:23.499564Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/66d158da40f8e70e825961c02d1b3039",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "timestamp": {
+        "integerValue": "1779479472880"
+      },
+      "empresa": {
+        "stringValue": "INSTITUTO ESPERANÇA CISAMU"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 318.83
+      },
+      "uHash": {
+        "stringValue": "66d158da40f8e70e825961c02d1b3039"
+      },
+      "cargo": {
+        "stringValue": "CONDUTOR DE VEICULO DE URGÊNCIA"
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 3144.87
+      },
+      "salary": {
+        "doubleValue": 2333.37
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-05-22T19:51:13.471307Z",
+    "updateTime": "2026-05-22T19:51:13.471307Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/67hm76iBF034Sef238G3",
+    "fields": {
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      },
+      "timestamp": {
+        "integerValue": "1776083126774"
+      },
+      "salary": {
+        "doubleValue": 3448
+      },
+      "cargo": {
+        "stringValue": "TAPECEIRO II"
+      }
+    },
+    "createTime": "2026-04-13T12:25:29.249898Z",
+    "updateTime": "2026-04-28T04:30:37.368419Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6LjmMXsAiBUWqmdud8QS",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1776249784647"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA -"
+      },
+      "salary": {
+        "doubleValue": 2427.35
+      }
+    },
+    "createTime": "2026-04-15T10:43:05.117805Z",
+    "updateTime": "2026-04-28T04:30:51.946506Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6a083b5368136437a4d30e991de5c049",
+    "fields": {
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 924.18
+      },
+      "salary": {
+        "doubleValue": 2189.97
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "uHash": {
+        "stringValue": "6a083b5368136437a4d30e991de5c049"
+      },
+      "cargo": {
+        "stringValue": "SERVENTE DE PEDREIRO"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "0618 REOBOTE HOME ENGENHARIA LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780749885566"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-06T12:44:47.179147Z",
+    "updateTime": "2026-06-06T12:44:47.179147Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6cb4b4a8b010f8bdc64e5632a505804d",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1778009197376"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 1380.37
+      },
+      "salary": {
+        "doubleValue": 1399.2
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 112.29
+      },
+      "uHash": {
+        "stringValue": "6cb4b4a8b010f8bdc64e5632a505804d"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-05T19:26:36.865095Z",
+    "updateTime": "2026-05-05T19:26:36.865095Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6cdabfaf13d278680777002aba4cdf2e",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "S.A MOAGEIRA E AGRÍCOLA - FILIIAL RAÇÃO"
+      },
+      "timestamp": {
+        "integerValue": "1779136546706"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 869
+      },
+      "salary": {
+        "doubleValue": 2200
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "uHash": {
+        "stringValue": "6cdabfaf13d278680777002aba4cdf2e"
+      },
+      "cargo": {
+        "stringValue": "AFASTADO: DOE"
+      },
+      "inss": {
+        "doubleValue": 140.67
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-18T20:35:46.75609Z",
+    "updateTime": "2026-05-18T20:35:46.75609Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/6ea257be59e870d398106bfd5477a802",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CONQUALI SERVIÇOS ADM LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780580787307"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 207.55
+      },
+      "cargo": {
+        "stringValue": "FRENTISTA"
+      },
+      "uHash": {
+        "stringValue": "6ea257be59e870d398106bfd5477a802"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1870
+      },
+      "liquido": {
+        "doubleValue": 2191.86
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-06-04T13:46:27.11487Z",
+    "updateTime": "2026-06-04T13:46:27.11487Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/701d205bb101d970d418791ba0a34979",
+    "fields": {
+      "empresa": {
+        "stringValue": "0528 E A DA SILVA CAFE BOUTIQUE COMERCIO DE"
+      },
+      "timestamp": {
+        "integerValue": "1781230500349"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 1551.42
+      },
+      "salary": {
+        "doubleValue": 3000
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 248.58
+      },
+      "uHash": {
+        "stringValue": "701d205bb101d970d418791ba0a34979"
+      },
+      "cargo": {
+        "stringValue": "CHEF DE COZINHA PATISSERIE JUNIOR"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-12T02:14:59.904263Z",
+    "updateTime": "2026-06-12T02:14:59.904263Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/7040e1aa69fd88769e433ca98076378b",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE PRODUCAO"
+      },
+      "uHash": {
+        "stringValue": "7040e1aa69fd88769e433ca98076378b"
+      },
+      "inss": {
+        "doubleValue": 214.46
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 1988.88
+      },
+      "liquido": {
+        "doubleValue": 2060.55
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "EMPLOYER TRABALHO TEMPORARIO S A"
+      },
+      "timestamp": {
+        "integerValue": "1780745188208"
+      }
+    },
+    "createTime": "2026-06-06T11:26:28.794852Z",
+    "updateTime": "2026-06-06T11:26:28.794852Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/76af6106e61e0900b17cd1efb0d1e7ed",
+    "fields": {
+      "uHash": {
+        "stringValue": "76af6106e61e0900b17cd1efb0d1e7ed"
+      },
+      "cargo": {
+        "stringValue": "RESGATISTA 515135"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 2334.81
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1780251942997"
+      },
+      "empresa": {
+        "stringValue": "CTA GROUP LTDA CNPJ: 50.531.200/0001-49"
+      }
+    },
+    "createTime": "2026-05-31T18:25:43.132061Z",
+    "updateTime": "2026-05-31T18:25:43.132061Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/80c60aa59738f885f6f55d9b85ec21e2",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "80c60aa59738f885f6f55d9b85ec21e2"
+      },
+      "cargo": {
+        "stringValue": "BALCONISTA"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 721.6
+      },
+      "salary": {
+        "doubleValue": 1804
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "timestamp": {
+        "integerValue": "1778850642493"
+      },
+      "empresa": {
+        "stringValue": "FABIANA DE FRANCA RIBEIRO"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-15T13:10:43.346101Z",
+    "updateTime": "2026-05-15T13:10:43.346101Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/8497b8a528ab3c51db2564b5d6c91a0b",
+    "fields": {
+      "empresa": {
+        "stringValue": "CETAC CENTRO DE TOMOGRAFIA COMPUTADORIZADA"
+      },
+      "timestamp": {
+        "integerValue": "1780423270493"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 2926
+      },
+      "salary": {
+        "doubleValue": 2235
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "TÉCNICO(A) DE ENFERMAGEM"
+      },
+      "uHash": {
+        "stringValue": "8497b8a528ab3c51db2564b5d6c91a0b"
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-06-02T18:01:10.494946Z",
+    "updateTime": "2026-06-02T18:01:10.494946Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/892aeac69b3753e99ac7f3412c19d6e5",
+    "fields": {
+      "inss": {
+        "doubleValue": 76.64
+      },
+      "cargo": {
+        "stringValue": "SERVENTE DE PEDREIRO"
+      },
+      "uHash": {
+        "stringValue": "892aeac69b3753e99ac7f3412c19d6e5"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2189.97
+      },
+      "liquido": {
+        "doubleValue": 924.18
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "REOBOTE HOME ENGENHARIA LTDA 33 473 868 0001 68 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780951524673"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-08T20:45:26.127069Z",
+    "updateTime": "2026-06-08T20:45:26.127069Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/8b106b2dc0d3d507486d225637b8dd93",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANCA ELETRONICA E SERVICOS GERAIS"
+      },
+      "timestamp": {
+        "integerValue": "1780770818448"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1586.12
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "8b106b2dc0d3d507486d225637b8dd93"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR SERVICOS GERIAIS"
+      },
+      "inss": {
+        "doubleValue": 141.04
+      }
+    },
+    "createTime": "2026-06-06T18:33:38.628459Z",
+    "updateTime": "2026-06-06T18:33:38.628459Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/8e184f481f190a2b90ee209613795cd0",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "56 KIARGOS SERVICOS E FACILITY LTDA 28 871 366 0001 55 1"
+      },
+      "timestamp": {
+        "integerValue": "1780689457519"
+      },
+      "uHash": {
+        "stringValue": "8e184f481f190a2b90ee209613795cd0"
+      },
+      "cargo": {
+        "stringValue": "COPEIRA"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 1072.64
+      },
+      "salary": {
+        "doubleValue": 923.07
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-06-05T19:57:38.94332Z",
+    "updateTime": "2026-06-05T19:57:38.94332Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/904efa1093302ec69ecb3736375f6821",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "DELTA LIMPEZA E CONSERVACAO LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780943870226"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "AUX SERVICOS GER"
+      },
+      "uHash": {
+        "stringValue": "904efa1093302ec69ecb3736375f6821"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1727.27
+      },
+      "liquido": {
+        "doubleValue": 1206.15
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-08T18:37:51.414361Z",
+    "updateTime": "2026-06-08T18:37:51.414361Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/90af1b26eab83971a9c99ce045a61ba9",
+    "fields": {
+      "uHash": {
+        "stringValue": "90af1b26eab83971a9c99ce045a61ba9"
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA CARRETEIRO"
+      },
+      "inss": {
+        "doubleValue": 373.95
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 3996.68
+      },
+      "salary": {
+        "doubleValue": 2976.26
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "timestamp": {
+        "integerValue": "1778363642502"
+      },
+      "empresa": {
+        "stringValue": "TRANSPANORAMA TRANSPORTES S/A"
+      }
+    },
+    "createTime": "2026-05-09T21:54:03.854224Z",
+    "updateTime": "2026-05-09T21:54:03.854224Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/94032ba1791666b1519578cf9ee91143",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 208.9
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE PRODUÇÃO"
+      },
+      "uHash": {
+        "stringValue": "94032ba1791666b1519578cf9ee91143"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1988.88
+      },
+      "liquido": {
+        "doubleValue": 2004.36
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "EMPLOYER TRABALHO TEMPORÁRIO S.A. 05.445.752/0001-80 CHESIQUIMICA LTDA (1) - 2125191000143"
+      },
+      "timestamp": {
+        "integerValue": "1780171359443"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-05-30T20:02:39.835158Z",
+    "updateTime": "2026-05-30T20:02:39.835158Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/977c12ddf1352a92739fb449d51a0e24",
+    "fields": {
+      "uHash": {
+        "stringValue": "977c12ddf1352a92739fb449d51a0e24"
+      },
+      "cargo": {
+        "stringValue": "VIGILANTE"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 2976.24
+      },
+      "salary": {
+        "doubleValue": 2536
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "1024 - PRESTSEG VIGILANCIA LTDA 02.906.848/0001-00 1"
+      },
+      "timestamp": {
+        "integerValue": "1779826815724"
+      }
+    },
+    "createTime": "2026-05-26T20:20:15.90866Z",
+    "updateTime": "2026-05-26T20:20:15.90866Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/982ff0dc370ab299a67a72801374c115",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CTA GROUP LTDA 50531200/0001-49"
+      },
+      "timestamp": {
+        "integerValue": "1780251943090"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "RESGATISTA"
+      },
+      "uHash": {
+        "stringValue": "982ff0dc370ab299a67a72801374c115"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 2334.81
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-05-31T18:25:43.235625Z",
+    "updateTime": "2026-05-31T18:25:43.235625Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/998c8d2550ecd5035b9b95f15433a457",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 911
+      },
+      "salary": {
+        "doubleValue": 2023.83
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "998c8d2550ecd5035b9b95f15433a457"
+      },
+      "cargo": {
+        "stringValue": "TECN PANIFICACAO JR"
+      },
+      "empresa": {
+        "stringValue": "409 PAN EXPRESS SERVICOS LTDA 06 747 627 0001 97 1"
+      },
+      "timestamp": {
+        "integerValue": "1781011430661"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-09T13:23:50.866364Z",
+    "updateTime": "2026-06-09T13:23:50.866364Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/99efed14f6ca205f51ce920546c39d5a",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "liquido": {
+        "doubleValue": 1586.12
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 141.04
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR SERVICOS GERAIS"
+      },
+      "uHash": {
+        "stringValue": "99efed14f6ca205f51ce920546c39d5a"
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANCA ELETRONICA E SERVICOS GERA3I5S 0L1T9D 1A47 0001 08"
+      },
+      "timestamp": {
+        "integerValue": "1780770818384"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-06T18:33:38.589586Z",
+    "updateTime": "2026-06-06T18:33:38.589586Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/9ee0ef9a7e36bb1e6c7369553a02245b",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "CORTEVA AGRISCIENCE DO BRASIL LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1777933942744"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "9ee0ef9a7e36bb1e6c7369553a02245b"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE LAVOURA"
+      },
+      "inss": {
+        "doubleValue": 24.23
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 298.96
+      },
+      "salary": {
+        "doubleValue": 1795.5
+      }
+    },
+    "createTime": "2026-05-04T22:32:23.423779Z",
+    "updateTime": "2026-05-04T22:32:23.423779Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/9f98eab338a686ec3a1541cf089d129b",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANÇA ELETRÔNICA E SERVICO"
+      },
+      "timestamp": {
+        "integerValue": "1777990350766"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 141.04
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVIÇOS GERAIS"
+      },
+      "uHash": {
+        "stringValue": "9f98eab338a686ec3a1541cf089d129b"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "liquido": {
+        "doubleValue": 1586.12
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-05T14:12:32.445228Z",
+    "updateTime": "2026-05-05T14:12:32.445228Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/CTJmV9l45h3ijDz3ceGS",
+    "fields": {
+      "salary": {
+        "doubleValue": 2622.68
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE ETA"
+      },
+      "timestamp": {
+        "integerValue": "1776009273451"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      }
+    },
+    "createTime": "2026-04-12T15:54:33.651044Z",
+    "updateTime": "2026-04-28T04:31:41.177684Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/GIEVVSnchE7LW7MAMvrP",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1776020331295"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR OPERACIONAL"
+      },
+      "salary": {
+        "doubleValue": 1908
+      }
+    },
+    "createTime": "2026-04-12T18:58:51.356333Z",
+    "updateTime": "2026-04-28T04:32:16.667718Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/HkNd5Eo9wQgOSFwS2Lm5",
+    "fields": {
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1777350743855"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 2504.02
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      }
+    },
+    "createTime": "2026-04-28T04:32:24.071616Z",
+    "updateTime": "2026-04-28T04:32:24.071616Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/QvZsM9o2SOoLIURgOMt9",
+    "fields": {
+      "empresa": {
+        "stringValue": "DIREC FACILITIES LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1777406811442"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "liquido": {
+        "doubleValue": 1751.82
+      },
+      "salary": {
+        "doubleValue": 2147.42
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "CONTROLADOR DE ACESSO"
+      }
+    },
+    "createTime": "2026-04-28T20:06:51.754793Z",
+    "updateTime": "2026-04-28T20:06:51.754793Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/a0c9203b33051227668abd6ead0af733",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 1474.64
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 130.02
+      },
+      "uHash": {
+        "stringValue": "a0c9203b33051227668abd6ead0af733"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVIÇOS GERAIS"
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANÇA ELETRÔNICA E SERVIÇO - TOMADOR: SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1777990350932"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-05T14:12:32.64176Z",
+    "updateTime": "2026-05-05T14:12:32.64176Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/a1e8f9e6ab906a289a640af89baf0407",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1165
+      },
+      "salary": {
+        "doubleValue": 3500
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "a1e8f9e6ab906a289a640af89baf0407"
+      },
+      "cargo": {
+        "stringValue": "MECANICO SUBCONJUNTOS"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "CONVAC CONSTRUTORA VALE DO ACO LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780953906667"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-08T21:25:06.873928Z",
+    "updateTime": "2026-06-08T21:25:06.873928Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/a6fb24de83ba079a3106958bd5de1a25",
+    "fields": {
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "a6fb24de83ba079a3106958bd5de1a25"
+      },
+      "cargo": {
+        "stringValue": "DE RESGATISTA"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 2334.81
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "PARÁGRAFO TERCEIRO. NA HIPÓTESE DE RESCISÃO DESTE CONTRATO PELO EMPREGADO, SEM JUSTA CAUSA, ANTES DE DECORRIDA A"
+      },
+      "timestamp": {
+        "integerValue": "1780521544250"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-03T21:19:04.049945Z",
+    "updateTime": "2026-06-03T21:19:04.049945Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/a7a50950a43af829934f864b21e975a1",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CTA GROUP LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780521544146"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "a7a50950a43af829934f864b21e975a1"
+      },
+      "cargo": {
+        "stringValue": "RESGATISTA"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 2334.81
+      },
+      "salary": {
+        "doubleValue": 2334.81
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-03T21:19:03.933106Z",
+    "updateTime": "2026-06-03T21:19:03.933106Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/a7e40f908299bd9dbbe7c6970e40fd79",
+    "fields": {
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "AMARRADOR"
+      },
+      "uHash": {
+        "stringValue": "a7e40f908299bd9dbbe7c6970e40fd79"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 1850
+      },
+      "liquido": {
+        "doubleValue": 1048.62
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "519 - WERBER MANUTENCAO E LIMPEZA LTDA. 29.289.070/0001-93 8"
+      },
+      "timestamp": {
+        "integerValue": "1780540599805"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-06-04T02:36:39.316384Z",
+    "updateTime": "2026-06-04T02:36:39.316384Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ac524a0a0e687356a248b95fe867eb17",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 76.91
+      },
+      "uHash": {
+        "stringValue": "ac524a0a0e687356a248b95fe867eb17"
+      },
+      "cargo": {
+        "stringValue": "AJUDANTE GERAL"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 1890
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "IND SERVICE SERVICOS INDUSTRIAIS LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780930094131"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-08T14:48:14.316625Z",
+    "updateTime": "2026-06-08T14:48:14.316625Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ad01f2295f254401e6ac898f0e9d4922",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 1073.71
+      },
+      "salary": {
+        "doubleValue": 2232
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "ad01f2295f254401e6ac898f0e9d4922"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR (A) DE CAIXA"
+      },
+      "empresa": {
+        "stringValue": "SUPER G. R. SERVICOS LTDA 47.773.659/0001-44 4"
+      },
+      "timestamp": {
+        "integerValue": "1780037622204"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-29T06:53:43.211796Z",
+    "updateTime": "2026-05-29T06:53:43.211796Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/b2515dfac0cfd7ed9107e2fe89d45cbe",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "CTA GROUP LTDA - CPF: 50.531.200/0001-49"
+      },
+      "timestamp": {
+        "integerValue": "1780251942882"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "RESGATISTA"
+      },
+      "uHash": {
+        "stringValue": "b2515dfac0cfd7ed9107e2fe89d45cbe"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2334.81
+      },
+      "liquido": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-31T18:25:43.028799Z",
+    "updateTime": "2026-05-31T18:25:43.028799Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/b40d8846e4bc90c3a96d26f14aa6d1d0",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "0618 REOBOTE HOME ENGENHARIA LTDA 33 473 868 0001 68 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780749885566"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "b40d8846e4bc90c3a96d26f14aa6d1d0"
+      },
+      "cargo": {
+        "stringValue": "SERVENTE DE PEDREIRO"
+      },
+      "inss": {
+        "doubleValue": 76.64
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 924.18
+      },
+      "salary": {
+        "doubleValue": 2189.97
+      }
+    },
+    "createTime": "2026-06-06T12:44:47.135655Z",
+    "updateTime": "2026-06-06T12:44:47.135655Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/b6a89b8f3606c09e9fafa5a38e96b3c9",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 444.2
+      },
+      "salary": {
+        "doubleValue": 2401.04
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "b6a89b8f3606c09e9fafa5a38e96b3c9"
+      },
+      "cargo": {
+        "stringValue": "RECEPCIONISTA"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "UMA - UNIDADE DE MEDICINA AVANCADA RIO PRETO1 7L.T35D5A.214/0001-83 1"
+      },
+      "timestamp": {
+        "integerValue": "1780494425796"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-03T13:47:06.176799Z",
+    "updateTime": "2026-06-03T13:47:06.176799Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/b75b7e7ffa335373d0839eb586e2437f",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "TRANSPANORAMA TRANSPORTES S/A"
+      },
+      "timestamp": {
+        "integerValue": "1779108649483"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 3001.27
+      },
+      "liquido": {
+        "doubleValue": 4907.14
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA CARRETEIRO"
+      },
+      "uHash": {
+        "stringValue": "b75b7e7ffa335373d0839eb586e2437f"
+      },
+      "inss": {
+        "doubleValue": 353.03
+      }
+    },
+    "createTime": "2026-05-18T12:50:48.651659Z",
+    "updateTime": "2026-05-18T12:50:48.651659Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/b87e1e9be77b86a29f0f28e91b24b283",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CETAC CENTRO DE TOMOGRAFIA COMPUTADORIZADA"
+      },
+      "timestamp": {
+        "integerValue": "1780517739844"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "TECNICO(A) DE ENFERMAGEM"
+      },
+      "uHash": {
+        "stringValue": "b87e1e9be77b86a29f0f28e91b24b283"
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "salary": {
+        "doubleValue": 22350
+      },
+      "liquido": {
+        "doubleValue": 27930
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-06-03T20:16:00.409945Z",
+    "updateTime": "2026-06-03T20:16:00.409945Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/bedd33b0a6472678552d27c89c65c79f",
+    "fields": {
+      "cargo": {
+        "stringValue": "CHEFE DE COZINHA PATISSERIE JUNIOR"
+      },
+      "uHash": {
+        "stringValue": "bedd33b0a6472678552d27c89c65c79f"
+      },
+      "inss": {
+        "doubleValue": 248.58
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 3000
+      },
+      "liquido": {
+        "doubleValue": 1551.42
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "0528 E A DA SILVA CAFE BOUTIQUE COMERCIO DE 36 957 945 0001 43"
+      },
+      "timestamp": {
+        "integerValue": "1781230693339"
+      }
+    },
+    "createTime": "2026-06-12T02:18:12.931296Z",
+    "updateTime": "2026-06-12T02:18:12.931296Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/bf07d17a94668d7c001c5f51b73f1741",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1778591527082"
+      },
+      "empresa": {
+        "stringValue": "EMPLOYER TRABALHO TEMPORÁRIO S.A."
+      },
+      "uHash": {
+        "stringValue": "bf07d17a94668d7c001c5f51b73f1741"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE PRODUÇÃO"
+      },
+      "inss": {
+        "doubleValue": 13.49
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 97.29
+      },
+      "salary": {
+        "doubleValue": 1798.77
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-05-12T13:12:09.264159Z",
+    "updateTime": "2026-05-12T13:12:09.264159Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/bf2530eff2e82d15fbf6dbecf93b880c",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 1396.67
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "bf2530eff2e82d15fbf6dbecf93b880c"
+      },
+      "cargo": {
+        "stringValue": "DATA ENDERECO ANALISTA CONTABIL"
+      },
+      "empresa": {
+        "stringValue": "14 533 049 0002 03"
+      },
+      "timestamp": {
+        "integerValue": "1780789072000"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-06T23:37:51.695251Z",
+    "updateTime": "2026-06-06T23:37:51.695251Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/c256c9a23beb1aa1a9cfbf5b697e29f7",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "REOBOTE HOME ENGENHARIA LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780262122150"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "SERVENTE DE PEDREIRO"
+      },
+      "uHash": {
+        "stringValue": "c256c9a23beb1aa1a9cfbf5b697e29f7"
+      },
+      "inss": {
+        "doubleValue": 76.64
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2189.97
+      },
+      "liquido": {
+        "doubleValue": 924.18
+      }
+    },
+    "createTime": "2026-05-31T21:15:23.597539Z",
+    "updateTime": "2026-05-31T21:15:23.597539Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/c61eb58d1a9510e478916c71b5f21af3",
+    "fields": {
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 880
+      },
+      "salary": {
+        "doubleValue": 749.99
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "uHash": {
+        "stringValue": "c61eb58d1a9510e478916c71b5f21af3"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVICOS GERAIS ()"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "timestamp": {
+        "integerValue": "1780396132282"
+      },
+      "empresa": {
+        "stringValue": "56 - KIARGOS SERVICOS E FACILITY LTDA 28.871.366/0001-55 1"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-02T10:28:53.526373Z",
+    "updateTime": "2026-06-02T10:28:53.526373Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/c9a4af10bdcfed9879baeba755e61147",
+    "fields": {
+      "salary": {
+        "doubleValue": 1730.72
+      },
+      "liquido": {
+        "doubleValue": 1453.57
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "SERVENTE DE OBRA"
+      },
+      "uHash": {
+        "stringValue": "c9a4af10bdcfed9879baeba755e61147"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "CONFER CONSTRUTORA FERNANDES LTDA 75.534.974/0007-40 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1779833687313"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-26T22:14:46.800677Z",
+    "updateTime": "2026-05-26T22:14:46.800677Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/d0f0810a8d0326b8e6a1648b70443fb1",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "KIARGOS SERVICOS E FACILITY LTDA 28.871.366/0001-55 1"
+      },
+      "timestamp": {
+        "integerValue": "1780429844300"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVICOS GERAIS ()"
+      },
+      "uHash": {
+        "stringValue": "d0f0810a8d0326b8e6a1648b70443fb1"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 749.99
+      },
+      "liquido": {
+        "doubleValue": 880
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-02T19:50:44.506787Z",
+    "updateTime": "2026-06-02T19:50:44.506787Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/d55ea71fc04b7d7c28f565091d5766a4",
+    "fields": {
+      "uHash": {
+        "stringValue": "d55ea71fc04b7d7c28f565091d5766a4"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      },
+      "inss": {
+        "doubleValue": 431.53
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 2504.02
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1777395168618"
+      }
+    },
+    "createTime": "2026-04-28T16:52:49.933965Z",
+    "updateTime": "2026-04-28T16:52:49.933965Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e17fbb4ee170f49ac5937b1db70989f6",
+    "fields": {
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "TECNICO(A) DE ENFERMAGEM"
+      },
+      "uHash": {
+        "stringValue": "e17fbb4ee170f49ac5937b1db70989f6"
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "salary": {
+        "doubleValue": 2235
+      },
+      "liquido": {
+        "doubleValue": 2926
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CETAC CENTRO DE TOMOGRAFIA COMPUTADORIZAD7A7"
+      },
+      "timestamp": {
+        "integerValue": "1780423489606"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-06-02T18:04:49.599436Z",
+    "updateTime": "2026-06-02T18:04:49.599436Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e3lnxnKn0Hbh1NjHhDgz",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1777350783024"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "liquido": {
+        "doubleValue": 2504.02
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      }
+    },
+    "createTime": "2026-04-28T04:33:03.230357Z",
+    "updateTime": "2026-04-28T04:33:03.230357Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e4de4ddfacf00067000f851d8e9dee44",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "GHELERE TRANSPORTES LTDA 75.958.926/0014-08 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1778249894741"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 4665.11
+      },
+      "salary": {
+        "doubleValue": 4782.38
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "SUPERVISOR (A) DE MANUTENCAO"
+      },
+      "uHash": {
+        "stringValue": "e4de4ddfacf00067000f851d8e9dee44"
+      },
+      "inss": {
+        "doubleValue": 493.35
+      }
+    },
+    "createTime": "2026-05-08T14:18:16.497372Z",
+    "updateTime": "2026-05-08T14:18:16.497372Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e593480abc76ea5376982673fc305295",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "uHash": {
+        "stringValue": "e593480abc76ea5376982673fc305295"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE LIMPEZA"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "liquido": {
+        "doubleValue": 1563.53
+      },
+      "salary": {
+        "doubleValue": 2090
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "timestamp": {
+        "integerValue": "1780945196736"
+      },
+      "empresa": {
+        "stringValue": "415 NUCLEO EDUCACIONAL MILLENIUM LTDA 05 940 402 0001 90 1"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-08T18:59:57.428768Z",
+    "updateTime": "2026-06-08T18:59:57.428768Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e6990949a6509c2b9735c7c6eab33aad",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "CETAC CENTRO DE TOMOGRAFIA COMPUTADORIZADA LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1780423489790"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2235
+      },
+      "liquido": {
+        "doubleValue": 2789
+      },
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "cargo": {
+        "stringValue": "TÉCNICO(A) DE ENFERMAGEM"
+      },
+      "uHash": {
+        "stringValue": "e6990949a6509c2b9735c7c6eab33aad"
+      },
+      "inss": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-02T18:04:49.854757Z",
+    "updateTime": "2026-06-02T18:04:49.854757Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/e98a3424a22a3bfecccefc337a79be54",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "SINGULAR FACILITIES SERVICE S.A."
+      },
+      "timestamp": {
+        "integerValue": "1780585894409"
+      },
+      "uHash": {
+        "stringValue": "e98a3424a22a3bfecccefc337a79be54"
+      },
+      "cargo": {
+        "stringValue": "PORTEIRO DIURNO"
+      },
+      "inss": {
+        "doubleValue": 72.45
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 926.34
+      },
+      "salary": {
+        "doubleValue": 966
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-06-04T15:11:35.447477Z",
+    "updateTime": "2026-06-04T15:11:35.447477Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ea6af2518c3e2ea3d0922988dfe5d57a",
+    "fields": {
+      "timestamp": {
+        "integerValue": "1780624920396"
+      },
+      "empresa": {
+        "stringValue": "GHELERE TRANSPORTES LTDA"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 7016.2
+      },
+      "salary": {
+        "doubleValue": 3638.8
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 48061
+      },
+      "uHash": {
+        "stringValue": "ea6af2518c3e2ea3d0922988dfe5d57a"
+      },
+      "cargo": {
+        "stringValue": "MOTORISTA DE CARRETA FRIGORIFICA"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-05T02:02:01.01567Z",
+    "updateTime": "2026-06-05T02:02:01.01567Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ed3bb8093a1afdec9f09853f691beb4d",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "BLINDEX SEGURANCA ELETRONICA E SERVICO"
+      },
+      "timestamp": {
+        "integerValue": "1777990350678"
+      },
+      "uHash": {
+        "stringValue": "ed3bb8093a1afdec9f09853f691beb4d"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE SERVIÇOS GERAIS"
+      },
+      "inss": {
+        "doubleValue": 130.02
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1474.64
+      },
+      "salary": {
+        "doubleValue": 1837.4
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-05-05T14:12:32.377598Z",
+    "updateTime": "2026-05-05T14:12:32.377598Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ee0b3f0c30afe18d017c34c7e699d1c6",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "NAGAIRO WIDE REBOUCAS LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1779970888793"
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 828.2
+      },
+      "salary": {
+        "doubleValue": 2070.51
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "CUMIM"
+      },
+      "uHash": {
+        "stringValue": "ee0b3f0c30afe18d017c34c7e699d1c6"
+      },
+      "inss": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-28T12:21:28.58504Z",
+    "updateTime": "2026-05-28T12:21:28.58504Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/f015d29a212d67ec15e717f5c64bf89d",
+    "fields": {
+      "empresa": {
+        "stringValue": "210 - FABIANA DE FRANCA RIBEIRO"
+      },
+      "timestamp": {
+        "integerValue": "1778850642545"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "salary": {
+        "doubleValue": 1804
+      },
+      "liquido": {
+        "doubleValue": 721.6
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "BALCONISTA"
+      },
+      "uHash": {
+        "stringValue": "f015d29a212d67ec15e717f5c64bf89d"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-05-15T13:10:43.38852Z",
+    "updateTime": "2026-05-15T13:10:43.38852Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/f08cd8c806b3d9d7b8666ce1e1ac0174",
+    "fields": {
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03 853 896 0003 01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1780509148502"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "liquido": {
+        "doubleValue": 2592.56
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "inss": {
+        "doubleValue": 451.08
+      },
+      "uHash": {
+        "stringValue": "f08cd8c806b3d9d7b8666ce1e1ac0174"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-06-03T17:52:28.722459Z",
+    "updateTime": "2026-06-03T17:52:28.722459Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/f16aa2c83ec64c518c040c7b3bcb6241",
+    "fields": {
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 4028
+      },
+      "liquido": {
+        "doubleValue": 3656.06
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "cargo": {
+        "stringValue": "OPERADOR CNC"
+      },
+      "uHash": {
+        "stringValue": "f16aa2c83ec64c518c040c7b3bcb6241"
+      },
+      "inss": {
+        "doubleValue": 371.94
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "MELLO SERRA COMERCIO E INDUSTRIA LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1777983114861"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-05-05T12:11:55.588927Z",
+    "updateTime": "2026-05-05T12:11:55.588927Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/f1739be1c08473c2587393ad2adaab56",
+    "fields": {
+      "v": {
+        "integerValue": "2"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "liquido": {
+        "doubleValue": 1559.32
+      },
+      "salary": {
+        "doubleValue": 1900
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "uHash": {
+        "stringValue": "f1739be1c08473c2587393ad2adaab56"
+      },
+      "cargo": {
+        "stringValue": "AUX. SERVICOS GERAIS"
+      },
+      "inss": {
+        "doubleValue": 146.68
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "empresa": {
+        "stringValue": "SINGULAR FACILITIES SERVICE S A"
+      },
+      "timestamp": {
+        "integerValue": "1780424412162"
+      },
+      "irrf": {
+        "doubleValue": 0
+      }
+    },
+    "createTime": "2026-06-02T18:20:12.150057Z",
+    "updateTime": "2026-06-02T18:20:12.150057Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/f2c2c6cddc6cc1989e810b6901db6b9d",
+    "fields": {
+      "irrf": {
+        "doubleValue": 0
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "ARAUFER IND E COM DE PRODUTOS SIDERURGI 39 360 319 0001 63 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1781103697718"
+      },
+      "cargo": {
+        "stringValue": "AUXILIAR DE PRODUCAO"
+      },
+      "uHash": {
+        "stringValue": "f2c2c6cddc6cc1989e810b6901db6b9d"
+      },
+      "inss": {
+        "doubleValue": 312.25
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2138.4
+      },
+      "liquido": {
+        "doubleValue": 3330.58
+      },
+      "v": {
+        "integerValue": "2"
+      }
+    },
+    "createTime": "2026-06-10T15:01:37.344042Z",
+    "updateTime": "2026-06-10T15:01:37.344042Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/fc21b60137122c7ef054d499354fec13",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": true
+      },
+      "inss": {
+        "doubleValue": 0
+      },
+      "cargo": {
+        "stringValue": "TECNICO(A) DE ENFERMAGEM"
+      },
+      "uHash": {
+        "stringValue": "fc21b60137122c7ef054d499354fec13"
+      },
+      "v": {
+        "integerValue": "2"
+      },
+      "salary": {
+        "doubleValue": 2235
+      },
+      "liquido": {
+        "doubleValue": 2926
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "irrf": {
+        "doubleValue": 0
+      },
+      "empresa": {
+        "stringValue": "CETAC - CENTRO DE TOMOGRAFIA COMPUTADORIZADA"
+      },
+      "timestamp": {
+        "integerValue": "1780423489511"
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-06-02T18:04:49.513345Z",
+    "updateTime": "2026-06-02T18:04:49.513345Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/s6Og7nKQh3WIdHclTIKd",
+    "fields": {
+      "cargo": {
+        "stringValue": "CONTROLADOR DE ACESSO"
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "hasNoturno": {
+        "booleanValue": true
+      },
+      "salary": {
+        "doubleValue": 2147.42
+      },
+      "liquido": {
+        "doubleValue": 1751.82
+      },
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "timestamp": {
+        "integerValue": "1777406811587"
+      },
+      "empresa": {
+        "stringValue": "DIREC FACILITIES LTDA"
+      }
+    },
+    "createTime": "2026-04-28T20:06:51.853225Z",
+    "updateTime": "2026-04-28T20:06:51.853225Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/ysccWg24oLUgPpK8GpxS",
+    "fields": {
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "AUDITOR (A) E RECEPCIONISTA"
+      },
+      "empresa": {
+        "stringValue": "IPE CENTER HOTEL LTDA"
+      },
+      "timestamp": {
+        "integerValue": "1777392022425"
+      },
+      "hasHoraExtra": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 2628.86
+      },
+      "liquido": {
+        "doubleValue": 1051.54
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-04-28T16:00:22.779112Z",
+    "updateTime": "2026-04-28T16:00:22.779112Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/zKKWXQ86MgfTlHGQ0VCK",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "timestamp": {
+        "integerValue": "1776905920283"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "liquido": {
+        "doubleValue": 2504.02
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      }
+    },
+    "createTime": "2026-04-23T00:58:40.520956Z",
+    "updateTime": "2026-04-23T00:58:40.520956Z"
+  },
+  {
+    "name": "projects/meu-holerite-c81cd/databases/(default)/documents/salary_stats/zRNA42KpXcgtVWsaWbXc",
+    "fields": {
+      "hasHoraExtra": {
+        "booleanValue": true
+      },
+      "timestamp": {
+        "integerValue": "1776906191786"
+      },
+      "empresa": {
+        "stringValue": "MARFRIG GLOBAL FOODS SA 03.853.896/0003-01 SEM TOMADOR"
+      },
+      "hasNoturno": {
+        "booleanValue": false
+      },
+      "salary": {
+        "doubleValue": 3418.57
+      },
+      "liquido": {
+        "doubleValue": 2504.02
+      },
+      "hasInsalubridade": {
+        "booleanValue": false
+      },
+      "cargo": {
+        "stringValue": "OPERADOR DE SALA DE MAQUINAS"
+      }
+    },
+    "createTime": "2026-04-23T01:03:12.078023Z",
+    "updateTime": "2026-04-23T01:03:12.078023Z"
+  }
+]

@@ -54,6 +54,14 @@ class StorageManager(context: Context) {
         return prefs.contains("dark_mode")
     }
 
+    fun setThemeAccent(accent: String) {
+        prefs.edit().putString("theme_accent", accent).apply()
+    }
+
+    fun getThemeAccent(): String {
+        return prefs.getString("theme_accent", "blue") ?: "blue"
+    }
+
     // ======================
     // 👁️ VISIBILIDADE
     // ======================

@@ -21,6 +21,8 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
@@ -28,6 +30,8 @@ import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +45,7 @@ import com.jack.meuholerite.database.AppDatabase
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -67,6 +72,7 @@ import com.jack.meuholerite.utils.toMoneyDoubleOrZero
 import com.jack.meuholerite.utils.extractStartDateForRecibo
 import kotlin.math.roundToInt
 import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
@@ -118,96 +124,189 @@ fun PrivacyValueText(
 
 @Composable
 fun IosTopBar(
-    userName: String, 
-    jornada: String? = null, 
+    userPhoto: String = "",
     isPrivacyActive: Boolean = false,
+    showCustomizeButton: Boolean = false,
     onPrivacyToggle: () -> Unit = {},
     onRankingClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onCustomizeClick: () -> Unit = {},
     onSettingsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .statusBarsPadding(),
-        verticalAlignment = Alignment.CenterVertically,
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .animateContentSize(),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Olá,",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = userName.ifEmpty { "Usuário" }.split(" ").firstOrNull() ?: "Usuário",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface,
-                letterSpacing = (-0.5).sp
-            )
-            if (jornada != null) {
-                Text(
-                    text = jornada,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+        Surface(
+            onClick = onProfileClick,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+        ) {
+            if (userPhoto.isNotBlank()) {
+                AsyncImage(
+                    model = userPhoto,
+                    contentDescription = "Perfil",
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
-            }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Surface(
-                onClick = onRankingClick,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 1.dp,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        imageVector = Icons.Outlined.EmojiEvents,
-                        contentDescription = "Ranking Salarial",
-                        tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Surface(
-                onClick = onPrivacyToggle,
-                shape = CircleShape,
-                color = if (isPrivacyActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                shadowElevation = 1.dp,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (isPrivacyActive) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                        contentDescription = "Modo Privacidade",
-                        tint = if (isPrivacyActive) Color.White else MaterialTheme.colorScheme.onSurface,
+                        Icons.Outlined.Person,
+                        contentDescription = "Perfil",
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
             }
+        }
 
-            Surface(
-                onClick = onSettingsClick,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 1.dp,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = "Configurações",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
-                    )
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                TopBarActionButton(
+                    onClick = onRankingClick,
+                    icon = Icons.Outlined.EmojiEvents,
+                    contentDescription = "Ranking Salarial",
+                    tint = Color(0xFFFFD700)
+                )
+
+                TopBarActionButton(
+                    onClick = onPrivacyToggle,
+                    icon = if (isPrivacyActive) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                    contentDescription = "Modo Privacidade",
+                    tint = if (isPrivacyActive) Color.White else MaterialTheme.colorScheme.onSurface,
+                    containerColor = if (isPrivacyActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    borderColor = if (isPrivacyActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)
+                )
+
+                TopBarActionButton(
+                    onClick = onSettingsClick,
+                    icon = Icons.Outlined.Settings,
+                    contentDescription = "Configurações",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            if (showCustomizeButton) {
+                Surface(
+                    onClick = onCustomizeClick,
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            contentDescription = "Personalizar home",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            "Personalizar",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TopBarActionButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = containerColor,
+        border = BorderStroke(1.dp, borderColor),
+        shadowElevation = 1.dp,
+        modifier = Modifier.size(46.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(23.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun AppPdfActionIcon(
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val stroke = size.minDimension * 0.085f
+        val pagePath = Path().apply {
+            moveTo(size.width * 0.24f, size.height * 0.14f)
+            lineTo(size.width * 0.62f, size.height * 0.14f)
+            lineTo(size.width * 0.78f, size.height * 0.3f)
+            lineTo(size.width * 0.78f, size.height * 0.86f)
+            lineTo(size.width * 0.24f, size.height * 0.86f)
+            close()
+        }
+        drawPath(pagePath, color = tint, style = Stroke(width = stroke, join = StrokeJoin.Round))
+        drawLine(
+            color = tint,
+            start = Offset(size.width * 0.61f, size.height * 0.15f),
+            end = Offset(size.width * 0.61f, size.height * 0.31f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = tint,
+            start = Offset(size.width * 0.61f, size.height * 0.31f),
+            end = Offset(size.width * 0.77f, size.height * 0.31f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
+        )
+        drawRoundRect(
+            color = tint.copy(alpha = 0.16f),
+            topLeft = Offset(size.width * 0.18f, size.height * 0.56f),
+            size = androidx.compose.ui.geometry.Size(size.width * 0.38f, size.height * 0.2f),
+            cornerRadius = CornerRadius(size.width * 0.08f, size.width * 0.08f)
+        )
+        drawContext.canvas.nativeCanvas.apply {
+            val paint = android.graphics.Paint().apply {
+                isAntiAlias = true
+                textAlign = android.graphics.Paint.Align.CENTER
+                textSize = size.minDimension * 0.22f
+                typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT_BOLD, android.graphics.Typeface.BOLD)
+                color = tint.toArgb()
+            }
+            drawText("PDF", size.width * 0.37f, size.height * 0.71f, paint)
         }
     }
 }

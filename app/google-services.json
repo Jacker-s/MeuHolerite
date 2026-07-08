@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "219618099535",
+    "project_id": "meu-holerite-c81cd",
+    "storage_bucket": "meu-holerite-c81cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219618099535:android:eadd062055815f7c9ec53a",
+        "android_client_info": {
+          "package_name": "com.jack.meuholerite"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "219618099535-jut3b60eerdd7fbeo4u0u1dl1rdubuuq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jack.meuholerite",
+            "certificate_hash": "391c9ce2bc5c3bec89984473c7ea22826fb7683d"
+          }
+        },
+        {
+          "client_id": "219618099535-staeoc6jt5b2762qrf8r9d6dme46qkjb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVSev7T7-U_61ufbTUJW3Lk9zrUv942IU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "219618099535-staeoc6jt5b2762qrf8r9d6dme46qkjb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

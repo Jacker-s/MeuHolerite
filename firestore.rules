@@ -94,7 +94,7 @@ service cloud.firestore {
         && request.resource.data.raffleId == resource.data.raffleId;
 
       allow read: if isAdmin()
-        || (isSignedIn() && request.auth.uid == resource.data.userId);
+        || isSignedIn();
 
       allow delete: if isAdmin();
     }
