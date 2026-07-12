@@ -1,4 +1,4 @@
- package com.jack.meuholerite
+﻿ package com.jack.meuholerite
 
 import android.content.Context
 import android.content.Intent
@@ -236,12 +236,6 @@ fun ReceiptsScreen(
     }
     val proventos = recibo?.proventos.orEmpty()
     val descontos = recibo?.descontos.orEmpty()
-    val adInsertPositions = remember(proventos, descontos) {
-        buildAdInsertPositions(
-            totalItems = proventos.size + descontos.size,
-            maxAds = 1
-        )
-    }
 
     var showHistory by remember { mutableStateOf(false) }
     var showSalaryEvolution by remember { mutableStateOf(false) }
@@ -304,6 +298,15 @@ fun ReceiptsScreen(
 
         item { SalaryComparisonCard(current = recibo, all = recibos) }
 
+        if (!adsRemovedState && (proventos.isNotEmpty() || descontos.isNotEmpty())) {
+            item {
+                NativeInlineAd(
+                    adUnitId = "ca-app-pub-7931782163570852/1526069738",
+                    size = NativeAdSize.Regular
+                )
+            }
+        }
+
         item {
             SectionHeaderColored(
                 title = stringResource(R.string.earnings),
@@ -314,13 +317,6 @@ fun ReceiptsScreen(
         itemsIndexed(proventos) { index, item ->
             ReceiptItemCardRow(item = item, accentColor = Color(0xFF34C759))
             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            val globalPosition = index + 1
-            if (!adsRemovedState && globalPosition in adInsertPositions) {
-                NativeInlineAd(
-                    adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                    size = NativeAdSize.Compact
-                )
-            }
         }
 
         item {
@@ -333,13 +329,6 @@ fun ReceiptsScreen(
         itemsIndexed(descontos) { index, item ->
             ReceiptItemCardRow(item = item, accentColor = Color(0xFFFF3B30))
             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            val globalPosition = proventos.size + index + 1
-            if (!adsRemovedState && globalPosition in adInsertPositions) {
-                NativeInlineAd(
-                    adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                    size = NativeAdSize.Compact
-                )
-            }
         }
 
         item {
@@ -348,16 +337,6 @@ fun ReceiptsScreen(
 
         item { Spacer(modifier = Modifier.height(18.dp)) }
     }
-}
-
-private fun buildAdInsertPositions(totalItems: Int, maxAds: Int): Set<Int> {
-    if (totalItems < 2 || maxAds <= 0) return emptySet()
-
-    return (1..maxAds)
-        .map { slot ->
-            ((totalItems.toFloat() * slot) / (maxAds + 1)).toInt().coerceIn(1, totalItems - 1)
-        }
-        .toSet()
 }
 
 @Composable

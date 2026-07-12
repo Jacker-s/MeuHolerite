@@ -75,6 +75,17 @@ import com.jack.meuholerite.model.InformeRendimento
 import com.jack.meuholerite.model.ReciboPagamento
 import com.jack.meuholerite.ui.EditProfileDialog
 import com.jack.meuholerite.ui.theme.MeuHoleriteTheme
+import android.content.Intent
+import android.webkit.CookieManager
+import com.google.firebase.auth.FirebaseAuth
+import java.io.File
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.ui.res.stringResource
 import com.jack.meuholerite.utils.StorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -138,6 +149,7 @@ private fun ProfileScreen(
     }
     val userEmail = remember { prefs.getString("user_email", "") ?: "" }
     var showEditProfile by remember { mutableStateOf(false) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     val latestRecibo = recibos.firstOrNull()
     val latestEspelho = espelhos.firstOrNull()
@@ -262,6 +274,9 @@ private fun ProfileScreen(
                                     userPhoto = prefs.getString("user_photo", "") ?: ""
                                 }
                             }
+                            ProfileActionPill(label = "", icon = Icons.AutoMirrored.Outlined.Logout) {
+                                showLogoutConfirm = true
+                            }
                         }
                     }
                 }
@@ -317,6 +332,75 @@ private fun ProfileScreen(
 
         }
     }
+
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            title = { Text(stringResource(R.string.logout_confirm_title), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(stringResource(R.string.logout_confirm))
+
+                    // BOTÃO 1: APENAS SAIR
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+                                FirebaseAuth.getInstance().signOut()
+                                showLogoutConfirm = false
+                                val intent = Intent(context, LoginActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                context.startActivity(intent)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(stringResource(R.string.exit_only))
+                    }
+
+                    // BOTÃO 2: SAIR E LIMPAR
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    val localDb = AppDatabase.getDatabase(context)
+                                    localDb.clearAllTables()
+                                    context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+                                    val pdfDir = File(context.filesDir, "pdfs")
+                                    if (pdfDir.exists()) pdfDir.deleteRecursively()
+                                    withContext(Dispatchers.Main) {
+                                        CookieManager.getInstance().removeAllCookies(null)
+                                        CookieManager.getInstance().flush()
+                                    }
+                                    FirebaseAuth.getInstance().signOut()
+                                }
+                                showLogoutConfirm = false
+                                val intent = Intent(context, LoginActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                context.startActivity(intent)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                    ) {
+                        Text(stringResource(R.string.exit_and_clear))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
 }
 
 @Composable
@@ -349,7 +433,7 @@ private fun ProfileAvatar(photo: String, size: androidx.compose.ui.unit.Dp) {
 
 @Composable
 private fun ProfileActionPill(
-    label: String,
+    label: String = "",
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
@@ -361,10 +445,12 @@ private fun ProfileActionPill(
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(if (label.isNotEmpty()) 6.dp else 0.dp)
         ) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            if (label.isNotEmpty()) {
+                Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
         }
     }
 }

@@ -262,20 +262,7 @@ fun FinanceScreenContent(onBack: () -> Unit) {
             onBack()
             return
         }
-
-        scope.launch {
-            if (AdsDataStore.canShowIntervalAd(activity)) {
-                RewardedInterstitialAdManager.showAd(activity) {
-                    scope.launch {
-                        AdsDataStore.incrementAdsShown(activity)
-                        AdsDataStore.markIntervalAdShown(activity)
-                        onBack()
-                    }
-                }
-            } else {
-                onBack()
-            }
-        }
+        onBack()
     }
 
     BackHandler(onBack = ::exitScreen)

@@ -21,9 +21,11 @@ object RewardedInterstitialAdManager {
     
     private const val TAG = "RewardedAdManager"
 
-    fun loadAd(context: Context) {
+    fun isAdReady(): Boolean = rewardedInterstitialAd != null
+
+    fun loadAd(context: Context, ignorePremium: Boolean = false) {
         CoroutineScope(Dispatchers.IO).launch {
-            if (AdsDataStore.isAdsRemoved(context)) {
+            if (!ignorePremium && AdsDataStore.isAdsRemoved(context)) {
                 Log.d(TAG, "Anúncios removidos pelo usuário. Pulando carregamento.")
                 return@launch
             }
@@ -36,14 +38,14 @@ object RewardedInterstitialAdManager {
                 val currentAdUnitId = AD_UNIT_ID
                 
                 Log.d(TAG, "Solicitando anúncio... ID: $currentAdUnitId")
-
+ 
                 RewardedInterstitialAd.load(context, currentAdUnitId, adRequest, object : RewardedInterstitialAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedInterstitialAd) {
                         rewardedInterstitialAd = ad
                         isLoading = false
                         Log.d(TAG, "Anúncio carregado. ID: $currentAdUnitId")
                     }
-
+ 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         rewardedInterstitialAd = null
                         isLoading = false
@@ -57,46 +59,49 @@ object RewardedInterstitialAdManager {
                         // Tenta carregar novamente em 45 segundos
                         CoroutineScope(Dispatchers.Main).launch {
                             delay(45000)
-                            loadAd(context)
+                            loadAd(context, ignorePremium)
                         }
                     }
                 })
             }
         }
     }
-
-    fun showAd(activity: Activity, onAdDismissed: () -> Unit) {
+ 
+    fun showAd(activity: Activity, ignorePremium: Boolean = false, onAdDismissed: (Boolean) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
-            if (AdsDataStore.isAdsRemoved(activity)) {
-                withContext(Dispatchers.Main) { onAdDismissed() }
+            if (!ignorePremium && AdsDataStore.isAdsRemoved(activity)) {
+                withContext(Dispatchers.Main) { onAdDismissed(true) }
                 return@launch
             }
             
             withContext(Dispatchers.Main) {
                 val ad = rewardedInterstitialAd
                 if (ad != null) {
+                    var earnedReward = false
+                    
                     ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
-                            Log.d(TAG, "Anúncio fechado.")
+                            Log.d(TAG, "Anúncio fechado. Ganhou recompensa? $earnedReward")
                             rewardedInterstitialAd = null
-                            loadAd(activity) 
-                            onAdDismissed()
+                            loadAd(activity, ignorePremium) 
+                            onAdDismissed(earnedReward)
                         }
-
+ 
                         override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
                             Log.e(TAG, "Erro ao exibir: ${adError.message}")
                             rewardedInterstitialAd = null
-                            onAdDismissed()
+                            onAdDismissed(false)
                         }
                     }
                     
                     ad.show(activity) { rewardItem ->
                         Log.d(TAG, "Usuário ganhou recompensa: ${rewardItem.amount}")
+                        earnedReward = true
                     }
                 } else {
                     Log.d(TAG, "Aviso: Anúncio não disponível. Tentando carregar...")
-                    onAdDismissed()
-                    loadAd(activity)
+                    onAdDismissed(false)
+                    loadAd(activity, ignorePremium)
                 }
             }
         }

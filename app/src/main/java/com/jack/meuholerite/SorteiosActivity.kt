@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.PeopleAlt
 import androidx.compose.material.icons.filled.TaskAlt
@@ -57,6 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.AlertDialog
+import coil.compose.AsyncImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -104,10 +106,13 @@ data class RaffleCampaign(
     val regulation: String = "",
     val tasks: List<RaffleTask> = emptyList(),
     val isActive: Boolean = true,
+    val isNumberBased: Boolean = false,
+    val winningNumber: String = "",
     val winnerName: String = "",
     val winnerEmail: String = "",
     val winnerContactInfo: String = "",
     val winnerUserId: String = "",
+    val winnerPhotoUrl: String = "",
     val winnerPrize: String = "",
     val winnerAt: Long = 0L,
     val createdAt: Long = 0L,
@@ -125,14 +130,16 @@ data class RaffleEntry(
     val userId: String = "",
     val userName: String = "",
     val userEmail: String = "",
+    val userPhotoUrl: String = "",
     val contactInfo: String = "",
     val completedTasks: List<String> = emptyList(),
+    val luckyNumbers: List<String> = emptyList(),
     val allTasksCompleted: Boolean = false,
     val updatedAt: Long = 0L,
     val createdAt: Long = 0L
 )
 
-private object SorteiosRepository {
+object SorteiosRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -157,7 +164,7 @@ private object SorteiosRepository {
             .addSnapshotListener { snapshot, _ ->
                 val history = snapshot?.documents.orEmpty()
                     .mapNotNull { it.toRaffleCampaign() }
-                    .filter { !it.isActive || it.winnerName.isNotBlank() }
+                    .filter { !it.isActive && it.winnerName.isNotBlank() }
                 onChange(history)
             }
     }
@@ -199,14 +206,17 @@ private object SorteiosRepository {
         prizeTitle: String,
         prizeValue: Double,
         regulation: String,
-        tasks: List<RaffleTask>
+        tasks: List<RaffleTask>,
+        isNumberBased: Boolean
     ) {
         val cleanedTasks = tasks
             .map { it.copy(title = it.title.trim(), link = it.link.trim()) }
             .filter { it.title.isNotBlank() }
         require(title.isNotBlank()) { "Informe um título para o sorteio." }
         require(prizeTitle.isNotBlank()) { "Informe o prêmio." }
-        require(cleanedTasks.isNotEmpty()) { "Adicione pelo menos uma tarefa." }
+        if (!isNumberBased) {
+            require(cleanedTasks.isNotEmpty()) { "Adicione pelo menos uma tarefa." }
+        }
 
         if (raffleId.isNullOrBlank()) {
             val activeDocs = firestore.collection("raffles")
@@ -228,6 +238,8 @@ private object SorteiosRepository {
                     "regulation" to regulation.trim(),
                     "tasks" to cleanedTasks.map { mapOf("title" to it.title, "link" to it.link) },
                     "isActive" to true,
+                    "isNumberBased" to isNumberBased,
+                    "winningNumber" to "",
                     "winnerName" to "",
                     "winnerEmail" to "",
                     "winnerContactInfo" to "",
@@ -249,6 +261,7 @@ private object SorteiosRepository {
                     "prizeValue" to prizeValue,
                     "regulation" to regulation.trim(),
                     "tasks" to cleanedTasks.map { mapOf("title" to it.title, "link" to it.link) },
+                    "isNumberBased" to isNumberBased,
                     "updatedAt" to System.currentTimeMillis()
                 )
             ).await()
@@ -274,6 +287,7 @@ private object SorteiosRepository {
                     "userId" to user.uid,
                     "userName" to userName,
                     "userEmail" to (user.email ?: ""),
+                    "userPhotoUrl" to (user.photoUrl?.toString() ?: ""),
                     "contactInfo" to contactInfo.trim(),
                     "completedTasks" to cleanedTasks,
                     "allTasksCompleted" to allCompleted,
@@ -285,7 +299,51 @@ private object SorteiosRepository {
             .await()
     }
 
-    suspend fun drawWinner(raffle: RaffleCampaign): RaffleEntry {
+    suspend fun assignLuckyNumber(raffle: RaffleCampaign, contactInfo: String) {
+        val user = auth.currentUser ?: error("Faça login para participar.")
+        val appContext = FirebaseAuth.getInstance().app.applicationContext
+        val sharedPrefs = appContext.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val savedName = sharedPrefs.getString("user_name", "")?.trim().orEmpty()
+        val userName = savedName.ifBlank { user.displayName ?: "Usuário" }
+        
+        val docId = "${raffle.id}_${user.uid}"
+        val now = System.currentTimeMillis()
+        
+        val newNumber = (100000..999999).random().toString()
+        
+        val docRef = firestore.collection("raffle_entries").document(docId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            if (snapshot.exists()) {
+                val currentNumbers = (snapshot.get("luckyNumbers") as? List<String>) ?: emptyList()
+                val updatedNumbers = currentNumbers + newNumber
+                transaction.update(
+                    docRef,
+                    "luckyNumbers", updatedNumbers,
+                    "contactInfo", contactInfo.trim(),
+                    "userPhotoUrl", (user.photoUrl?.toString() ?: ""),
+                    "allTasksCompleted", true,
+                    "updatedAt", now
+                )
+            } else {
+                transaction.set(docRef, mapOf(
+                    "raffleId" to raffle.id,
+                    "userId" to user.uid,
+                    "userName" to userName,
+                    "userEmail" to (user.email ?: ""),
+                    "userPhotoUrl" to (user.photoUrl?.toString() ?: ""),
+                    "contactInfo" to contactInfo.trim(),
+                    "completedTasks" to emptyList<String>(),
+                    "luckyNumbers" to listOf(newNumber),
+                    "allTasksCompleted" to true,
+                    "updatedAt" to now,
+                    "createdAt" to now
+                ))
+            }
+        }.await()
+    }
+
+    suspend fun drawWinner(raffle: RaffleCampaign): Pair<RaffleEntry, String> {
         require(raffle.id.isNotBlank()) { "Nenhum sorteio ativo." }
 
         val eligible = firestore.collection("raffle_entries")
@@ -296,27 +354,42 @@ private object SorteiosRepository {
             .documents
             .mapNotNull { it.toRaffleEntry() }
 
-        require(eligible.isNotEmpty()) { "Nenhum usuário elegível cumpriu todas as tarefas." }
+        require(eligible.isNotEmpty()) { "Nenhum usuário elegível." }
 
-        val winner = eligible.random()
+        val winner: RaffleEntry
+        var winningNumber = ""
+
+        if (raffle.isNumberBased) {
+            val allNumbers = eligible.flatMap { entry -> entry.luckyNumbers.map { it to entry } }
+            require(allNumbers.isNotEmpty()) { "Nenhum número da sorte gerado." }
+            val chosen = allNumbers.random()
+            winningNumber = chosen.first
+            winner = chosen.second
+        } else {
+            winner = eligible.random()
+        }
+
         val prizeLabel = buildPrizeLabel(raffle.prizeTitle, raffle.prizeValue)
         val now = System.currentTimeMillis()
 
         firestore.collection("raffles").document(raffle.id)
             .update(
                 mapOf(
+                    "winningNumber" to winningNumber,
                     "winnerName" to winner.userName,
                     "winnerEmail" to winner.userEmail,
                     "winnerContactInfo" to winner.contactInfo,
                     "winnerUserId" to winner.userId,
+                    "winnerPhotoUrl" to winner.userPhotoUrl,
                     "winnerPrize" to prizeLabel,
                     "winnerAt" to now,
-                    "updatedAt" to now
+                    "updatedAt" to now,
+                    "isActive" to false
                 )
             )
             .await()
 
-        return winner
+        return winner to winningNumber
     }
 
     suspend fun closeRaffle(raffleId: String) {
@@ -340,7 +413,9 @@ private object SorteiosRepository {
                     "winnerEmail" to "",
                     "winnerContactInfo" to "",
                     "winnerUserId" to "",
+                    "winnerPhotoUrl" to "",
                     "winnerPrize" to "",
+                    "winningNumber" to "",
                     "winnerAt" to 0L,
                     "updatedAt" to System.currentTimeMillis()
                 )
@@ -380,10 +455,13 @@ private fun DocumentSnapshot.toRaffleCampaign(): RaffleCampaign? {
         regulation = data["regulation"] as? String ?: "",
         tasks = parsedTasks,
         isActive = data["isActive"] as? Boolean ?: false,
+        isNumberBased = data["isNumberBased"] as? Boolean ?: false,
+        winningNumber = data["winningNumber"] as? String ?: "",
         winnerName = data["winnerName"] as? String ?: "",
         winnerEmail = data["winnerEmail"] as? String ?: "",
         winnerContactInfo = data["winnerContactInfo"] as? String ?: "",
         winnerUserId = data["winnerUserId"] as? String ?: "",
+        winnerPhotoUrl = data["winnerPhotoUrl"] as? String ?: "",
         winnerPrize = data["winnerPrize"] as? String ?: "",
         winnerAt = (data["winnerAt"] as? Number)?.toLong() ?: 0L,
         createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
@@ -399,8 +477,10 @@ private fun DocumentSnapshot.toRaffleEntry(): RaffleEntry? {
         userId = data["userId"] as? String ?: "",
         userName = data["userName"] as? String ?: "",
         userEmail = data["userEmail"] as? String ?: "",
+        userPhotoUrl = data["userPhotoUrl"] as? String ?: "",
         contactInfo = data["contactInfo"] as? String ?: "",
         completedTasks = (data["completedTasks"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
+        luckyNumbers = (data["luckyNumbers"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
         allTasksCompleted = data["allTasksCompleted"] as? Boolean ?: false,
         updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L,
         createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
@@ -452,6 +532,7 @@ private fun openWinnerContact(context: Context, email: String, contactInfo: Stri
 class SorteiosActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.jack.meuholerite.ads.RewardedInterstitialAdManager.loadAd(this, ignorePremium = true)
         setContent {
             MeuHoleriteTheme {
                 SorteiosScreen(onBack = { finish() })
@@ -489,6 +570,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
     var adminPrizeValue by remember { mutableStateOf("") }
     var adminTasksText by remember { mutableStateOf("") }
     var adminRegulation by remember { mutableStateOf("") }
+    var adminIsNumberBased by remember { mutableStateOf(false) }
     var userContactInfo by remember { mutableStateOf("") }
     var showParticipantsDialog by remember { mutableStateOf(false) }
 
@@ -562,12 +644,14 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                     if (task.link.isBlank()) task.title else "${task.title} | ${task.link}"
                 }
                 adminRegulation = raffle.regulation
+                adminIsNumberBased = raffle.isNumberBased
             } else if (adminRaffleId == null) {
                 adminTitle = ""
                 adminPrizeTitle = ""
                 adminPrizeValue = ""
                 adminTasksText = ""
                 adminRegulation = ""
+                adminIsNumberBased = false
             }
         }
     }
@@ -672,14 +756,16 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                     )
                 }
 
-                item { SectionTitle("Tarefas para participar", "Complete tudo para ficar elegível") }
+                if (!activeRaffle!!.isNumberBased) {
+                    item { SectionTitle("Tarefas para participar", "Complete tudo para ficar elegível") }
 
-                items(activeRaffle!!.tasks) { task ->
-                    TaskCheckboxCard(
-                        task = task,
-                        checked = selectedTasks[task.title] == true,
-                        onCheckedChange = { selectedTasks[task.title] = it }
-                    )
+                    items(activeRaffle!!.tasks) { task ->
+                        TaskCheckboxCard(
+                            task = task,
+                            checked = selectedTasks[task.title] == true,
+                            onCheckedChange = { selectedTasks[task.title] = it }
+                        )
+                    }
                 }
 
                 item {
@@ -691,6 +777,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                         onContactInfoChange = { userContactInfo = it },
                         isLoggedIn = currentUser != null,
                         isSubmitting = isSubmitting,
+                        isNumberBased = activeRaffle!!.isNumberBased,
                         onSubmit = {
                             val raffle = activeRaffle ?: return@ParticipantCard
                             val completed = selectedTasks.filterValues { it }.keys.toList()
@@ -703,6 +790,30 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                                     Toast.makeText(context, e.message ?: "Não foi possível salvar sua participação.", Toast.LENGTH_LONG).show()
                                 } finally {
                                     isSubmitting = false
+                                }
+                            }
+                        },
+                        onWatchAd = {
+                            val raffle = activeRaffle ?: return@ParticipantCard
+                            if (userContactInfo.isBlank()) {
+                                Toast.makeText(context, "Preencha seu contato antes de assistir ao anúncio.", Toast.LENGTH_SHORT).show()
+                                return@ParticipantCard
+                            }
+                            com.jack.meuholerite.ads.RewardedInterstitialAdManager.showAd(context as android.app.Activity, ignorePremium = true) { earned ->
+                                if (earned) {
+                                    scope.launch {
+                                        isSubmitting = true
+                                        try {
+                                            SorteiosRepository.assignLuckyNumber(raffle, userContactInfo)
+                                            Toast.makeText(context, "Número da sorte gerado!", Toast.LENGTH_SHORT).show()
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, e.message ?: "Erro ao gerar número.", Toast.LENGTH_LONG).show()
+                                        } finally {
+                                            isSubmitting = false
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Você precisa assistir ao anúncio completo para obter o número.", Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -728,6 +839,8 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                         onTasksTextChange = { adminTasksText = it },
                         regulation = adminRegulation,
                         onRegulationChange = { adminRegulation = it },
+                        isNumberBased = adminIsNumberBased,
+                        onIsNumberBasedChange = { adminIsNumberBased = it },
                         totalParticipants = totalParticipants,
                         eligibleParticipants = eligibleParticipants,
                         isSaving = isSavingAdmin,
@@ -744,7 +857,8 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                                         prizeTitle = adminPrizeTitle,
                                         prizeValue = adminPrizeValue.replace(",", ".").toDoubleOrNull() ?: 0.0,
                                         regulation = adminRegulation,
-                                        tasks = parseAdminTasks(adminTasksText.lines())
+                                        tasks = parseAdminTasks(adminTasksText.lines()),
+                                        isNumberBased = adminIsNumberBased
                                     )
                                     Toast.makeText(context, "Campanha salva com sucesso.", Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
@@ -761,14 +875,16 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                             adminPrizeValue = ""
                             adminTasksText = ""
                             adminRegulation = ""
+                            adminIsNumberBased = false
                         },
                         onDraw = {
                             val raffle = activeRaffle ?: return@AdminPanelCard
                             scope.launch {
                                 isDrawing = true
                                 try {
-                                    val winner = SorteiosRepository.drawWinner(raffle)
-                                    Toast.makeText(context, "Sorteado: ${winner.userName}", Toast.LENGTH_LONG).show()
+                                    val (winner, winningNumber) = SorteiosRepository.drawWinner(raffle)
+                                    val msg = if (winningNumber.isNotBlank()) "Sorteado: ${winner.userName} (Nº $winningNumber)" else "Sorteado: ${winner.userName}"
+                                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                     adminRaffleId = null
                                 } catch (e: Exception) {
                                     Toast.makeText(context, e.message ?: "Não foi possível realizar o sorteio.", Toast.LENGTH_LONG).show()
@@ -810,6 +926,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                         winnerName = raffle.winnerName.ifBlank { "Campanha encerrada" },
                         winnerEmail = raffle.winnerEmail,
                         winnerContactInfo = raffle.winnerContactInfo,
+                        winningNumber = raffle.winningNumber,
                         prize = raffle.winnerPrize.ifBlank {
                             buildString {
                                 append(raffle.prizeTitle)
@@ -820,6 +937,7 @@ private fun SorteiosScreen(onBack: () -> Unit) {
                             }
                         },
                         subtitle = raffle.title,
+                        winnerPhotoUrl = raffle.winnerPhotoUrl,
                         onDelete = if (isAdmin) {
                             {
                                 scope.launch {
@@ -1504,7 +1622,9 @@ private fun ParticipantCard(
     onContactInfoChange: (String) -> Unit,
     isLoggedIn: Boolean,
     isSubmitting: Boolean,
-    onSubmit: () -> Unit
+    isNumberBased: Boolean,
+    onSubmit: () -> Unit,
+    onWatchAd: () -> Unit
 ) {
     val allTasksChecked = totalTasks > 0 && completedTasks >= totalTasks
     Surface(shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
@@ -1516,32 +1636,18 @@ private fun ParticipantCard(
                         .background(SorteiosBlue.copy(alpha = 0.12f), RoundedCornerShape(15.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Filled.TaskAlt, contentDescription = null, tint = SorteiosBlue)
+                    Icon(if (isNumberBased) Icons.Filled.ConfirmationNumber else Icons.Filled.TaskAlt, contentDescription = null, tint = SorteiosBlue)
                 }
                 Spacer(Modifier.size(10.dp))
                 Column {
                     Text("Sua participação", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SorteiosInk)
-                    Text("Confirme as tarefas e deixe seu contato.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (isNumberBased) "Assista a um anúncio para obter números da sorte e deixe seu contato." 
+                        else "Confirme as tarefas e deixe seu contato.",
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-
-            Text(
-                when {
-                    !isLoggedIn -> "Faça login para marcar as tarefas e entrar no sorteio."
-                    entry?.allTasksCompleted == true -> "Você já cumpriu todas as tarefas e está elegível para o sorteio."
-                    entry != null -> "Sua participação foi salva, mas ainda faltam tarefas para ficar elegível."
-                    else -> "Marque todas as tarefas concluídas para confirmar sua participação."
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
-            )
-
-            Text(
-                "$completedTasks de $totalTasks tarefas concluídas",
-                color = if (allTasksChecked) SorteiosGreen else SorteiosRose,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
-            )
 
             OutlinedTextField(
                 value = contactInfo,
@@ -1552,34 +1658,100 @@ private fun ParticipantCard(
                 shape = RoundedCornerShape(16.dp)
             )
 
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = SorteiosGreen.copy(alpha = 0.08f)
-            ) {
+            if (isNumberBased) {
+                if (entry != null && entry.luckyNumbers.isNotEmpty()) {
+                    var showCodesDialog by remember { mutableStateOf(false) }
+
+                    Text(
+                        "Você está participando! 🎊",
+                        fontWeight = FontWeight.Bold,
+                        color = SorteiosGreen,
+                        fontSize = 15.sp
+                    )
+                    
+                    OutlinedButton(
+                        onClick = { showCodesDialog = true },
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.ConfirmationNumber, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text("Meus códigos", fontWeight = FontWeight.Bold, color = SorteiosBlue)
+                    }
+
+                    if (showCodesDialog) {
+                        MyCodesDialog(
+                            luckyNumbers = entry.luckyNumbers,
+                            onDismiss = { showCodesDialog = false }
+                        )
+                    }
+
+                    Text(
+                        "Assista mais anúncios para obter mais números e aumentar suas chances de ganhar!",
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Button(
+                    onClick = onWatchAd,
+                    enabled = isLoggedIn && !isSubmitting && contactInfo.isNotBlank(),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.size(8.dp))
+                    }
+                    Text(if (entry != null && entry.luckyNumbers.isNotEmpty()) "Obter mais números" else "Participar")
+                }
+            } else {
                 Text(
-                    text = if (entry?.allTasksCompleted == true) {
-                        "Seu cadastro já está pronto para entrar no sorteio desta rodada."
-                    } else {
-                        "A participação só é salva quando todas as tarefas da campanha estiverem marcadas como concluídas."
+                    when {
+                        !isLoggedIn -> "Faça login para marcar as tarefas e entrar no sorteio."
+                        entry?.allTasksCompleted == true -> "Você já cumpriu todas as tarefas e está elegível para o sorteio."
+                        entry != null -> "Sua participação foi salva, mas ainda faltam tarefas para ficar elegível."
+                        else -> "Marque todas as tarefas concluídas para confirmar sua participação."
                     },
-                    modifier = Modifier.padding(14.dp),
-                    color = SorteiosInk,
-                    lineHeight = 19.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+
+                Text(
+                    "$completedTasks de $totalTasks tarefas concluídas",
+                    color = if (allTasksChecked) SorteiosGreen else SorteiosRose,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
-            }
-
-            Button(
-                onClick = onSubmit,
-                enabled = isLoggedIn && !isSubmitting && allTasksChecked,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.size(8.dp))
+                
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = SorteiosGreen.copy(alpha = 0.08f)
+                ) {
+                    Text(
+                        text = if (entry?.allTasksCompleted == true) {
+                            "Seu cadastro já está pronto para entrar no sorteio desta rodada."
+                        } else {
+                            "A participação só é salva quando todas as tarefas da campanha estiverem marcadas como concluídas."
+                        },
+                        modifier = Modifier.padding(14.dp),
+                        color = SorteiosInk,
+                        lineHeight = 19.sp,
+                        fontSize = 13.sp
+                    )
                 }
-                Text("Salvar participação")
+
+                Button(
+                    onClick = onSubmit,
+                    enabled = isLoggedIn && !isSubmitting && allTasksChecked && contactInfo.isNotBlank(),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.size(8.dp))
+                    }
+                    Text("Salvar participação")
+                }
             }
         }
     }
@@ -1597,6 +1769,8 @@ private fun AdminPanelCard(
     onTasksTextChange: (String) -> Unit,
     regulation: String,
     onRegulationChange: (String) -> Unit,
+    isNumberBased: Boolean,
+    onIsNumberBasedChange: (Boolean) -> Unit,
     totalParticipants: Int,
     eligibleParticipants: Int,
     isSaving: Boolean,
@@ -1656,20 +1830,35 @@ private fun AdminPanelCard(
                 shape = RoundedCornerShape(16.dp)
             )
 
-            OutlinedTextField(
-                value = tasksText,
-                onValueChange = onTasksTextChange,
-                label = { Text("Tarefas, uma por linha") },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 4,
-                shape = RoundedCornerShape(16.dp)
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Checkbox(checked = isNumberBased, onCheckedChange = onIsNumberBasedChange)
+                Text(
+                    "Sorteio por Números da Sorte (Anúncios)",
+                    color = SorteiosInk,
+                    fontSize = 14.sp
+                )
+            }
 
-            Text(
-                "Formato com link: Tarefa | https://seulink.com",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
-            )
+            if (!isNumberBased) {
+                OutlinedTextField(
+                    value = tasksText,
+                    onValueChange = onTasksTextChange,
+                    label = { Text("Tarefas, uma por linha") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                    shape = RoundedCornerShape(16.dp)
+                )
+
+                Text(
+                    "Formato com link: Tarefa | https://seulink.com",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
 
             OutlinedTextField(
                 value = regulation,
@@ -1766,8 +1955,10 @@ private fun WinnerCard(
     winnerName: String,
     winnerEmail: String,
     winnerContactInfo: String,
+    winningNumber: String,
     prize: String,
     subtitle: String,
+    winnerPhotoUrl: String = "",
     onDelete: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -1782,13 +1973,26 @@ private fun WinnerCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(SorteiosGold.copy(alpha = 0.15f), RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = SorteiosGold)
+                if (winnerPhotoUrl.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        AsyncImage(
+                            model = winnerPhotoUrl,
+                            contentDescription = "Foto do vencedor",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(SorteiosGold.copy(alpha = 0.15f), RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = SorteiosGold)
+                    }
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -1800,6 +2004,10 @@ private fun WinnerCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(text = winnerName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SorteiosInk)
+                    if (winningNumber.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(text = "Nº Sorteado: $winningNumber", color = SorteiosBlue, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(text = prize, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
@@ -1861,3 +2069,55 @@ private fun WinnerCard(
         }
     }
 }
+
+@Composable
+private fun MyCodesDialog(
+    luckyNumbers: List<String>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Fechar", fontWeight = FontWeight.Bold, color = SorteiosBlue)
+            }
+        },
+        title = {
+            Text("Meus Códigos da Sorte", fontWeight = FontWeight.Black, color = SorteiosInk)
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 300.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(luckyNumbers) { number ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SorteiosBlue.copy(alpha = 0.08f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ConfirmationNumber,
+                                contentDescription = null,
+                                tint = SorteiosBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = number,
+                                color = SorteiosInk,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    )
+}
+

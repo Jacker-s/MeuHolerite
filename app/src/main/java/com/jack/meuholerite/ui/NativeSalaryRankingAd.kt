@@ -37,10 +37,22 @@ enum class NativeAdSize {
     Compact
 }
 
-private object NativeAdPool {
+internal object NativeAdPool {
     private val availableAds = mutableMapOf<String, MutableList<NativeAd>>()
     private val activeAds = mutableSetOf<NativeAd>()
     private val seenAds = mutableSetOf<NativeAd>()
+
+    fun addToPool(adUnitId: String, size: NativeAdSize, ad: NativeAd) {
+        synchronized(this) {
+            val key = poolKey(adUnitId, size)
+            val list = availableAds.getOrPut(key) { mutableListOf() }
+            if (list.size < 4) {
+                list.add(ad)
+            } else {
+                ad.destroy()
+            }
+        }
+    }
 
     private fun poolKey(adUnitId: String, size: NativeAdSize): String = "$adUnitId:$size"
 

@@ -97,6 +97,7 @@ import androidx.work.WorkManager
 import coil.compose.AsyncImage
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.MobileAds
+import com.jack.meuholerite.ads.NativeAdPreloader
 import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -176,6 +177,16 @@ data class SmartAlert(
     val icon: ImageVector
 )
 
+data class HomeNewsItem(
+    val id: String,
+    val title: String,
+    val summary: String,
+    val imageUrl: String,
+    val link: String,
+    val category: String,
+    val timestamp: Long
+)
+
 private data class MonthlySummary(
     val gross: Double,
     val net: Double,
@@ -190,12 +201,14 @@ private enum class HomeSection(val key: String, val title: String, val icon: Ima
     STATUS("status", "Status do mês", Icons.Outlined.DateRange),
     NEXT_PAYMENT("next_payment", "Próximo pagamento", Icons.Outlined.CalendarMonth),
     SMART_ALERTS("smart_alerts", "Alertas inteligentes", Icons.Outlined.NotificationsActive),
+    NEWS("news", "Notícias", Icons.Outlined.Feed),
     PROMOS("promos", "Promoções", Icons.Outlined.LocalOffer),
     SORTEIOS("sorteios", "Sorteios", Icons.Outlined.EmojiEvents),
     NET_PAY("net_pay", "Líquido a receber", Icons.Outlined.AccountBalanceWallet),
     POINT_OVERVIEW("point_overview", "Resumo do ponto", Icons.Outlined.Schedule),
     SALARY_RANKING("salary_ranking", "Ranking de salários", Icons.Outlined.QueryStats),
     FINANCE("finance", "Gestão financeira", Icons.Outlined.AccountBalance),
+    MONTHLY_SUMMARY("monthly_summary", "Resumo mensal", Icons.Outlined.PieChartOutline),
     QUICK_LINKS("quick_links", "Atalhos rápidos", Icons.Outlined.DashboardCustomize),
     AI_SHORTCUT("ai_shortcut", "Atalho da IA", Icons.Filled.AutoAwesome)
 }
@@ -204,6 +217,7 @@ private fun resolveHomeSections(orderKeys: List<String>): List<HomeSection> {
     val allSectionsByKey = HomeSection.entries.associateBy { it.key }
     return (orderKeys + HomeSection.entries.map { it.key })
         .mapNotNull { allSectionsByKey[it] }
+        .filterNot { it == HomeSection.NEWS }
         .distinct()
 }
 
@@ -265,11 +279,15 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        // Google AdMob Initialization
-        MobileAds.initialize(this) { RewardedInterstitialAdManager.loadAd(this) }
 
 
 
+
+
+        runOnUiThread {
+            com.jack.meuholerite.ads.RewardedInterstitialAdManager.loadAd(this)
+            com.jack.meuholerite.ads.NativeAdPreloader.preload(this, "ca-app-pub-7931782163570852/1526069738", com.jack.meuholerite.ui.NativeAdSize.Regular, 2)
+        }
 
         billingManager = com.jack.meuholerite.utils.BillingManager(this)
         billingManager.startConnection()
@@ -580,6 +598,7 @@ fun MainScreen(
     var importSuccessData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var showSignReminder by remember { mutableStateOf(false) }
     var globalMessageToShow by remember { mutableStateOf<GlobalMessage?>(null) }
+    var openHomeCustomizationRequest by remember { mutableIntStateOf(0) }
     var showHomeCustomizeTip by remember {
         mutableStateOf(
             appPrefs.getBoolean("onboarding_completed", false) &&
@@ -587,7 +606,9 @@ fun MainScreen(
         )
     }
     var hasLoadedEpays by remember { mutableStateOf(false) }
+    var hasEngagedTools by remember { mutableStateOf(false) }
     var promoList by remember { mutableStateOf<List<com.jack.meuholerite.model.Promocao>>(emptyList()) }
+    var newsList by remember { mutableStateOf<List<HomeNewsItem>>(emptyList()) }
     var promoNotifEnabled by remember { mutableStateOf(prefs.getBoolean("promo_notif_enabled", true)) }
 
     // Real-time listener for promocoes (elimina get() redundante)
@@ -628,8 +649,43 @@ fun MainScreen(
         onDispose { listener.remove() }
     }
 
+    DisposableEffect(Unit) {
+        val ref = FirebaseFirestore.getInstance().collection("news")
+        val listener = ref.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                android.util.Log.e("Noticias", "Erro no listener: ${error.message}")
+                return@addSnapshotListener
+            }
+            if (snapshot != null) {
+                newsList = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    val active = data["active"] as? Boolean ?: true
+                    if (!active) return@mapNotNull null
+                    HomeNewsItem(
+                        id = doc.id,
+                        title = data["title"] as? String ?: "",
+                        summary = data["summary"] as? String ?: (data["content"] as? String ?: ""),
+                        imageUrl = data["imageUrl"] as? String ?: "",
+                        link = data["link"] as? String ?: "",
+                        category = data["category"] as? String ?: "Notícia",
+                        timestamp = (data["timestamp"] as? Number)?.toLong() ?: 0L
+                    )
+                }
+                    .filter { it.title.isNotBlank() || it.summary.isNotBlank() }
+                    .sortedByDescending { it.timestamp }
+                android.util.Log.d("Noticias", "Listener atualizou: ${newsList.size} notícias")
+            }
+        }
+        onDispose { listener.remove() }
+    }
+
     fun safeShowAd(onAdDismissed: () -> Unit = {}) {
         (context as? Activity)?.let { activity ->
+            if (!RewardedInterstitialAdManager.isAdReady()) {
+                RewardedInterstitialAdManager.loadAd(activity)
+                onAdDismissed()
+                return@let
+            }
             RewardedInterstitialAdManager.showAd(activity) {
                 scope.launch {
                     com.jack.meuholerite.ads.AdsDataStore.incrementAdsShown(context)
@@ -642,6 +698,55 @@ fun MainScreen(
                         com.jack.meuholerite.ads.AdsDataStore.markRemoveAdsPromptShown(context)
                     }
                     onAdDismissed()
+                }
+            }
+        }
+    }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    var timedInterstitialStartedAt by remember { mutableLongStateOf(0L) }
+    var timedInterstitialShowing by remember { mutableStateOf(false) }
+
+    val timedInterstitialBlocked = showOnboarding ||
+        showRestorePrompt ||
+        isRestoring ||
+        showLaborAiChat ||
+        showHomeCustomizeTip ||
+        globalMessageToShow != null ||
+        showRemoveAdsDialog.value ||
+        currentRoute == Screen.Epays.route
+
+    LaunchedEffect(timedInterstitialBlocked) {
+        if (!timedInterstitialBlocked && timedInterstitialStartedAt == 0L) {
+            timedInterstitialStartedAt = System.currentTimeMillis()
+        }
+    }
+
+    LaunchedEffect(adsRemovedState, timedInterstitialStartedAt, timedInterstitialBlocked, currentRoute) {
+        while (true) {
+            delay(15_000)
+
+            if (adsRemovedState || timedInterstitialBlocked || timedInterstitialShowing) continue
+            if (timedInterstitialStartedAt == 0L) continue
+
+            val now = System.currentTimeMillis()
+            val hasReachedFirstDelay =
+                now - timedInterstitialStartedAt >= AdsDataStore.INITIAL_TIMED_INTERSTITIAL_DELAY_MS
+
+            if (!hasReachedFirstDelay || !AdsDataStore.canShowTimedInterstitial(context)) continue
+
+            val activity = context as? Activity ?: continue
+            if (!RewardedInterstitialAdManager.isAdReady()) {
+                RewardedInterstitialAdManager.loadAd(activity)
+                continue
+            }
+
+            timedInterstitialShowing = true
+            safeShowAd {
+                scope.launch {
+                    AdsDataStore.markTimedInterstitialShown(context)
+                    timedInterstitialShowing = false
                 }
             }
         }
@@ -931,10 +1036,14 @@ fun MainScreen(
 
     val navigateTo = { screen: Screen ->
         val currentRoute = navController.currentBackStackEntry?.destination?.route
-        val shouldShowToolsExitAd = currentRoute == Screen.Tools.route && screen != Screen.Tools
+        val shouldShowToolsExitAd =
+            currentRoute == Screen.Tools.route && screen != Screen.Tools && hasEngagedTools
 
         fun performNavigation() {
             if (screen == Screen.Epays) hasLoadedEpays = true
+            if (currentRoute == Screen.Tools.route && screen != Screen.Tools) {
+                hasEngagedTools = false
+            }
             navController.navigate(screen.route) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
@@ -1006,6 +1115,7 @@ fun MainScreen(
                     .putBoolean("pending_open_home_customize", true)
                     .apply()
                 showHomeCustomizeTip = false
+                openHomeCustomizationRequest += 1
                 navigateTo(Screen.Home)
             }
         )
@@ -1147,44 +1257,46 @@ fun MainScreen(
             val currentRoute = navBackStackEntry?.destination?.route
             val items = listOf(Screen.Home, Screen.Epays, Screen.Recibos, Screen.Ponto)
 
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                shadowElevation = 16.dp,
-                tonalElevation = 6.dp
-            ) {
-                Row(
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 0.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
+                        .windowInsetsPadding(WindowInsets.navigationBars),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                    shadowElevation = 16.dp,
+                    tonalElevation = 6.dp
                 ) {
-                    items.forEach { screen ->
-                        val isSelected = currentRoute == screen.route
-                        PremiumNavigationBarItem(
-                            selected = isSelected,
-                            onClick = { navigateTo(screen) },
-                            icon = { isSel, color ->
-                                when (screen) {
-                                    Screen.Home -> AnimatedHomeIcon(isSel, color)
-                                    Screen.Epays -> AnimatedGlobeIcon(isSel, color)
-                                    Screen.Recibos -> AnimatedReceiptIcon(isSel, color)
-                                    Screen.Ponto -> AnimatedClockIcon(isSel, color)
-                                    else -> Icon(screen.icon, null, tint = color)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 0.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items.forEach { screen ->
+                            val isSelected = currentRoute == screen.route
+                            PremiumNavigationBarItem(
+                                selected = isSelected,
+                                onClick = { navigateTo(screen) },
+                                icon = { isSel, color ->
+                                    when (screen) {
+                                        Screen.Home -> AnimatedHomeIcon(isSel, color)
+                                        Screen.Epays -> AnimatedGlobeIcon(isSel, color)
+                                        Screen.Recibos -> AnimatedReceiptIcon(isSel, color)
+                                        Screen.Ponto -> AnimatedClockIcon(isSel, color)
+                                        else -> Icon(screen.icon, null, tint = color)
+                                    }
+                                },
+                                label = stringResource(screen.label),
+                                accentColor = when(screen) {
+                                    Screen.Home -> MaterialTheme.colorScheme.primary
+                                    Screen.Epays -> Color(0xFF007AFF) // IosBlue
+                                    Screen.Recibos -> Color(0xFF34C759) // IosGreen
+                                    Screen.Ponto -> Color(0xFF5856D6) // IosIndigo
+                                    else -> MaterialTheme.colorScheme.primary
                                 }
-                            },
-                            label = stringResource(screen.label),
-                            accentColor = when(screen) {
-                                Screen.Home -> MaterialTheme.colorScheme.primary
-                                Screen.Epays -> Color(0xFF007AFF) // IosBlue
-                                Screen.Recibos -> Color(0xFF34C759) // IosGreen
-                                Screen.Ponto -> Color(0xFF5856D6) // IosIndigo
-                                else -> MaterialTheme.colorScheme.primary
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -1237,43 +1349,15 @@ fun MainScreen(
                             } else if (isRecibo) {
                                 var novo = ReciboParser().parse(text)
                                 if (novo.periodo == "Não identificado" || novo.valorLiquido == "0,00" || novo.cargo.isEmpty()) {
-                                    val activity = context as? Activity
-                                    if (activity != null) {
-                                        if (AdsDataStore.canShowIntervalAd(context)) {
-                                            RewardedInterstitialAdManager.showAd(activity) {
-                                                scope.launch {
-                                                    AdsDataStore.incrementAdsShown(context)
-                                                    AdsDataStore.markIntervalAdShown(context)
-                                                    val aiNovo = AiParser().parseRecibo(text)
-                                                    val finalNovo = aiNovo ?: novo
-                                                    val path = savePdfPermanently(uri, "recibo_${finalNovo.periodo.replace("/", "_")}.pdf")
-                                                    withContext(Dispatchers.IO) {
-                                                        val toSave = finalNovo.copy(pdfFilePath = path)
-                                                        db.reciboDao().insert(toSave.toEntity(gson, path)!!)
-                                                    }
-                                                    refreshData()
-                                                    importSuccessData = Triple("RECIBO", finalNovo.periodo, path ?: "")
-                                                }
-                                            }
-                                        } else {
-                                            val aiNovo = AiParser().parseRecibo(text)
-                                            val finalNovo = aiNovo ?: novo
-                                            val path = savePdfPermanently(uri, "recibo_${finalNovo.periodo.replace("/", "_")}.pdf")
-                                            withContext(Dispatchers.IO) {
-                                                val toSave = finalNovo.copy(pdfFilePath = path)
-                                                db.reciboDao().insert(toSave.toEntity(gson, path)!!)
-                                            }
-                                            refreshData()
-                                            importSuccessData = Triple("RECIBO", finalNovo.periodo, path ?: "")
-                                        }
-                                    } else {
-                                        val path = savePdfPermanently(uri, "recibo_${novo.periodo.replace("/", "_")}.pdf")
-                                        withContext(Dispatchers.IO) {
-                                            db.reciboDao().insert(novo.copy(pdfFilePath = path).toEntity(gson, path)!!)
-                                        }
-                                        refreshData()
-                                        importSuccessData = Triple("RECIBO", novo.periodo, path ?: "")
+                                    val aiNovo = AiParser().parseRecibo(text)
+                                    val finalNovo = aiNovo ?: novo
+                                    val path = savePdfPermanently(uri, "recibo_${finalNovo.periodo.replace("/", "_")}.pdf")
+                                    withContext(Dispatchers.IO) {
+                                        val toSave = finalNovo.copy(pdfFilePath = path)
+                                        db.reciboDao().insert(toSave.toEntity(gson, path)!!)
                                     }
+                                    refreshData()
+                                    importSuccessData = Triple("RECIBO", finalNovo.periodo, path ?: "")
                                 } else {
                                     val path = savePdfPermanently(uri, "recibo_${novo.periodo.replace("/", "_")}.pdf")
                                     withContext(Dispatchers.IO) {
@@ -1363,6 +1447,8 @@ fun MainScreen(
                         backupManager = backupManager,
                         safeShowAd = ::safeShowAd,
                         onOpenPdf = { openPdf(it) },
+                        openCustomizeRequest = openHomeCustomizationRequest,
+                        newsList = newsList,
                         promoList = promoList,
                         promoNotifEnabled = promoNotifEnabled,
                         onPromoNotifToggle = {
@@ -1410,7 +1496,10 @@ fun MainScreen(
                     )
                 }
                 composable(Screen.Tools.route) {
-                    ToolsScreen(navController)
+                    ToolsScreen(
+                        navController = navController,
+                        onUserEngaged = { hasEngagedTools = true }
+                    )
                 }
                 composable(Screen.Promocoes.route) {
                     PromocoesFeedScreen(
@@ -2172,6 +2261,8 @@ fun HomeScreen(
     backupManager: GoogleDriveBackupManager,
     safeShowAd: (() -> Unit) -> Unit,
     onOpenPdf: (String?) -> Unit,
+    openCustomizeRequest: Int = 0,
+    newsList: List<HomeNewsItem> = emptyList(),
     promoList: List<com.jack.meuholerite.model.Promocao> = emptyList(),
     promoNotifEnabled: Boolean = true,
     onPromoNotifToggle: (Boolean) -> Unit = {}
@@ -2188,19 +2279,97 @@ fun HomeScreen(
     var isGeneratingAi by remember { mutableStateOf(false) }
     var aiPrediction by remember { mutableStateOf<String?>(null) }
     var isGeneratingPrediction by remember { mutableStateOf(false) }
+    var aiTips by remember { mutableStateOf<String?>(null) }
+    var isGeneratingTips by remember { mutableStateOf(false) }
+    var aiDeductions by remember { mutableStateOf<String?>(null) }
+    var isGeneratingDeductions by remember { mutableStateOf(false) }
+    var aiGoal by remember { mutableStateOf<String?>(null) }
+    var isGeneratingGoal by remember { mutableStateOf(false) }
+    var aiCustomAnswer by remember { mutableStateOf<String?>(null) }
+    var aiCustomPrompt by remember { mutableStateOf("") }
+    var isGeneratingCustomPrompt by remember { mutableStateOf(false) }
     var showAiAssistantModal by remember { mutableStateOf(false) }
     var shouldShowAdAfterAiModal by remember { mutableStateOf(false) }
     var showHomeCustomization by remember {
         mutableStateOf(appPrefs.getBoolean("pending_open_home_customize", false))
     }
+    var lastHandledCustomizeRequest by remember { mutableIntStateOf(0) }
     val homeLayout by HomeLayoutStore.layoutFlow(context).collectAsState(initial = HomeLayoutStore.defaultLayout())
     val orderedHomeSections = remember(homeLayout.sectionOrder) {
         resolveHomeSections(homeLayout.sectionOrder)
     }
 
+    var activeRaffleForCard by remember { mutableStateOf<RaffleCampaign?>(null) }
+    var latestWinnerForCard by remember { mutableStateOf<RaffleCampaign?>(null) }
+
+    DisposableEffect(Unit) {
+        val listenerActive = SorteiosRepository.observeActiveRaffle { activeRaffleForCard = it }
+        val listenerHistory = SorteiosRepository.observeRaffleHistory { history ->
+            latestWinnerForCard = history.firstOrNull { it.winnerName.isNotBlank() }
+        }
+        onDispose {
+            listenerActive.remove()
+            listenerHistory.remove()
+        }
+    }
+
+    var tickerIndex by remember { mutableStateOf(0) }
+    val tickerMessages = remember(activeRaffleForCard, latestWinnerForCard) {
+        val list = mutableListOf<String>()
+        activeRaffleForCard?.let { raffle ->
+            list.add("Sorteio ativo: ${raffle.title}")
+            if (raffle.prizeTitle.isNotBlank()) {
+                val prizeFormatted = if (raffle.prizeValue > 0.0) "${raffle.prizeTitle} (R$ %.2f)".format(raffle.prizeValue).replace(".", ",") else raffle.prizeTitle
+                list.add("Concorra a: $prizeFormatted")
+            }
+            if (raffle.isNumberBased) {
+                list.add("Ganhe números da sorte assistindo anúncios!")
+            } else if (raffle.tasks.isNotEmpty()) {
+                list.add("Complete as ${raffle.tasks.size} tarefas para concorrer!")
+            }
+            if (raffle.regulation.isNotBlank()) {
+                list.add("Regulamento: ${raffle.regulation}")
+            }
+        }
+        latestWinnerForCard?.let { winner ->
+            list.add("Último ganhador: ${winner.winnerName}")
+            if (winner.winnerPrize.isNotBlank()) {
+                list.add("Prêmio entregue: ${winner.winnerPrize}")
+            }
+            if (winner.winningNumber.isNotBlank()) {
+                list.add("Número sorteado anterior: ${winner.winningNumber}")
+            }
+        }
+        if (list.isEmpty()) {
+            list.add("Acompanhe prêmios, tarefas e ganhadores anteriores.")
+        }
+        list
+    }
+
+    LaunchedEffect(tickerMessages) {
+        if (tickerMessages.size > 1) {
+            while (true) {
+                kotlinx.coroutines.delay(4000)
+                tickerIndex = (tickerIndex + 1) % tickerMessages.size
+            }
+        } else {
+            tickerIndex = 0
+        }
+    }
+
     LaunchedEffect(showHomeCustomization) {
         if (showHomeCustomization && appPrefs.getBoolean("pending_open_home_customize", false)) {
             appPrefs.edit().putBoolean("pending_open_home_customize", false).apply()
+        }
+    }
+
+    LaunchedEffect(openCustomizeRequest) {
+        if (openCustomizeRequest > 0 && openCustomizeRequest != lastHandledCustomizeRequest) {
+            lastHandledCustomizeRequest = openCustomizeRequest
+            showHomeCustomization = true
+            if (appPrefs.getBoolean("pending_open_home_customize", false)) {
+                appPrefs.edit().putBoolean("pending_open_home_customize", false).apply()
+            }
         }
     }
 
@@ -2232,7 +2401,8 @@ fun HomeScreen(
     val marketMotion by rememberEntranceMotion(600)
     val summaryMotion by rememberEntranceMotion(680)
     val marketDataManager = remember { BackupManager(context) }
-    var topRankingCard by remember { mutableStateOf<SalaryRanking?>(null) }
+    var topRankingCards by remember { mutableStateOf<List<SalaryRanking>>(emptyList()) }
+    var topRankingIndex by remember { mutableIntStateOf(0) }
     var marketLoading by remember { mutableStateOf(false) }
 
     val jaRecebeuMesAtual = remember(selectedRecibo?.periodo) {
@@ -2376,13 +2546,29 @@ fun HomeScreen(
         marketLoading = true
         marketDataManager.getTopSalaries()
             .onSuccess { rankingList ->
-                topRankingCard = rankingList.maxByOrNull { it.maxReportedSalary }
+                topRankingCards = rankingList
+                    .sortedByDescending { it.maxReportedSalary }
+                    .take(10)
+                topRankingIndex = 0
             }
             .onFailure {
-                topRankingCard = null
+                topRankingCards = emptyList()
             }
         marketLoading = false
     }
+
+    LaunchedEffect(topRankingCards) {
+        if (topRankingCards.size > 1) {
+            while (true) {
+                kotlinx.coroutines.delay(3600)
+                topRankingIndex = (topRankingIndex + 1) % topRankingCards.size
+            }
+        } else {
+            topRankingIndex = 0
+        }
+    }
+
+    val activeRankingCard = topRankingCards.getOrNull(topRankingIndex)
 
     fun generateInsight() {
         if (selectedRecibo == null && selectedEspelho == null) return
@@ -2478,20 +2664,132 @@ fun HomeScreen(
         }
     }
 
+    fun generateFinancialTips() {
+        if (selectedRecibo == null) return
+        shouldShowAdAfterAiModal = true
+        scope.launch {
+            isGeneratingTips = true
+            val contextData = """
+                Aja como um consultor financeiro brasileiro. O usuário tem um salário líquido de R$ ${selectedRecibo?.valorLiquido ?: ""}.
+                Dê 3 dicas curtas e práticas de economia e educação financeira (ex: método 50-30-20) adequadas para a renda dele.
+            """.trimIndent()
+            aiTips = aiParser.getAiAnalysis(contextData)
+            isGeneratingTips = false
+        }
+    }
+
+    fun explainDeductions() {
+        if (selectedRecibo == null) return
+        shouldShowAdAfterAiModal = true
+        scope.launch {
+            isGeneratingDeductions = true
+            val contextData = """
+                Aja como um especialista em RH. O usuário teve um total de descontos de R$ ${selectedRecibo?.totalDescontos ?: ""} no seu salário de R$ ${selectedRecibo?.valorLiquido ?: ""}.
+                A lista de descontos é:
+                ${selectedRecibo?.descontos?.joinToString("\n") { "- ${it.descricao}: R$ ${it.valor}" } ?: "Não disponível"}
+                
+                Explique de forma simples para onde está indo o dinheiro (INSS, IRRF, etc.) e se essa proporção de descontos é comum. Seja amigável e breve.
+            """.trimIndent()
+            aiDeductions = aiParser.getAiAnalysis(contextData)
+            isGeneratingDeductions = false
+        }
+    }
+
+    fun generateGoalSuggestion() {
+        if (selectedRecibo == null) return
+        shouldShowAdAfterAiModal = true
+        scope.launch {
+            isGeneratingGoal = true
+            val contextData = """
+                Aja como um mentor financeiro. O usuário ganha líquido R$ ${selectedRecibo?.valorLiquido ?: ""}.
+                Sugira uma meta financeira (ex: Reserva de Emergência) e calcule um valor ideal para ele. Diga quanto ele deve guardar por mês para atingir essa meta em 6 ou 12 meses.
+            """.trimIndent()
+            aiGoal = aiParser.getAiAnalysis(contextData)
+            isGeneratingGoal = false
+        }
+    }
+
+    fun submitCustomAiPrompt() {
+        val prompt = aiCustomPrompt.trim()
+        if (prompt.isBlank()) return
+
+        shouldShowAdAfterAiModal = true
+        scope.launch {
+            isGeneratingCustomPrompt = true
+            val reciboContext = if (selectedRecibo != null) {
+                """
+                Holerite atual:
+                - Período: ${selectedRecibo.periodo}
+                - Cargo: ${selectedRecibo.cargo}
+                - Líquido: R$ ${selectedRecibo.valorLiquido}
+                - Proventos: R$ ${selectedRecibo.totalProventos}
+                - Descontos: R$ ${selectedRecibo.totalDescontos}
+                """.trimIndent()
+            } else {
+                "Holerite atual não disponível."
+            }
+            val pontoContext = if (selectedEspelho != null) {
+                """
+                Ponto atual:
+                - Período: ${selectedEspelho.periodo}
+                - Horas trabalhadas: $worked
+                - Horas extras: $extra
+                - Adicional noturno: $night
+                - Faltas identificadas: $absCount
+                """.trimIndent()
+            } else {
+                "Ponto atual não disponível."
+            }
+
+            val customContext = """
+                Responda de forma clara, prática e amigável em Português do Brasil.
+                Se a pergunta envolver leis trabalhistas, deixe claro quando a resposta for orientação geral e recomende confirmar com RH, sindicato ou advogado em casos específicos.
+
+                Contexto do usuário:
+                $reciboContext
+
+                $pontoContext
+
+                Pergunta do usuário:
+                $prompt
+            """.trimIndent()
+
+            aiCustomAnswer = aiParser.getAiAnalysis(customContext)
+            isGeneratingCustomPrompt = false
+        }
+    }
+
     val displayAiText = when {
+        aiCustomAnswer != null -> aiCustomAnswer!!
         aiPrediction != null -> aiPrediction!!
         aiInsight != null -> aiInsight!!
+        aiTips != null -> aiTips!!
+        aiDeductions != null -> aiDeductions!!
+        aiGoal != null -> aiGoal!!
+        isGeneratingCustomPrompt -> "Pensando na sua pergunta..."
         isGeneratingAi -> "Analisando seus dados..."
         isGeneratingPrediction -> "Calculando previsão de pagamento..."
-        else -> "Toque para gerar uma análise inteligente dos seus rendimentos e jornada."
+        isGeneratingTips -> "Gerando dicas de economia..."
+        isGeneratingDeductions -> "Explicando os descontos..."
+        isGeneratingGoal -> "Calculando meta financeira..."
+        else -> "Escreva sua pergunta ou use um dos botões abaixo para que a IA analise seus dados de forma inteligente."
     }
 
     fun dismissAiAssistantModal() {
         showAiAssistantModal = false
         aiInsight = null
         aiPrediction = null
+        aiTips = null
+        aiDeductions = null
+        aiGoal = null
+        aiCustomAnswer = null
+        aiCustomPrompt = ""
         isGeneratingAi = false
         isGeneratingPrediction = false
+        isGeneratingTips = false
+        isGeneratingDeductions = false
+        isGeneratingGoal = false
+        isGeneratingCustomPrompt = false
 
         if (shouldShowAdAfterAiModal) {
             shouldShowAdAfterAiModal = false
@@ -2524,11 +2822,29 @@ fun HomeScreen(
             text = displayAiText,
             isGeneratingAi = isGeneratingAi,
             isGeneratingPrediction = isGeneratingPrediction,
-            canRefreshInsight = aiInsight != null,
+            isGeneratingTips = isGeneratingTips,
+            isGeneratingDeductions = isGeneratingDeductions,
+            isGeneratingGoal = isGeneratingGoal,
+            isGeneratingCustomPrompt = isGeneratingCustomPrompt,
+            customPrompt = aiCustomPrompt,
+            canRefreshInsight = aiInsight != null || aiPrediction != null || aiTips != null || aiDeductions != null || aiGoal != null || aiCustomAnswer != null,
             onDismiss = { dismissAiAssistantModal() },
-            onRefreshInsight = { generateInsight() },
+            onClearState = {
+                aiInsight = null
+                aiPrediction = null
+                aiTips = null
+                aiDeductions = null
+                aiGoal = null
+                aiCustomAnswer = null
+                aiCustomPrompt = ""
+            },
+            onCustomPromptChange = { aiCustomPrompt = it },
+            onSubmitCustomPrompt = { submitCustomAiPrompt() },
             onGenerateInsight = { generateInsight() },
-            onGeneratePrediction = { generatePaymentPrediction() }
+            onGeneratePrediction = { generatePaymentPrediction() },
+            onGenerateTips = { generateFinancialTips() },
+            onExplainDeductions = { explainDeductions() },
+            onGenerateGoal = { generateGoalSuggestion() }
         )
     }
 
@@ -2560,8 +2876,9 @@ fun HomeScreen(
 
                     when (section) {
                         HomeSection.SMART_ALERTS -> smartAlerts.isNotEmpty()
+                        HomeSection.NEWS -> newsList.isNotEmpty()
                         HomeSection.PROMOS -> promoList.isNotEmpty()
-                        HomeSection.SALARY_RANKING -> selectedRecibo != null || topRankingCard != null || marketLoading
+                        HomeSection.SALARY_RANKING -> selectedRecibo != null || activeRankingCard != null || marketLoading
                         else -> true
                     }
                 }
@@ -2611,6 +2928,21 @@ fun HomeScreen(
                             )
                         }
 
+                        HomeSection.NEWS -> if (newsList.isNotEmpty()) item {
+                            HomeNewsLiveCard(
+                                news = newsList,
+                                onClick = { item ->
+                                    if (item.link.isNotBlank()) {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
+                                        context.startActivity(intent)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(promoMotion)
+                            )
+                        }
+
                         HomeSection.PROMOS -> if (promoList.isNotEmpty()) item {
                             PromocoesMiniCard(
                                 promocoes = promoList,
@@ -2644,7 +2976,7 @@ fun HomeScreen(
                                                 )
                                             )
                                         )
-                                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                                        .padding(horizontal = 18.dp, vertical = 22.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
@@ -2659,22 +2991,53 @@ fun HomeScreen(
                                             modifier = Modifier.padding(12.dp)
                                         )
                                     }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = stringResource(R.string.raffles_button).uppercase(Locale.getDefault()),
-                                            color = Color.White.copy(alpha = 0.82f),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Black,
-                                            letterSpacing = 1.2.sp
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            text = "Acompanhe prêmios, tarefas, regulamento e ganhadores anteriores.",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            lineHeight = 19.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .heightIn(min = 80.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.raffles_button).uppercase(Locale.getDefault()),
+                                                color = Color.White.copy(alpha = 0.82f),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Black,
+                                                letterSpacing = 1.2.sp
+                                            )
+                                            if (activeRaffleForCard != null) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = Color(0xFF1E8E5A),
+                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "AO VIVO",
+                                                        color = Color.White,
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Spacer(Modifier.height(6.dp))
+                                        Crossfade(
+                                            targetState = tickerMessages[tickerIndex.coerceIn(0, tickerMessages.lastIndex)],
+                                            animationSpec = tween(500)
+                                        ) { text ->
+                                            Text(
+                                                text = text,
+                                                color = Color.White,
+                                                fontSize = 15.sp,
+                                                lineHeight = 21.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
                                     Icon(
                                         Icons.Filled.ChevronRight,
@@ -2712,7 +3075,7 @@ fun HomeScreen(
                             )
                         }
 
-                        HomeSection.SALARY_RANKING -> if (selectedRecibo != null || topRankingCard != null || marketLoading) item {
+                        HomeSection.SALARY_RANKING -> if (selectedRecibo != null || activeRankingCard != null || marketLoading) item {
                             Column(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
@@ -2720,7 +3083,9 @@ fun HomeScreen(
                             ) {
                                 SectionHeader("Ranking de salários")
                                 SalaryRankingHomeCard(
-                                    ranking = topRankingCard,
+                                    ranking = activeRankingCard,
+                                    currentIndex = topRankingIndex,
+                                    totalItems = topRankingCards.size,
                                     isLoading = marketLoading,
                                     onClick = {
                                         context.startActivity(Intent(context, SalaryRankingActivity::class.java))
@@ -2745,9 +3110,19 @@ fun HomeScreen(
                                             context.startActivity(Intent(context, FinanceActivity::class.java))
                                         }
                                     )
-                                    SectionHeader("Resumo mensal automático")
-                                    MonthlySummaryCard(summary = monthlySummary)
                                 }
+                            }
+                        }
+
+                        HomeSection.MONTHLY_SUMMARY -> item {
+                            Column(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .entranceMotion(financeMotion),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                SectionHeader("Resumo mensal automático")
+                                MonthlySummaryCard(summary = monthlySummary)
                             }
                         }
 
@@ -3820,98 +4195,393 @@ private fun AiAssistantDialog(
     text: String,
     isGeneratingAi: Boolean,
     isGeneratingPrediction: Boolean,
+    isGeneratingTips: Boolean,
+    isGeneratingDeductions: Boolean,
+    isGeneratingGoal: Boolean,
+    isGeneratingCustomPrompt: Boolean,
+    customPrompt: String,
     canRefreshInsight: Boolean,
     onDismiss: () -> Unit,
-    onRefreshInsight: () -> Unit,
+    onClearState: () -> Unit,
+    onCustomPromptChange: (String) -> Unit,
+    onSubmitCustomPrompt: () -> Unit,
     onGenerateInsight: () -> Unit,
-    onGeneratePrediction: () -> Unit
+    onGeneratePrediction: () -> Unit,
+    onGenerateTips: () -> Unit,
+    onExplainDeductions: () -> Unit,
+    onGenerateGoal: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val isGenerating = isGeneratingAi || isGeneratingPrediction || isGeneratingTips || isGeneratingDeductions || isGeneratingGoal || isGeneratingCustomPrompt
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            shape = RoundedCornerShape(26.dp),
+            shape = RoundedCornerShape(0.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
             modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .wrapContentHeight()
+                .fillMaxSize()
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .padding(18.dp)
-                    .verticalScroll(scrollState)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f),
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        )
+                    )
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("ASSISTENTE IA", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.weight(1f))
-                    if (canRefreshInsight) {
-                        IconButton(onClick = onRefreshInsight, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(18.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        "ASSISTENTE IA",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        letterSpacing = 0.9.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(14.dp))
+
+                            Text(
+                                text = "Converse com seus dados do holerite",
+                                fontSize = 28.sp,
+                                lineHeight = 32.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Peça análises, previsões, dicas de economia, explicação de descontos e metas financeiras em um só lugar.",
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                onClick = onDismiss,
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                tonalElevation = 2.dp
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(42.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Fechar")
+                                }
+                            }
+                            if (canRefreshInsight) {
+                                Surface(
+                                    onClick = onClearState,
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                    tonalElevation = 2.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Text("Nova leitura", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                         }
                     }
-                }
 
-                Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(18.dp))
 
-                AnimatedContent(targetState = text, label = "ai_modal_text") { currentText ->
-                    Text(
-                        text = currentText,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (isGeneratingAi || isGeneratingPrediction) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .height(3.dp)
-                    )
-                } else {
-                    Spacer(Modifier.height(14.dp))
-
-                    Button(
-                        onClick = onGenerateInsight,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(10.dp)
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        tonalElevation = 3.dp,
+                        shadowElevation = 6.dp,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
                     ) {
-                        Icon(Icons.Filled.AutoAwesome, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Gerar Análise", fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Text(
+                                text = "Pergunte do seu jeito",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "Exemplos: como economizar mais, como reduzir atrasos, como evitar faltas ou dúvidas sobre leis trabalhistas.",
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = customPrompt,
+                                onValueChange = onCustomPromptChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 3,
+                                maxLines = 5,
+                                shape = RoundedCornerShape(20.dp),
+                                placeholder = {
+                                    Text("Digite sua pergunta aqui...")
+                                }
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = onSubmitCustomPrompt,
+                                enabled = customPrompt.isNotBlank() && !isGenerating,
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(vertical = 14.dp)
+                            ) {
+                                Icon(Icons.Outlined.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Perguntar para a IA", fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(18.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        tonalElevation = 3.dp,
+                        shadowElevation = 8.dp,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.ChatBubbleOutline,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    "Resposta da IA",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            AnimatedContent(targetState = text, label = "ai_modal_text") { currentText ->
+                                Text(
+                                    text = currentText,
+                                    fontSize = 15.sp,
+                                    lineHeight = 22.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            if (isGenerating) {
+                                Spacer(Modifier.height(14.dp))
+                                LinearProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(5.dp)
+                                        .clip(CircleShape),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Text(
+                        text = if (canRefreshInsight) "Escolha uma nova ação" else "O que a IA pode fazer agora",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    AiActionButton(
+                        title = "Análise geral do holerite",
+                        subtitle = "Resumo rápido do que mais chama atenção no seu pagamento.",
+                        icon = Icons.Filled.AutoAwesome,
+                        onClick = onGenerateInsight,
+                        isPrimary = true
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AiActionButton(
+                        title = "Prever próximo pagamento",
+                        subtitle = "Estimativa com base nos seus dados atuais.",
+                        icon = Icons.Outlined.Analytics,
+                        onClick = onGeneratePrediction
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AiActionButton(
+                        title = "Dicas de economia",
+                        subtitle = "Sugestões práticas para melhorar sua organização financeira.",
+                        icon = Icons.Outlined.AttachMoney,
+                        onClick = onGenerateTips
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AiActionButton(
+                        title = "Explicar meus descontos",
+                        subtitle = "Leitura mais clara do que saiu no seu holerite.",
+                        icon = Icons.Outlined.Receipt,
+                        onClick = onExplainDeductions
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AiActionButton(
+                        title = "Sugerir meta financeira",
+                        subtitle = "Cria uma meta simples baseada no seu momento atual.",
+                        icon = Icons.Outlined.Star,
+                        onClick = onGenerateGoal
+                    )
+
+                    Spacer(Modifier.height(18.dp))
 
                     OutlinedButton(
-                        onClick = onGeneratePrediction,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(10.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                    ) {
-                        Icon(Icons.Outlined.Analytics, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Previsão de Próximo Pagamento", fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    TextButton(
                         onClick = onDismiss,
-                        modifier = Modifier.align(Alignment.End)
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+                        contentPadding = PaddingValues(vertical = 14.dp)
                     ) {
-                        Text("Fechar", fontWeight = FontWeight.Bold)
+                        Text("Fechar assistente", fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AiActionButton(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    isPrimary: Boolean = false
+) {
+    val containerColor = if (isPrimary) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val contentColor = if (isPrimary) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(22.dp),
+        color = containerColor,
+        tonalElevation = if (isPrimary) 0.dp else 2.dp,
+        shadowElevation = if (isPrimary) 0.dp else 4.dp,
+        border = if (isPrimary) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = if (isPrimary) {
+                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                }
+            ) {
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = if (isPrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
+                    fontWeight = FontWeight.Black,
+                    color = contentColor
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = if (isPrimary) {
+                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+
+            Spacer(Modifier.width(10.dp))
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = if (isPrimary) {
+                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -5258,30 +5928,235 @@ fun SmartAlertCard(alert: SmartAlert) {
 @Composable
 private fun SalaryRankingHomeCard(
     ranking: SalaryRanking?,
+    currentIndex: Int,
+    totalItems: Int,
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val highlightColor = Color(0xFF1F7BFF)
+    val softHighlight = Color(0xFF86B7FF)
+    val cardProgress = if (totalItems > 0) ((currentIndex + 1).toFloat() / totalItems.toFloat()).coerceIn(0f, 1f) else 0f
+
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(22.dp),
         color = Color.Transparent,
-        shadowElevation = 6.dp,
+        tonalElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .background(
-                    brush = Brush.verticalGradient(
+                    Brush.linearGradient(
                         listOf(
-                            Color(0xFF12253B),
-                            Color(0xFF1D3B5A),
-                            Color(0xFF2F5C85)
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.88f),
+                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f)
                         )
                     )
                 )
                 .padding(16.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "RANKING DE SALARIOS AO VIVO",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.1.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (ranking != null) "R$ ${ranking.maxReportedSalary.formatBrMoney()}" else "R$ 0,00",
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = highlightColor.copy(alpha = 0.12f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.EmojiEvents,
+                            contentDescription = null,
+                            tint = highlightColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = if (totalItems > 0) "${currentIndex + 1}/$totalItems" else "TOP 10",
+                            color = highlightColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = ranking?.cargo ?: "Abra o radar salarial para ver os maiores cargos",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = if (ranking != null) {
+                    ranking.empresa.ifBlank { "${ranking.empresasCount} empresas monitoradas" }
+                } else {
+                    "Toque para abrir a lista completa de cargos"
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MetricMini(
+                    title = "MEDIANA",
+                    value = if (ranking != null) "R$ ${ranking.medianaSalary.formatBrMoney()}" else "R$ 0,00",
+                    valueColor = Color(0xFF34C759),
+                    modifier = Modifier.weight(1f)
+                )
+                MetricMini(
+                    title = "EMPRESAS",
+                    value = if (ranking != null) ranking.empresasCount.toString() else "0",
+                    valueColor = highlightColor,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            if (isLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    color = highlightColor,
+                    trackColor = softHighlight.copy(alpha = 0.25f)
+                )
+            } else {
+                LinearProgressIndicator(
+                    progress = { cardProgress },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    color = highlightColor,
+                    trackColor = softHighlight.copy(alpha = 0.22f)
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (ranking != null) "${ranking.count} relatos usados" else "Sem dados",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (totalItems > 1) "Alternando automaticamente" else "Radar salarial",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = if (ranking != null) "Toque para abrir o ranking completo" else "Toque para explorar cargos e faixas",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeNewsLiveCard(
+    news: List<HomeNewsItem>,
+    onClick: (HomeNewsItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val items = remember(news) { news.sortedByDescending { it.timestamp }.take(10) }
+    var activeIndex by remember { mutableIntStateOf(0) }
+    val activeNews = items.getOrNull(activeIndex) ?: return
+
+    LaunchedEffect(items) {
+        if (items.size > 1) {
+            while (true) {
+                kotlinx.coroutines.delay(3600)
+                activeIndex = (activeIndex + 1) % items.size
+            }
+        } else {
+            activeIndex = 0
+        }
+    }
+
+    Surface(
+        onClick = { onClick(activeNews) },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.Transparent,
+        shadowElevation = 6.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            Color(0xFF13253B),
+                            Color(0xFF204766),
+                            Color(0xFF2F7D72)
+                        )
+                    )
+                )
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            if (activeNews.imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = activeNews.imageUrl,
+                    contentDescription = activeNews.title,
+                    modifier = Modifier
+                        .size(92.dp)
+                        .clip(RoundedCornerShape(18.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White.copy(alpha = 0.14f),
+                    modifier = Modifier.size(92.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Outlined.Feed,
+                            contentDescription = null,
+                            tint = Color(0xFF93FFF0),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 92.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -5289,149 +6164,55 @@ private fun SalaryRankingHomeCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(999.dp),
-                        color = Color.White.copy(alpha = 0.12f)
+                        color = Color.White.copy(alpha = 0.14f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Outlined.EmojiEvents, null, tint = Color(0xFFFFD166), modifier = Modifier.size(15.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Outlined.Feed, contentDescription = null, tint = Color(0xFF93FFF0), modifier = Modifier.size(14.dp))
                             Text(
-                                "RANKING DE SALARIOS",
-                                color = Color(0xFFFFD166),
+                                text = activeNews.category.ifBlank { "NOTÍCIAS" }.uppercase(Locale.getDefault()),
+                                color = Color(0xFF93FFF0),
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.8.sp
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.12f)
-                    ) {
-                        Box(
-                            modifier = Modifier.size(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.AutoMirrored.Outlined.TrendingUp, null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
-
-                Text(
-                    text = if (ranking != null) "Compare cargos em cards expansivos e veja quem lidera o radar salarial agora." else "Abra o radar salarial para explorar cargos, faixas e medias reportadas.",
-                    color = Color.White,
-                    fontSize = 21.sp,
-                    lineHeight = 26.sp,
-                    fontWeight = FontWeight.Black
-                )
-
-                Text(
-                    text = if (ranking != null) "Cargo em destaque: ${ranking.cargo}" else "Toque para abrir a lista completa de cargos",
-                    color = Color.White.copy(alpha = 0.74f),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                )
-
-                if (isLoading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().height(4.dp),
-                        color = Color.White,
-                        trackColor = Color.White.copy(alpha = 0.2f)
+                    Text(
+                        text = "${activeIndex + 1}/${items.size}",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        "Maior salario reportado",
-                                        color = Color(0xFFFFD166),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Black,
-                                        letterSpacing = 0.9.sp
-                                    )
-                                    Spacer(Modifier.height(6.dp))
-                                    Text(
-                                        if (ranking != null) "R$ ${ranking.maxReportedSalary.formatBrMoney()}" else "Sem dados",
-                                        color = Color.White,
-                                        fontSize = 30.sp,
-                                        lineHeight = 34.sp,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = Color(0xFFFFD166).copy(alpha = 0.14f)
-                                ) {
-                                    Text(
-                                        text = if (ranking != null) "${ranking.count} relatos" else "Radar",
-                                        color = Color(0xFFFFD166),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                HomeRankingMetric(
-                                    label = "Cargo",
-                                    value = ranking?.cargo ?: "Sem dados",
-                                    modifier = Modifier.weight(1f)
-                                )
-                                HomeRankingMetric(
-                                    label = "Empresas",
-                                    value = if (ranking != null) ranking.empresasCount.toString() else "-",
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    HomeRankingPill(Icons.Outlined.QueryStats, "Lista por cargos")
-                    HomeRankingPill(Icons.Outlined.Business, "Faixas reais")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = activeNews.title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = activeNews.summary,
+                        color = Color.White.copy(alpha = 0.78f),
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                "Toque para abrir o ranking",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "Abra a lista e expanda qualquer cargo para ver os detalhes",
-                                color = Color.White.copy(alpha = 0.72f),
-                                fontSize = 11.sp
-                            )
-                        }
-                        Icon(Icons.Outlined.ExpandMore, null, tint = Color(0xFFFFD166))
-                    }
-                }
+                Text(
+                    text = if (activeNews.link.isNotBlank()) "Toque para abrir a notícia" else "Atualização ao vivo do app",
+                    color = Color.White.copy(alpha = 0.68f),
+                    fontSize = 11.sp
+                )
             }
         }
     }

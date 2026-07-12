@@ -11,7 +11,7 @@
         android:background="@drawable/bg_native_ad_regular"
         android:descendantFocusability="blocksDescendants"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="10dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -48,33 +48,33 @@
             android:id="@+id/ad_headline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:maxLines="2"
             android:textColor="#1E2430"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/ad_body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:maxLines="4"
+            android:layout_marginTop="4dp"
+            android:maxLines="3"
             android:textColor="#5B6472"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
         <com.google.android.gms.ads.nativead.MediaView
             android:id="@+id/ad_media"
             android:layout_width="match_parent"
-            android:layout_height="156dp"
-            android:layout_marginTop="14dp"
+            android:layout_height="110dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/bg_native_ad_media" />
 
         <ImageView
             android:id="@+id/ad_image"
             android:layout_width="match_parent"
-            android:layout_height="156dp"
-            android:layout_marginTop="14dp"
+            android:layout_height="110dp"
+            android:layout_marginTop="8dp"
             android:adjustViewBounds="true"
             android:background="@drawable/bg_native_ad_media"
             android:scaleType="centerCrop"
@@ -83,7 +83,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -96,10 +96,10 @@
 
                 <ImageView
                     android:id="@+id/ad_app_icon"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:background="@drawable/bg_native_ad_media"
-                    android:padding="4dp"
+                    android:padding="3dp"
                     android:scaleType="centerCrop" />
 
                 <Space
@@ -134,11 +134,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_native_ad_cta"
-                android:paddingHorizontal="22dp"
-                android:paddingVertical="11dp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
                 android:textColor="@android:color/white"
                 android:textAlignment="center"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

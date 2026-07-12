@@ -26,9 +26,9 @@ object AppThemePalettes {
         lightBackground = Color(0xFFF4F8FF),
         lightSurface = Color(0xFFFFFFFF),
         lightSurfaceVariant = Color(0xFFE9F1FF),
-        darkBackground = Color(0xFF0B1220),
-        darkSurface = Color(0xFF131C2E),
-        darkSurfaceVariant = Color(0xFF1B2740)
+        darkBackground = Color(0xFF121B2B),
+        darkSurface = Color(0xFF1B263B),
+        darkSurfaceVariant = Color(0xFF24324F)
     )
     val Green = AppThemePalette(
         key = "green",
@@ -39,9 +39,9 @@ object AppThemePalettes {
         lightBackground = Color(0xFFF3FBF6),
         lightSurface = Color(0xFFFFFFFF),
         lightSurfaceVariant = Color(0xFFE3F4E9),
-        darkBackground = Color(0xFF081510),
-        darkSurface = Color(0xFF102019),
-        darkSurfaceVariant = Color(0xFF183126)
+        darkBackground = Color(0xFF0D1F18),
+        darkSurface = Color(0xFF162D24),
+        darkSurfaceVariant = Color(0xFF224235)
     )
     val Orange = AppThemePalette(
         key = "orange",
@@ -52,9 +52,9 @@ object AppThemePalettes {
         lightBackground = Color(0xFFFFF7F1),
         lightSurface = Color(0xFFFFFFFF),
         lightSurfaceVariant = Color(0xFFFFEBDD),
-        darkBackground = Color(0xFF18110B),
-        darkSurface = Color(0xFF241911),
-        darkSurfaceVariant = Color(0xFF342317)
+        darkBackground = Color(0xFF1F1712),
+        darkSurface = Color(0xFF2C211A),
+        darkSurfaceVariant = Color(0xFF3D2F25)
     )
     val Rose = AppThemePalette(
         key = "rose",
@@ -65,9 +65,9 @@ object AppThemePalettes {
         lightBackground = Color(0xFFFFF5F8),
         lightSurface = Color(0xFFFFFFFF),
         lightSurfaceVariant = Color(0xFFFFE7EE),
-        darkBackground = Color(0xFF190D13),
-        darkSurface = Color(0xFF24131B),
-        darkSurfaceVariant = Color(0xFF331A26)
+        darkBackground = Color(0xFF22131C),
+        darkSurface = Color(0xFF2E1B27),
+        darkSurfaceVariant = Color(0xFF402737)
     )
 
     val all = listOf(Blue, Green, Orange, Rose)

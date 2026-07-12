@@ -896,16 +896,109 @@ fun IosWidgetFinanceHighlightCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (isPressed) 0.98f else 1f, label = "scale")
-    
+
     val totalSpent = totalExpenses + totalDebts
     val income = (remaining + totalSpent).coerceAtLeast(0.0)
-    val progress = if (income > 0) (totalSpent / income).coerceIn(0.0, 1.0).toFloat() else 0f
+    val commitmentRatio = if (income > 0) (totalSpent / income).coerceIn(0.0, 1.0).toFloat() else 0f
+    val expenseRatio = if (income > 0) (totalExpenses / income).coerceIn(0.0, 1.0).toFloat() else 0f
+    val debtRatio = if (income > 0) (totalDebts / income).coerceIn(0.0, 1.0).toFloat() else 0f
+    val reserveRatio = if (income > 0) (remaining / income).coerceIn(-1.0, 1.0).toFloat() else 0f
 
     val color = when {
         remaining < 0 -> Color(0xFFFF3B30) // Crítico (Negativo)
-        progress < 0.5f -> Color(0xFF34C759) // Saudável (Até 50%)
-        progress < 0.8f -> Color(0xFFFF9500) // Alerta (50% a 80%)
+        commitmentRatio < 0.5f -> Color(0xFF34C759) // Saudável (Até 50%)
+        commitmentRatio < 0.8f -> Color(0xFFFF9500) // Alerta (50% a 80%)
         else -> Color(0xFFFF3B30) // Perigo (Acima de 80%)
+    }
+    val palette = remember(color) {
+        when (color) {
+            Color(0xFF34C759) -> listOf(
+                Color(0xFFE7F8EE),
+                Color(0xFFD2F1E0),
+                Color(0xFFF7FCF9)
+            )
+            Color(0xFFFF9500) -> listOf(
+                Color(0xFFFFF1DD),
+                Color(0xFFFFE1B8),
+                Color(0xFFFFFAF2)
+            )
+            else -> listOf(
+                Color(0xFFFFE6E3),
+                Color(0xFFFFD0C8),
+                Color(0xFFFFF6F4)
+            )
+        }
+    }
+    val cardBorderColor = color.copy(alpha = 0.18f)
+    val softBadgeColor = color.copy(alpha = 0.12f)
+    val textPrimaryColor = Color(0xFF162033)
+    val textSecondaryColor = Color(0xFF5B6473)
+
+    data class FinanceLiveItem(
+        val label: String,
+        val value: String,
+        val subtitle: String,
+        val accent: Color,
+        val progress: Float,
+        val icon: ImageVector
+    )
+
+    val liveItems = remember(remaining, totalExpenses, totalDebts, income, commitmentRatio, expenseRatio, debtRatio, reserveRatio) {
+        buildList {
+            add(
+                FinanceLiveItem(
+                    label = "SALDO DO MÊS",
+                    value = "R$ ${remaining.formatBrMoney()}",
+                    subtitle = if (remaining >= 0) "Valor ainda livre depois das contas atuais." else "Seu mês já está projetado no negativo.",
+                    accent = if (remaining >= 0) Color(0xFF1FA463) else Color(0xFFD64545),
+                    progress = reserveRatio.coerceAtLeast(0f),
+                    icon = if (remaining >= 0) Icons.AutoMirrored.Outlined.TrendingUp else Icons.AutoMirrored.Outlined.TrendingDown
+                )
+            )
+            add(
+                FinanceLiveItem(
+                    label = "DESPESAS",
+                    value = "R$ ${totalExpenses.formatBrMoney()}",
+                    subtitle = "Saída total cadastrada em gastos fixos e variáveis.",
+                    accent = Color(0xFF0F6FFF),
+                    progress = expenseRatio,
+                    icon = Icons.Outlined.Payments
+                )
+            )
+            add(
+                FinanceLiveItem(
+                    label = "DÍVIDAS",
+                    value = "R$ ${totalDebts.formatBrMoney()}",
+                    subtitle = if (totalDebts > 0.0) "Parcelas mensais das dívidas em andamento." else "Nenhuma parcela mensal registrada agora.",
+                    accent = Color(0xFF5856D6),
+                    progress = debtRatio,
+                    icon = Icons.Outlined.AccountBalance
+                )
+            )
+            add(
+                FinanceLiveItem(
+                    label = "COMPROMETIMENTO",
+                    value = "${(commitmentRatio * 100).toInt()}%",
+                    subtitle = "Percentual do líquido tomado por gastos e parcelas.",
+                    accent = color,
+                    progress = commitmentRatio,
+                    icon = Icons.Outlined.PieChartOutline
+                )
+            )
+        }
+    }
+    var liveIndex by remember { mutableIntStateOf(0) }
+    val activeItem = liveItems.getOrElse(liveIndex % liveItems.size) { liveItems.first() }
+
+    LaunchedEffect(liveItems) {
+        if (liveItems.size > 1) {
+            while (true) {
+                kotlinx.coroutines.delay(3200)
+                liveIndex = (liveIndex + 1) % liveItems.size
+            }
+        } else {
+            liveIndex = 0
+        }
     }
 
     Surface(
@@ -914,83 +1007,172 @@ fun IosWidgetFinanceHighlightCard(
             .scale(scale)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, cardBorderColor),
         shadowElevation = 4.dp
     ) {
         Column(
             modifier = Modifier
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            color.copy(alpha = 0.9f),
-                            color
-                        )
+                    Brush.linearGradient(
+                        palette
                     )
                 )
-                .padding(24.dp)
+                .padding(18.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "GESTÃO FINANCEIRA",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        "Saldo Restante",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Box(
-                    modifier = Modifier.size(44.dp).background(Color.White.copy(alpha = 0.2f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.AccountBalanceWallet, null, tint = Color.White, modifier = Modifier.size(24.dp))
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            PrivacyValueText(
-                value = "R$ ${String.format("%.2f", remaining)}",
-                color = Color.White,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-1).sp
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    PrivacyValueText(
-                        value = "Despesas: R$ ${String.format("%.2f", totalExpenses)}",
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = textSecondaryColor,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.1.sp
                     )
-                    if (totalDebts > 0) {
-                        PrivacyValueText(
-                            value = "Parcelas Dívidas: R$ ${String.format("%.2f", totalDebts)}",
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        activeItem.label,
+                        color = textPrimaryColor,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = softBadgeColor
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(activeItem.icon, null, tint = activeItem.accent, modifier = Modifier.size(16.dp))
+                        Text(
+                            text = "${liveIndex + 1}/${liveItems.size}",
+                            color = activeItem.accent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
-                Icon(Icons.Outlined.ChevronRight, null, tint = Color.White.copy(alpha = 0.5f))
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            PrivacyValueText(
+                value = activeItem.value,
+                color = textPrimaryColor,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = activeItem.subtitle,
+                color = textSecondaryColor,
+                fontSize = 12.sp,
+                lineHeight = 17.sp
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FinanceHighlightMiniMetric(
+                    title = "DESPESAS",
+                    value = "R$ ${totalExpenses.formatBrMoney()}",
+                    valueColor = Color(0xFF0F6FFF),
+                    containerColor = Color.White.copy(alpha = 0.62f),
+                    modifier = Modifier.weight(1f)
+                )
+                FinanceHighlightMiniMetric(
+                    title = "DÍVIDAS",
+                    value = "R$ ${totalDebts.formatBrMoney()}",
+                    valueColor = Color(0xFF5856D6),
+                    containerColor = Color.White.copy(alpha = 0.62f),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            LinearProgressIndicator(
+                progress = { activeItem.progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(CircleShape),
+                color = activeItem.accent,
+                trackColor = activeItem.accent.copy(alpha = 0.16f)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    if (income > 0.0) "Base mensal: R$ ${income.formatBrMoney()}" else "Base mensal indisponível",
+                    color = textSecondaryColor,
+                    fontSize = 11.sp
+                )
+                Text(
+                    "Ao vivo",
+                    color = textSecondaryColor,
+                    fontSize = 11.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Toque para abrir sua gestão financeira completa",
+                fontSize = 11.sp,
+                color = textSecondaryColor,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FinanceHighlightMiniMetric(
+    title: String,
+    value: String,
+    valueColor: Color,
+    containerColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = containerColor,
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                title,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(4.dp))
+            PrivacyValueText(
+                value = value,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                color = valueColor
+            )
         }
     }
 }

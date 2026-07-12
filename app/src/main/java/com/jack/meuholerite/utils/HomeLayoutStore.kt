@@ -23,13 +23,14 @@ object HomeLayoutStore {
 
     val defaultSectionOrder = listOf(
         "status",
+        "sorteios",
         "net_pay",
         "promos",
-        "sorteios",
         "next_payment",
         "smart_alerts",
         "salary_ranking",
         "finance",
+        "monthly_summary",
         "quick_links",
         "ai_shortcut",
         "profile",
@@ -38,7 +39,6 @@ object HomeLayoutStore {
     val defaultHiddenSections = setOf(
         "next_payment",
         "smart_alerts",
-        "salary_ranking",
         "finance",
         "quick_links",
         "ai_shortcut",
@@ -69,7 +69,6 @@ object HomeLayoutStore {
                 ?.filter { it.isNotBlank() }
                 ?.toSet()
                 .orEmpty()
-
             HomeLayoutPrefs(
                 sectionOrder = if (normalizedOrder.isEmpty()) defaultSectionOrder else normalizedOrder,
                 hiddenSections = if (prefs[KEY_HIDDEN_SECTIONS] == null) defaultHiddenSections else hiddenSections,

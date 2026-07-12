@@ -123,6 +123,7 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
     var isRefreshing by remember { mutableStateOf(false) }
     var hasSyncedLocalStats by remember { mutableStateOf(false) }
     var expandedCargo by rememberSaveable { mutableStateOf<String?>(null) }
+    var hasEngagedRanking by rememberSaveable { mutableStateOf(false) }
 
     fun refreshData(syncLocalStats: Boolean = false) {
         scope.launch {
@@ -165,9 +166,7 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
         refreshData(syncLocalStats = true)
     }
 
-    val bannerInsertions = remember(ranking) {
-        generateRadarBannerInsertions(ranking.size)
-    }
+    // Anúncios inseridos a cada 5 itens diretamente no LazyColumn
 
     fun exitScreen() {
         if (activity == null) {
@@ -176,7 +175,7 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
         }
 
         scope.launch {
-            if (AdsDataStore.canShowIntervalAd(activity)) {
+            if (hasEngagedRanking && AdsDataStore.canShowIntervalAd(activity)) {
                 RewardedInterstitialAdManager.showAd(activity) {
                     scope.launch {
                         AdsDataStore.incrementAdsShown(activity)
@@ -212,7 +211,10 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { refreshData() }) {
+                    IconButton(onClick = {
+                        hasEngagedRanking = true
+                        refreshData()
+                    }) {
                         Icon(Icons.Outlined.QueryStats, contentDescription = "Atualizar", tint = RankingInk)
                     }
                 },
@@ -247,15 +249,6 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
                     contentPadding = PaddingValues(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (!adsRemovedState) {
-                        item {
-                            NativeInlineAd(
-                                adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                                size = NativeAdSize.Regular
-                            )
-                        }
-                    }
-
                     when {
                         isLoading -> {
                             item {
@@ -298,13 +291,18 @@ fun SalaryRankingScreen(onBack: () -> Unit) {
                                     item = item,
                                     expanded = expandedCargo == item.cargo,
                                     onToggle = {
+                                        hasEngagedRanking = true
                                         expandedCargo = if (expandedCargo == item.cargo) null else item.cargo
                                     }
                                 )
 
-                                if (!adsRemovedState && index in bannerInsertions) {
+                                val shouldShowAd = !adsRemovedState && (
+                                    index == 2 || (index > 2 && (index - 2) % 7 == 0)
+                                )
+
+                                if (shouldShowAd) {
                                     NativeInlineAd(
-                                        adUnitId = "ca-app-pub-7931782163570852/9626518665",
+                                        adUnitId = "ca-app-pub-7931782163570852/1526069738",
                                         size = NativeAdSize.Compact
                                     )
                                 }
@@ -724,28 +722,7 @@ private fun confidenceLabel(count: Int): String {
     }
 }
 
-private fun generateRadarBannerInsertions(count: Int): Set<Int> {
-    if (count < 4) return emptySet()
-
-    val desiredBanners = when {
-        count >= 10 -> 3
-        count >= 6 -> 2
-        else -> 1
-    }
-
-    val random = Random(count * 37 + 11)
-    val validPositions = (1 until count - 1).toMutableList()
-    val chosenPositions = mutableSetOf<Int>()
-
-    while (validPositions.isNotEmpty() && chosenPositions.size < desiredBanners) {
-        val pickedIndex = random.nextInt(validPositions.size)
-        val position = validPositions.removeAt(pickedIndex)
-        chosenPositions += position
-        validPositions.removeAll { candidate -> kotlin.math.abs(candidate - position) <= 1 }
-    }
-
-    return chosenPositions
-}
+// Função generateRadarBannerInsertions removida, pois os anúncios agora são a cada 5 itens
 
 private fun salaryRangeLabel(min: Double, max: Double): String {
     if (min <= 0.0 && max <= 0.0) return "R$ 0"

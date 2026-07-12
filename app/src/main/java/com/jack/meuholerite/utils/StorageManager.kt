@@ -59,7 +59,7 @@ class StorageManager(context: Context) {
     }
 
     fun getThemeAccent(): String {
-        return prefs.getString("theme_accent", "blue") ?: "blue"
+        return prefs.getString("theme_accent", "orange") ?: "orange"
     }
 
     // ======================

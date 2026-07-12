@@ -147,19 +147,7 @@ class SettingsActivity : AppCompatActivity() {
                     val isAdsRemoved by com.jack.meuholerite.ads.AdsDataStore.isAdsRemovedFlow(this@SettingsActivity).collectAsState(initial = false)
 
                     fun exitScreen() {
-                        scope.launch {
-                            if (AdsDataStore.canShowIntervalAd(activity)) {
-                                RewardedInterstitialAdManager.showAd(activity) {
-                                    scope.launch {
-                                        AdsDataStore.incrementAdsShown(activity)
-                                        AdsDataStore.markIntervalAdShown(activity)
-                                        finish()
-                                    }
-                                }
-                            } else {
-                                finish()
-                            }
-                        }
+                        finish()
                     }
 
                     SettingsScreen(

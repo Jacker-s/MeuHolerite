@@ -53,7 +53,7 @@ private val IosLightColorScheme = lightColorScheme(
 @Composable
 fun MeuHoleriteTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    themeAccent: String = AppThemePalettes.Blue.key,
+    themeAccent: String = AppThemePalettes.Orange.key,
     // Desabilitamos dynamicColor para manter a fidelidade ao design iOS
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit

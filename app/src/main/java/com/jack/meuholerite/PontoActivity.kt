@@ -1,4 +1,4 @@
-package com.jack.meuholerite
+﻿package com.jack.meuholerite
 
 import android.content.Context
 import android.content.Intent
@@ -251,12 +251,6 @@ fun TimesheetScreen(
     val descontos = remember(espelho) {
         espelho?.resumoItens?.filter { it.isNegative }.orEmpty()
     }
-    val adInsertPositions = remember(proventos, descontos) {
-        buildPontoAdInsertPositions(
-            totalItems = proventos.size + descontos.size,
-            maxAds = 1
-        )
-    }
 
     var showHistory by remember { mutableStateOf(false) }
 
@@ -300,7 +294,15 @@ fun TimesheetScreen(
         }
 
         item { SummaryHeroCard(espelho = espelho) }
-        
+
+        if (!adsRemovedState && (proventos.isNotEmpty() || descontos.isNotEmpty())) {
+            item {
+                NativeInlineAd(
+                    adUnitId = "ca-app-pub-7931782163570852/1526069738",
+                    size = NativeAdSize.Regular
+                )
+            }
+        }
 
 
         if (espelho.detalhesSaldoBH.isNotEmpty()) {
@@ -329,13 +331,6 @@ fun TimesheetScreen(
                     thickness = 0.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                 )
-                val globalPosition = index + 1
-                if (!adsRemovedState && globalPosition in adInsertPositions) {
-                    NativeInlineAd(
-                        adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                        size = NativeAdSize.Compact
-                    )
-                }
             }
         }
 
@@ -354,13 +349,6 @@ fun TimesheetScreen(
                     thickness = 0.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                 )
-                val globalPosition = proventos.size + index + 1
-                if (!adsRemovedState && globalPosition in adInsertPositions) {
-                    NativeInlineAd(
-                        adUnitId = "ca-app-pub-7931782163570852/1526069738",
-                        size = NativeAdSize.Compact
-                    )
-                }
             }
         }
 
@@ -379,16 +367,6 @@ fun TimesheetScreen(
 
         item { Spacer(modifier = Modifier.height(40.dp)) }
     }
-}
-
-private fun buildPontoAdInsertPositions(totalItems: Int, maxAds: Int): Set<Int> {
-    if (totalItems < 2 || maxAds <= 0) return emptySet()
-
-    return (1..maxAds)
-        .map { slot ->
-            ((totalItems.toFloat() * slot) / (maxAds + 1)).toInt().coerceIn(1, totalItems - 1)
-        }
-        .toSet()
 }
 
 private fun formatPeriodoMiniCard(periodo: String): String {

@@ -47,6 +47,27 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Comentários públicos do site
+    match /site_comments/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'role', 'message', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.role is string
+        && request.resource.data.role.size() <= 60
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 600
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
+
+    match /site_news/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // --- NOVA REGRA DO RANKING ---
     match /salary_stats/{docId} {
       allow read: if true;

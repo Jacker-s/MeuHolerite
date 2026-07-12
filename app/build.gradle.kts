@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 import java.io.FileInputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -40,8 +40,8 @@ android {
         applicationId = "com.jack.meuholerite"
         minSdk = 24
         targetSdk = 35
-        versionCode = 72
-        versionName = "2.6"
+        versionCode = 75
+        versionName = "2.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
     }
@@ -107,6 +107,7 @@ configurations.all {
 }
 
 dependencies {
+    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     // Dependências do Android, Compose e Firebase
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
